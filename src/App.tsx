@@ -1,5 +1,5 @@
 // @ts-nocheck -- The legacy prototype UI predates the typed intelligence layer.
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -9,8 +9,14 @@ import {
   Stethoscope,
   FlaskConical,
   Circle,
+  Camera,
+  ScanText,
+  Database,
+  ExternalLink,
 } from "lucide-react";
 import { scoreCandidates } from "./intelligence/confidenceEngine";
+import { ingredientMatches, parseIngredientText } from "./intelligence/ingredientParser";
+import { PRODUCT_CATALOG } from "./data/productCatalog";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -980,7 +986,7 @@ function buildUploadedAnalysis(product, suitability) {
   if (!suitability) return [];
   return product.ingredients
     .map((ing, idx) => {
-      const conflict = suitability.conflicting.find((c) => ing.includes(c.name));
+      const conflict = suitability.conflicting.find((c) => ingredientMatches(ing, c.name));
       if (conflict) {
         return {
           name: ing,
@@ -989,11 +995,11 @@ function buildUploadedAnalysis(product, suitability) {
           note: `${conflict.func}——但风险方向因你选择的具体症状而异,不同诊断结论下同一成分的适用性可能相反,建议结合报告里的具体建议判断。`,
         };
       }
-      const good = suitability.good.find((g) => ing.includes(g.name));
+      const good = suitability.good.find((g) => ingredientMatches(ing, g.name));
       if (good) {
         return { name: ing, position: `第 ${idx + 1} 位`, status: "good", note: good.func };
       }
-      const risky = suitability.risky.find((r) => ing.includes(r.name));
+      const risky = suitability.risky.find((r) => ingredientMatches(ing, r.name));
       if (risky) {
         const late = idx >= 8;
         return {
@@ -1017,15 +1023,7 @@ function groupBySystem(items) {
   return Object.entries(map).map(([system, list]) => ({ system, items: list }));
 }
 
-/* 模拟产品库——demo用,真实产品需要接入实际配料表数据库才能替换 */
-const MOCK_PRODUCTS = [
-  { id: "p1", name: "清养舒缓修护霜", ingredients: ["水", "甘油 (Glycerin)", "神经酰胺 (Ceramide NP)", "角鲨烷 (Squalane)", "泛醇/泛醌三乙酸酯 (Panthenol)", "黄原胶", "苯氧乙醇/氯苯甘醚等防腐剂 (Phenoxyethanol/Chlorphenesin)"] },
-  { id: "p2", name: "净颜控油调理水", ingredients: ["水", "变性酒精 (Alcohol/Alcohol Denat.,高浓度)", "水杨酸 (BHA)", "金缕梅提取物", "薄荷醇/辣椒素等热感成分", "香精 (Parfum/Fragrance)"] },
-  { id: "p3", name: "平衡洁净洗剂", ingredients: ["水", "氨基酸表活 (如 Sodium Cocoyl Alaninate)", "锌吡硫酮 (Zinc Pyrithione)", "甘油 (Glycerin)", "茶树精油 (Tea Tree Oil)", "苯氧乙醇/氯苯甘醚等防腐剂 (Phenoxyethanol/Chlorphenesin)"] },
-  { id: "p4", name: "亮采精华液", ingredients: ["水", "烟酰胺 (Niacinamide)", "传明酸 (Tranexamic Acid)", "甘油 (Glycerin)", "二氧化钛/氧化锌 (物理防晒剂)", "维生素C衍生物 (Ascorbyl Glucoside/Palmitate/3-O-Ethyl Ascorbic Acid)"] },
-];
-
-function scoreMockProduct(product, suitability) {
+function scoreProduct(product, suitability) {
   if (!suitability) return { score: 50, matchedGood: [], matchedRisky: [] };
   const matchedGood = [];
   const matchedRisky = [];
@@ -1033,13 +1031,13 @@ function scoreMockProduct(product, suitability) {
   product.ingredients.forEach((ing, idx) => {
     const weight = Math.max(1, 8 - idx); // 越靠前权重越高
     suitability.good.forEach((g) => {
-      if (ing.includes(g.name) && !matchedGood.includes(g.name)) {
+      if (ingredientMatches(ing, g.name) && !matchedGood.includes(g.name)) {
         matchedGood.push(g.name);
         score += weight * 3;
       }
     });
     suitability.risky.forEach((r) => {
-      if (ing.includes(r.name) && !matchedRisky.includes(r.name)) {
+      if (ingredientMatches(ing, r.name) && !matchedRisky.includes(r.name)) {
         matchedRisky.push(r.name);
         score -= weight * 4;
       }
@@ -1116,12 +1114,36 @@ function Eyebrow({ children }) {
   );
 }
 
-function ProgressRail({ step, total }) {
+const PROFILE_STAGES = ["肤质", "基础信息", "安全筛查", "问题问诊"];
+
+function JourneyProgress({ stage }) {
   return (
-    <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{ height: 3, flex: 1, borderRadius: 2, background: i <= step ? TEAL : LINE, transition: "background 300ms ease" }} />
-      ))}
+    <div style={{ marginBottom: 26 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 8 }}>
+        {PROFILE_STAGES.map((label, index) => {
+          const complete = index < stage;
+          const active = index === stage;
+          return (
+            <div
+              key={label}
+              aria-label={`${label}${complete ? "已完成" : active ? "进行中" : "未开始"}`}
+              style={{
+                height: 5,
+                borderRadius: 4,
+                background: complete || active ? TEAL : LINE,
+                opacity: active ? 0.72 : 1,
+                transition: "background 300ms ease",
+              }}
+            />
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: TEAL }}>
+          {stage + 1}/4 · {PROFILE_STAGES[stage]}
+        </span>
+        <span style={{ fontSize: 10.5, color: MUTE }}>每完成一阶段，点亮一格</span>
+      </div>
     </div>
   );
 }
@@ -1416,9 +1438,16 @@ function App() {
   const [multiSelMap, setMultiSelMap] = useState({});
   const [multiDraft, setMultiDraft] = useState([]);
   const [selectedUploadId, setSelectedUploadId] = useState(null);
+  const [uploadedProduct, setUploadedProduct] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [ocrText, setOcrText] = useState("");
+  const [ocrStatus, setOcrStatus] = useState("idle");
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrError, setOcrError] = useState("");
   const [quickCandidateKey, setQuickCandidateKey] = useState(null);
   const [quickRecommendKey, setQuickRecommendKey] = useState(null);
   const [history, setHistory] = useState(["intro"]);
+  const photoInputRef = useRef(null);
 
   function goTo(nextScreen) {
     setHistory((h) => [...h, nextScreen]);
@@ -1449,8 +1478,68 @@ function App() {
     setMultiSelMap({});
     setMultiDraft([]);
     setSelectedUploadId(null);
+    setUploadedProduct(null);
+    setPhotoPreview("");
+    setOcrText("");
+    setOcrStatus("idle");
+    setOcrProgress(0);
+    setOcrError("");
     setQuickCandidateKey(null);
     setQuickRecommendKey(null);
+  }
+
+  async function handleIngredientPhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadedProduct(null);
+    setSelectedUploadId(null);
+    setOcrText("");
+    setOcrError("");
+    setOcrProgress(0);
+    setOcrStatus("reading");
+
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(String(reader.result || ""));
+    reader.readAsDataURL(file);
+
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng", 1, {
+        logger: (message) => {
+          if (message.status === "recognizing text") {
+            setOcrProgress(Math.round((message.progress || 0) * 100));
+          }
+        },
+      });
+      const result = await worker.recognize(file);
+      await worker.terminate();
+      setOcrText(result.data.text.trim());
+      setOcrStatus("done");
+      if (!result.data.text.trim()) {
+        setOcrError("没有识别到文字，请换一张更清晰、正对配料表的照片，或在下方手动粘贴成分。 ");
+      }
+    } catch (error) {
+      setOcrStatus("error");
+      setOcrError("图片已保留，但本次 OCR 识别失败。你仍可以在下方手动粘贴或校对配料表。 ");
+    }
+  }
+
+  function confirmScannedIngredients() {
+    const ingredients = parseIngredientText(ocrText, INGREDIENT_LIBRARY);
+    if (ingredients.length === 0) {
+      setOcrError("暂时没有匹配到成分库中的标准成分名。请检查识别文字，或用英文 INCI 名称补充后再分析。 ");
+      return;
+    }
+    setUploadedProduct({
+      id: "camera-upload",
+      brand: "我的产品",
+      name: "拍照识别的配料表",
+      category: "自定义",
+      ingredients,
+    });
+    setOcrError("");
+    goTo("ingredient");
   }
 
   function backSkin() {
@@ -1624,8 +1713,9 @@ function App() {
     ? mergeSuitabilityKeys((QUICK_RECOMMEND_OPTIONS.find((o) => o.key === quickRecommendKey) || {}).keys || [])
     : null;
   const suitability = diagnosisSuitability || quickIngredientSuitability || quickRecommendSuitability;
+  const selectedProduct = uploadedProduct || PRODUCT_CATALOG.find((p) => p.id === selectedUploadId) || null;
   const rankedProducts = suitability
-    ? MOCK_PRODUCTS.map((p) => ({ ...p, ...scoreMockProduct(p, suitability) })).sort((a, b) => b.score - a.score)
+    ? PRODUCT_CATALOG.map((p) => ({ ...p, ...scoreProduct(p, suitability) })).sort((a, b) => b.score - a.score)
     : [];
 
   return (
@@ -1804,14 +1894,14 @@ function App() {
         {screen === "quickRecommendResult" && quickRecommendSuitability && (
           <div style={{ paddingTop: 24, paddingBottom: 40 }}>
             <TextButton onClick={goBack}><ChevronLeft size={14} /> 重新选择</TextButton>
-            <Eyebrow>产品推荐 · 模拟数据</Eyebrow>
+            <Eyebrow>产品推荐 · 本地产品数据库</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 23, fontWeight: 500, marginBottom: 7, marginTop: 0 }}>
               按「{QUICK_RECOMMEND_OPTIONS.find((o) => o.key === quickRecommendKey)?.label}」匹配
             </h2>
             <div style={{ display: "flex", gap: 10, border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", marginBottom: 20, background: "#fff" }}>
-              <AlertTriangle size={15} color={AMBER} style={{ flexShrink: 0, marginTop: 1 }} />
+              <Database size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 12, color: MUTE, lineHeight: 1.6 }}>
-                以下产品为 demo 虚构数据。真实版本需要接入实际产品配料表数据库；当前只是复用同一套成分匹配与位置权重逻辑。
+                已收录 {PRODUCT_CATALOG.length} 款真实产品，成分依据品牌官方页面建立。配方可能因地区与批次调整，购买或使用前仍应与手中包装核对。
               </span>
             </div>
             {rankedProducts.map((p, i) => (
@@ -1819,9 +1909,15 @@ function App() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: MUTE, marginRight: 8 }}>#{i + 1}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.brand} · {p.name}</span>
                   </div>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: i === 0 ? TEAL : MUTE, fontWeight: 600 }}>{p.score}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 7 }}>
+                  <Tag>{p.category}</Tag>
+                  <a href={p.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none" }}>
+                    品牌成分页 <ExternalLink size={11} />
+                  </a>
                 </div>
                 {p.matchedGood.length > 0 && (
                   <div style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>为什么匹配:{p.matchedGood.join("、")}</div>
@@ -1836,7 +1932,7 @@ function App() {
             ))}
             <SectionLabel>为什么不是黑箱推荐?</SectionLabel>
             <BodyText>
-              每个推荐分数都来自同一份成分库：命中适合成分加分,命中风险成分减分,且排位越靠前权重越高。未来接入真实产品数据库后,这套逻辑可以直接复用。
+              每个推荐分数都来自同一份成分库：命中适合成分加分,命中风险成分减分,且配料表排位越靠前权重越高。产品目录和规则层分开维护，后续可以继续扩充产品，不需要改推荐算法。
             </BodyText>
             <TextButton onClick={() => goTo("intro")}>回到三个入口</TextButton>
           </div>
@@ -1849,7 +1945,10 @@ function App() {
               <ChevronLeft size={14} /> 上一步
             </TextButton>
             <Eyebrow>第一步 · 肤质建档</Eyebrow>
-            <ProgressRail step={skinStep} total={SKIN_QUESTIONS.length} />
+            <JourneyProgress stage={0} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
+              本阶段问题 {skinStep + 1}/{SKIN_QUESTIONS.length}
+            </div>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               {SKIN_QUESTIONS[skinStep].q}
             </h2>
@@ -1867,7 +1966,10 @@ function App() {
               <ChevronLeft size={14} /> 上一步
             </TextButton>
             <Eyebrow>第二步 · 基础信息</Eyebrow>
-            <ProgressRail step={profileStep} total={visibleProfileQuestions.length} />
+            <JourneyProgress stage={1} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
+              本阶段问题 {profileStep + 1}/{visibleProfileQuestions.length}
+            </div>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               {currentProfileQ.q}
             </h2>
@@ -1885,6 +1987,7 @@ function App() {
               <ChevronLeft size={14} /> 上一步
             </TextButton>
             <Eyebrow>肤质已记录</Eyebrow>
+            <JourneyProgress stage={3} />
             <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
               <Tag>{{ combo: "混合性", oily: "油性", dry: "干性", normal: "中性" }[skinAnswers.wash]}</Tag>
               <Tag>{skinSensitive ? "敏感叠加" : "非敏感"}</Tag>
@@ -1920,6 +2023,7 @@ function App() {
               <ChevronLeft size={14} /> 上一步
             </TextButton>
             <Eyebrow>第三步 · 就医识别</Eyebrow>
+            <JourneyProgress stage={2} />
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 21, fontWeight: 500, marginBottom: 6, marginTop: 0, lineHeight: 1.4 }}>
               在选具体问题之前,先排除这几种情况
             </h2>
@@ -1968,7 +2072,10 @@ function App() {
               {tree.label} · 鉴别问诊
               {selectedSymptoms.length > 1 ? `(${symptomIndex + 1}/${selectedSymptoms.length})` : ""}
             </Eyebrow>
-            <ProgressRail step={qStep} total={visibleQuestions.length} />
+            <JourneyProgress stage={3} />
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
+              本症状问题 {qStep + 1}/{visibleQuestions.length}
+            </div>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 21, fontWeight: 500, marginBottom: 6, marginTop: 0, lineHeight: 1.4 }}>
               {currentQ.q}
             </h2>
@@ -2131,7 +2238,7 @@ function App() {
               <FlaskConical size={15} /> 查看成分匹配分析
             </PrimaryButton>
             {suitability && (
-              <PrimaryButton onClick={() => goTo("recommend")}>为你推荐产品(模拟)</PrimaryButton>
+              <PrimaryButton onClick={() => goTo("recommend")}>从产品数据库为我匹配</PrimaryButton>
             )}
             <TextButton onClick={resetAll}>重新开始</TextButton>
           </div>
@@ -2149,49 +2256,81 @@ function App() {
             </h2>
             {diagnosisSuitability && (
               <div style={{ border: `1px solid ${TEAL}`, borderRadius: 10, padding: "12px 14px", background: TEAL_SOFT, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: "#2E4E48", lineHeight: 1.6, marginBottom: 9 }}>
+                <div style={{ fontSize: 12, color: "#2E4E48", lineHeight: 1.6 }}>
                   已有本次完整诊断结果。默认使用刚才的诊断结论，比自己选择一个标签更准确。
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedUploadId(MOCK_PRODUCTS[1].id);
-                    goTo("ingredient");
-                  }}
-                  style={{ border: `1px solid ${TEAL}`, background: "#fff", color: "#2E4E48", borderRadius: 8, padding: "8px 12px", fontSize: 12.5, cursor: "pointer" }}
-                >
-                  使用我的诊断结果
-                </button>
               </div>
             )}
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 24, lineHeight: 1.6 }}>
-              拍照识别配料表,或者从下面选一个产品做演示——这一步决定后面比对的是哪份配料表
+              拍摄瓶身背面的配料表，OCR 会在你的设备浏览器内读取英文 INCI 名称；识别后可以手动校对，再进入匹配分析。
             </p>
 
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleIngredientPhoto}
+              style={{ display: "none" }}
+            />
             <button
-              onClick={() => {
-                setSelectedUploadId(MOCK_PRODUCTS[1].id);
-                goTo("ingredient");
-              }}
+              onClick={() => photoInputRef.current?.click()}
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%",
                 padding: "22px 20px", borderRadius: 12, border: `1.5px dashed ${TEAL}`, background: TEAL_SOFT,
                 cursor: "pointer", marginBottom: 24,
               }}
             >
-              <FlaskConical size={18} color={TEAL} />
-              <span style={{ fontSize: 14.5, fontWeight: 500, color: "#2E4E48" }}>拍照上传配料表(模拟识别)</span>
+              <Camera size={18} color={TEAL} />
+              <span style={{ fontSize: 14.5, fontWeight: 500, color: "#2E4E48" }}>拍照或从相册选择配料表</span>
             </button>
 
+            {photoPreview && (
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 10, background: "#fff", marginBottom: 14 }}>
+                <img src={photoPreview} alt="待识别的产品配料表" style={{ display: "block", width: "100%", maxHeight: 260, objectFit: "contain", borderRadius: 8 }} />
+              </div>
+            )}
+
+            {ocrStatus === "reading" && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: MUTE, marginBottom: 6 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><ScanText size={14} /> 正在识别英文 INCI…</span>
+                  <span>{ocrProgress}%</span>
+                </div>
+                <div style={{ height: 5, background: LINE, borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${ocrProgress}%`, background: TEAL, transition: "width 200ms ease" }} />
+                </div>
+              </div>
+            )}
+
+            {(photoPreview || ocrText) && ocrStatus !== "reading" && (
+              <div style={{ marginBottom: 22 }}>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, marginBottom: 7 }}>识别结果（请校对）</label>
+                <textarea
+                  value={ocrText}
+                  onChange={(event) => setOcrText(event.target.value)}
+                  placeholder="例如：Aqua, Glycerin, Niacinamide, Ceramide NP…"
+                  rows={7}
+                  style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: `1px solid ${ocrError ? RUST : LINE}`, borderRadius: 10, padding: "12px 13px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.55, color: INK, background: "#fff" }}
+                />
+                {ocrError && <div style={{ color: RUST, fontSize: 11.5, lineHeight: 1.5, marginTop: 7 }}>{ocrError}</div>}
+                <PrimaryButton onClick={confirmScannedIngredients} disabled={!ocrText.trim()}>
+                  <ScanText size={15} /> 确认成分并开始匹配
+                </PrimaryButton>
+              </div>
+            )}
+
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.08em", color: MUTE, textTransform: "uppercase", marginBottom: 12 }}>
-              或者选一个演示产品
+              或者从产品数据库选择
             </div>
-            {MOCK_PRODUCTS.map((p) => (
+            {PRODUCT_CATALOG.map((p) => (
               <OptionCard
                 key={p.id}
-                label={p.name}
-                sub={`${p.ingredients.length} 种成分`}
+                label={`${p.brand} · ${p.name}`}
+                sub={`${p.category} · 已记录 ${p.ingredients.length} 项公开成分`}
                 selected={selectedUploadId === p.id}
                 onClick={() => {
+                  setUploadedProduct(null);
                   setSelectedUploadId(p.id);
                   goTo("ingredient");
                 }}
@@ -2201,52 +2340,62 @@ function App() {
         )}
 
         {/* ---------------- INGREDIENT ---------------- */}
-        {screen === "ingredient" && suitability && (
+        {screen === "ingredient" && suitability && selectedProduct && (
           <div style={{ paddingTop: 24, paddingBottom: 40 }}>
             <TextButton onClick={goBack}>
               <ChevronLeft size={14} /> 上一步(重新选择产品)
             </TextButton>
-            <Eyebrow>成分匹配分析 · 模拟数据</Eyebrow>
+            <Eyebrow>成分匹配分析 · {uploadedProduct ? "拍照识别" : "产品数据库"}</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               你在用的这瓶,匹配吗?
             </h2>
             <div style={{ display: "flex", gap: 10, border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16, background: "#fff" }}>
-              <AlertTriangle size={15} color={AMBER} style={{ flexShrink: 0, marginTop: 1 }} />
+              {uploadedProduct ? <ScanText size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} /> : <Database size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} />}
               <span style={{ fontSize: 12, color: MUTE, lineHeight: 1.6 }}>
-                正在比对「{(MOCK_PRODUCTS.find((p) => p.id === selectedUploadId) || MOCK_PRODUCTS[1]).name}」——真实版本这一步是拍照OCR识别配料表,当前demo用选产品模拟这个环节。下面每一条判断都来自你刚扩充的{INGREDIENT_LIBRARY.length}条成分库,而不是写死的示例。
+                正在比对「{selectedProduct.brand} · {selectedProduct.name}」。识别到 {selectedProduct.ingredients.length} 个成分库条目，下面每一条判断都来自 {INGREDIENT_LIBRARY.length} 条成分规则，而不是写死的示例。
               </span>
             </div>
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20, lineHeight: 1.6 }}>
               基于本次{symptomResults.length > 1 ? "所有已选症状" : "诊断结论"}比对——同一个成分,风险会因诊断结论而不同
             </p>
 
-            {buildUploadedAnalysis(MOCK_PRODUCTS.find((p) => p.id === selectedUploadId) || MOCK_PRODUCTS[1], suitability).map((ing, i) => (
+            {buildUploadedAnalysis(selectedProduct, suitability).map((ing, i) => (
               <IngredientRow key={i} name={ing.name} position={ing.position} status={ing.status} note={ing.note} />
             ))}
+
+            {buildUploadedAnalysis(selectedProduct, suitability).length === 0 && (
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", background: "#fff", color: MUTE, fontSize: 12.5, lineHeight: 1.6, marginBottom: 18 }}>
+                已读取配料表，但没有命中当前诊断对应的适合或风险规则。这不等于产品一定适合，只表示现有规则库没有足够证据评分。
+              </div>
+            )}
 
             <SectionLabel>结论</SectionLabel>
             <BodyText>
               结合诊断结论与成分排位估算,上面标记为「冲突」的成分建议优先替换或减少使用频率,「一致」的成分可以保留,「低权重」的成分理论上有风险但估计浓度低,暂不列为优先处理项。
             </BodyText>
 
+            {uploadedProduct && (
+              <BodyText>OCR 可能漏字或误认，尤其是反光、弧形瓶身和小字号。安全结论以你校对后的文字和产品包装原始配料表为准。</BodyText>
+            )}
+
             <PrimaryButton onClick={resetAll}>重新开始演示</PrimaryButton>
           </div>
         )}
 
-        {/* ---------------- RECOMMEND (模拟推荐) ---------------- */}
+        {/* ---------------- RECOMMEND (产品数据库匹配) ---------------- */}
         {screen === "recommend" && suitability && (
           <div style={{ paddingTop: 24, paddingBottom: 40 }}>
             <TextButton onClick={goBack}>
               <ChevronLeft size={14} /> 上一步
             </TextButton>
-            <Eyebrow>为你推荐 · 模拟数据</Eyebrow>
+            <Eyebrow>为你推荐 · 本地产品数据库</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               按{symptomResults.length > 1 ? `本次${symptomResults.length}个症状综合` : `「${primary.top.label}」`}的适合/风险成分匹配
             </h2>
             <div style={{ display: "flex", gap: 10, border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", marginBottom: 20, background: "#fff" }}>
-              <AlertTriangle size={15} color={AMBER} style={{ flexShrink: 0, marginTop: 1 }} />
+              <Database size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 12, color: MUTE, lineHeight: 1.6 }}>
-                以下 4 款是演示用的虚构产品,用来展示推荐打分逻辑——真实产品需要接入实际配料表数据库,这一步在当前demo中未实现。打分依据是你刚扩充的{INGREDIENT_LIBRARY.length}条成分库{symptomResults.length > 1 ? ",并综合了本次所有已选症状,不只是第一个" : ""}。
+                当前数据库收录 {PRODUCT_CATALOG.length} 款真实产品，成分数据来自品牌官方页面。打分依据是 {INGREDIENT_LIBRARY.length} 条成分规则{symptomResults.length > 1 ? ",并综合本次所有已选症状" : ""}；配方可能因地区与批次变化，请以包装为准。
               </span>
             </div>
 
@@ -2255,9 +2404,15 @@ function App() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: MUTE, marginRight: 8 }}>#{i + 1}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.brand} · {p.name}</span>
                   </div>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: i === 0 ? TEAL : MUTE, fontWeight: 600 }}>{p.score}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 7 }}>
+                  <Tag>{p.category}</Tag>
+                  <a href={p.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none" }}>
+                    品牌成分页 <ExternalLink size={11} />
+                  </a>
                 </div>
                 {p.matchedGood.length > 0 && (
                   <div style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>命中适合成分:{p.matchedGood.join("、")}</div>
