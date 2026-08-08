@@ -15,7 +15,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { scoreCandidates } from "./intelligence/confidenceEngine";
-import { ingredientMatches, parseIngredientText } from "./intelligence/ingredientParser";
+import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
+import { rankProducts } from "./intelligence/productScoring";
 import { PRODUCT_CATALOG } from "./data/productCatalog";
 
 const FONT_IMPORT = `
@@ -984,34 +985,46 @@ function mergeSuitability(results) {
    命中风险成分且排位靠前 → risk;命中风险成分但排位靠后(估计浓度低) → mild;命中适合成分 → good */
 function buildUploadedAnalysis(product, suitability) {
   if (!suitability) return [];
-  return product.ingredients
-    .map((ing, idx) => {
-      const conflict = suitability.conflicting.find((c) => ingredientMatches(ing, c.name));
-      if (conflict) {
-        return {
-          name: ing,
-          position: `第 ${idx + 1} 位`,
-          status: "mild",
-          note: `${conflict.func}——但风险方向因你选择的具体症状而异,不同诊断结论下同一成分的适用性可能相反,建议结合报告里的具体建议判断。`,
-        };
-      }
-      const good = suitability.good.find((g) => ingredientMatches(ing, g.name));
-      if (good) {
-        return { name: ing, position: `第 ${idx + 1} 位`, status: "good", note: good.func };
-      }
-      const risky = suitability.risky.find((r) => ingredientMatches(ing, r.name));
-      if (risky) {
-        const late = idx >= 8;
-        return {
-          name: ing,
-          position: `第 ${idx + 1} 位`,
-          status: late ? "mild" : "risk",
-          note: late ? `${risky.func}(排位靠后,估计浓度低,风险权重相应调低)` : risky.func,
-        };
-      }
-      return null;
-    })
-    .filter(Boolean);
+  const recognized = product.ingredients.map((ing, idx) => {
+    const conflict = suitability.conflicting.find((c) => ingredientMatches(ing, c.name));
+    if (conflict) {
+      return {
+        name: ing,
+        position: `第 ${idx + 1} 位`,
+        status: "mild",
+        note: `${conflict.func}——但它对你选择的不同症状存在方向冲突，需要结合报告判断。`,
+      };
+    }
+    const good = suitability.good.find((g) => ingredientMatches(ing, g.name));
+    if (good) {
+      return { name: ing, position: `第 ${idx + 1} 位`, status: "good", note: good.func };
+    }
+    const risky = suitability.risky.find((r) => ingredientMatches(ing, r.name));
+    if (risky) {
+      const late = idx >= 8;
+      return {
+        name: ing,
+        position: `第 ${idx + 1} 位`,
+        status: late ? "mild" : "risk",
+        note: late ? `${risky.func}（排位靠后，风险权重相应调低）` : risky.func,
+      };
+    }
+    const reference = INGREDIENT_LIBRARY.find((item) => ingredientMatches(ing, item.name));
+    return {
+      name: ing,
+      position: `第 ${idx + 1} 位`,
+      status: "neutral",
+      note: reference ? `${reference.system}：${reference.func}。当前诊断下不参与加减分。` : "已记录，但当前规则库没有把它列为适合或风险证据。",
+    };
+  });
+
+  const unknown = (product.unknownIngredients || []).map((ingredient, index) => ({
+    name: ingredient,
+    position: `未标准化 ${index + 1}`,
+    status: "unknown",
+    note: "OCR 已读取这段文字，但暂时无法映射到标准成分名，因此不参与评分。",
+  }));
+  return [...recognized, ...unknown];
 }
 
 function groupBySystem(items) {
@@ -1021,29 +1034,6 @@ function groupBySystem(items) {
     map[it.system].push(it);
   });
   return Object.entries(map).map(([system, list]) => ({ system, items: list }));
-}
-
-function scoreProduct(product, suitability) {
-  if (!suitability) return { score: 50, matchedGood: [], matchedRisky: [] };
-  const matchedGood = [];
-  const matchedRisky = [];
-  let score = 50;
-  product.ingredients.forEach((ing, idx) => {
-    const weight = Math.max(1, 8 - idx); // 越靠前权重越高
-    suitability.good.forEach((g) => {
-      if (ingredientMatches(ing, g.name) && !matchedGood.includes(g.name)) {
-        matchedGood.push(g.name);
-        score += weight * 3;
-      }
-    });
-    suitability.risky.forEach((r) => {
-      if (ingredientMatches(ing, r.name) && !matchedRisky.includes(r.name)) {
-        matchedRisky.push(r.name);
-        score -= weight * 4;
-      }
-    });
-  });
-  return { score: Math.max(5, Math.min(98, score)), matchedGood, matchedRisky };
 }
 
 /* ============================================================
@@ -1290,6 +1280,8 @@ function IngredientRow({ name, position, status, note }) {
     risk: { color: RUST, bg: "#FBF0EC", label: "冲突" },
     good: { color: TEAL, bg: TEAL_SOFT, label: "一致" },
     mild: { color: AMBER, bg: AMBER_SOFT, label: "低权重" },
+    neutral: { color: "#676156", bg: "#F1EFEA", label: "中性" },
+    unknown: { color: "#756F64", bg: "#F6F4EF", label: "未识别" },
   }[status];
   return (
     <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", marginBottom: 10, background: "#fff" }}>
@@ -1303,6 +1295,65 @@ function IngredientRow({ name, position, status, note }) {
         </span>
       </div>
       <p style={{ fontSize: 12, color: "#5C574D", lineHeight: 1.6, margin: 0 }}>{note}</p>
+    </div>
+  );
+}
+
+function ProductRecommendationCard({ product, index }) {
+  const confidenceLabel = { high: "高", medium: "中", low: "低" }[product.confidence];
+  const scoreColor = product.score === null ? MUTE : index === 0 ? TEAL : INK;
+  return (
+    <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 16px", marginBottom: 12, background: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 9 }}>
+        <div>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: MUTE, marginRight: 8 }}>#{index + 1}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{product.brand} · {product.name}</span>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: product.score === null ? 10.5 : 15, color: scoreColor, fontWeight: 600, whiteSpace: "nowrap" }}>
+          {product.score === null ? "证据不足" : `${product.score} 分`}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Tag>{product.category}</Tag>
+          <Tag>{product.ingredientListType === "full" ? "完整配方" : "部分配方"}</Tag>
+        </div>
+        <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none", whiteSpace: "nowrap" }}>
+          数据来源 <ExternalLink size={11} />
+        </a>
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: MUTE, marginBottom: 5 }}>
+          <span>数据完整度 {product.dataCompleteness}%</span>
+          <span>可信度：{confidenceLabel} · 有效证据 {product.evidenceCount} 条</span>
+        </div>
+        <div style={{ height: 5, background: LINE, borderRadius: 4, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${product.dataCompleteness}%`, background: product.dataCompleteness >= 85 ? TEAL : AMBER }} />
+        </div>
+      </div>
+
+      {product.positiveEvidence.map((evidence) => (
+        <div key={`good-${evidence.name}`} style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>
+          +{evidence.points} · {evidence.name}（配料第 {evidence.ingredientPosition} 位）
+        </div>
+      ))}
+      {product.negativeEvidence.map((evidence) => (
+        <div key={`risk-${evidence.name}`} style={{ fontSize: 12, color: "#7A3D2C", marginBottom: 4 }}>
+          {evidence.points} · {evidence.name}（配料第 {evidence.ingredientPosition} 位）
+        </div>
+      ))}
+      {product.conflictingEvidence.map((name) => (
+        <div key={`conflict-${name}`} style={{ fontSize: 12, color: "#6B5527", marginBottom: 4 }}>
+          方向冲突 · {name}：不同症状下适用性相反，不计入分数
+        </div>
+      ))}
+      {!product.recommendationAvailable && (
+        <div style={{ fontSize: 12, color: MUTE, lineHeight: 1.55 }}>
+          当前配方数据或相关证据不足，因此不生成精确推荐分数，也不会把它当作首选。
+        </div>
+      )}
     </div>
   );
 }
@@ -1439,6 +1490,7 @@ function App() {
   const [multiDraft, setMultiDraft] = useState([]);
   const [selectedUploadId, setSelectedUploadId] = useState(null);
   const [uploadedProduct, setUploadedProduct] = useState(null);
+  const [uploadedParseResult, setUploadedParseResult] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [ocrText, setOcrText] = useState("");
   const [ocrStatus, setOcrStatus] = useState("idle");
@@ -1479,6 +1531,7 @@ function App() {
     setMultiDraft([]);
     setSelectedUploadId(null);
     setUploadedProduct(null);
+    setUploadedParseResult(null);
     setPhotoPreview("");
     setOcrText("");
     setOcrStatus("idle");
@@ -1493,6 +1546,7 @@ function App() {
     if (!file) return;
 
     setUploadedProduct(null);
+    setUploadedParseResult(null);
     setSelectedUploadId(null);
     setOcrText("");
     setOcrError("");
@@ -1526,17 +1580,21 @@ function App() {
   }
 
   function confirmScannedIngredients() {
-    const ingredients = parseIngredientText(ocrText, INGREDIENT_LIBRARY);
-    if (ingredients.length === 0) {
+    const parsed = parseIngredientDetails(ocrText, INGREDIENT_LIBRARY);
+    if (parsed.recognized.length === 0) {
       setOcrError("暂时没有匹配到成分库中的标准成分名。请检查识别文字，或用英文 INCI 名称补充后再分析。 ");
       return;
     }
+    setUploadedParseResult(parsed);
     setUploadedProduct({
       id: "camera-upload",
       brand: "我的产品",
       name: "拍照识别的配料表",
       category: "自定义",
-      ingredients,
+      ingredients: parsed.recognized.map((item) => item.canonicalName),
+      unknownIngredients: parsed.unknown.map((item) => item.raw),
+      dataCompleteness: parsed.coverage,
+      ingredientListType: "partial",
     });
     setOcrError("");
     goTo("ingredient");
@@ -1714,8 +1772,10 @@ function App() {
     : null;
   const suitability = diagnosisSuitability || quickIngredientSuitability || quickRecommendSuitability;
   const selectedProduct = uploadedProduct || PRODUCT_CATALOG.find((p) => p.id === selectedUploadId) || null;
+  const liveOcrResult = ocrText.trim() ? parseIngredientDetails(ocrText, INGREDIENT_LIBRARY) : null;
+  const selectedProductAnalysis = selectedProduct && suitability ? buildUploadedAnalysis(selectedProduct, suitability) : [];
   const rankedProducts = suitability
-    ? PRODUCT_CATALOG.map((p) => ({ ...p, ...scoreProduct(p, suitability) })).sort((a, b) => b.score - a.score)
+    ? rankProducts(PRODUCT_CATALOG, suitability)
     : [];
 
   return (
@@ -1905,34 +1965,11 @@ function App() {
               </span>
             </div>
             {rankedProducts.map((p, i) => (
-              <div key={p.id} style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", marginBottom: 10, background: "#fff" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: MUTE, marginRight: 8 }}>#{i + 1}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.brand} · {p.name}</span>
-                  </div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: i === 0 ? TEAL : MUTE, fontWeight: 600 }}>{p.score}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 7 }}>
-                  <Tag>{p.category}</Tag>
-                  <a href={p.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none" }}>
-                    品牌成分页 <ExternalLink size={11} />
-                  </a>
-                </div>
-                {p.matchedGood.length > 0 && (
-                  <div style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>为什么匹配:{p.matchedGood.join("、")}</div>
-                )}
-                {p.matchedRisky.length > 0 && (
-                  <div style={{ fontSize: 12, color: "#7A3D2C" }}>为什么谨慎:{p.matchedRisky.join("、")}</div>
-                )}
-                {p.matchedGood.length === 0 && p.matchedRisky.length === 0 && (
-                  <div style={{ fontSize: 12, color: MUTE }}>未命中已知规则,暂按中性处理</div>
-                )}
-              </div>
+              <ProductRecommendationCard key={p.id} product={p} index={i} />
             ))}
             <SectionLabel>为什么不是黑箱推荐?</SectionLabel>
             <BodyText>
-              每个推荐分数都来自同一份成分库：命中适合成分加分,命中风险成分减分,且配料表排位越靠前权重越高。产品目录和规则层分开维护，后续可以继续扩充产品，不需要改推荐算法。
+              每个分数都会展示加分、减分、配料位置、有效证据数量和数据完整度。没有相关证据时直接标记“证据不足”，不会用默认中性分数假装完成推荐。
             </BodyText>
             <TextButton onClick={() => goTo("intro")}>回到三个入口</TextButton>
           </div>
@@ -2314,6 +2351,32 @@ function App() {
                   style={{ width: "100%", boxSizing: "border-box", resize: "vertical", border: `1px solid ${ocrError ? RUST : LINE}`, borderRadius: 10, padding: "12px 13px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.55, color: INK, background: "#fff" }}
                 />
                 {ocrError && <div style={{ color: RUST, fontSize: 11.5, lineHeight: 1.5, marginTop: 7 }}>{ocrError}</div>}
+                {liveOcrResult && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7, marginBottom: 10 }}>
+                      {[
+                        ["已标准化", liveOcrResult.recognized.length, TEAL],
+                        ["待确认", liveOcrResult.unknown.length, AMBER],
+                        ["覆盖率", `${liveOcrResult.coverage}%`, INK],
+                      ].map(([label, value, color]) => (
+                        <div key={label} style={{ border: `1px solid ${LINE}`, borderRadius: 8, padding: "9px 8px", background: "#fff", textAlign: "center" }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 600, color }}>{value}</div>
+                          <div style={{ fontSize: 10.5, color: MUTE, marginTop: 2 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {liveOcrResult.recognized.length > 0 && (
+                      <div style={{ fontSize: 11.5, color: "#2E4E48", lineHeight: 1.6, marginBottom: 6 }}>
+                        已识别：{liveOcrResult.recognized.map((item) => item.canonicalName).join("、")}
+                      </div>
+                    )}
+                    {liveOcrResult.unknown.length > 0 && (
+                      <div style={{ fontSize: 11.5, color: "#6B5527", lineHeight: 1.6 }}>
+                        未识别：{liveOcrResult.unknown.slice(0, 6).map((item) => item.raw).join("、")}{liveOcrResult.unknown.length > 6 ? "…" : ""}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <PrimaryButton onClick={confirmScannedIngredients} disabled={!ocrText.trim()}>
                   <ScanText size={15} /> 确认成分并开始匹配
                 </PrimaryButton>
@@ -2327,7 +2390,7 @@ function App() {
               <OptionCard
                 key={p.id}
                 label={`${p.brand} · ${p.name}`}
-                sub={`${p.category} · 已记录 ${p.ingredients.length} 项公开成分`}
+                sub={`${p.category} · ${p.ingredientListType === "full" ? "完整配方" : "部分配方"} · 数据完整度 ${p.dataCompleteness}%`}
                 selected={selectedUploadId === p.id}
                 onClick={() => {
                   setUploadedProduct(null);
@@ -2359,11 +2422,36 @@ function App() {
               基于本次{symptomResults.length > 1 ? "所有已选症状" : "诊断结论"}比对——同一个成分,风险会因诊断结论而不同
             </p>
 
-            {buildUploadedAnalysis(selectedProduct, suitability).map((ing, i) => (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 18 }}>
+              {[
+                ["数据完整度", `${selectedProduct.dataCompleteness ?? 100}%`],
+                ["已标准化", selectedProduct.ingredients.length],
+                ["未识别", selectedProduct.unknownIngredients?.length || 0],
+              ].map(([label, value]) => (
+                <div key={label} style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 8px", background: "#fff", textAlign: "center" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 600, color: INK }}>{value}</div>
+                  <div style={{ fontSize: 10.5, color: MUTE, marginTop: 3 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {uploadedParseResult && (
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", background: "#fff", marginBottom: 16 }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 8 }}>OCR 原文 → 标准成分</div>
+                {uploadedParseResult.recognized.map((item, index) => (
+                  <div key={`${item.canonicalName}-${index}`} style={{ fontSize: 11.5, color: "#4B473F", lineHeight: 1.55, marginBottom: 4 }}>
+                    {item.raw} → <b>{item.canonicalName}</b>
+                    {item.matchType === "fuzzy" ? `（纠错匹配 ${Math.round(item.confidence * 100)}%）` : ""}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedProductAnalysis.map((ing, i) => (
               <IngredientRow key={i} name={ing.name} position={ing.position} status={ing.status} note={ing.note} />
             ))}
 
-            {buildUploadedAnalysis(selectedProduct, suitability).length === 0 && (
+            {selectedProductAnalysis.length === 0 && (
               <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", background: "#fff", color: MUTE, fontSize: 12.5, lineHeight: 1.6, marginBottom: 18 }}>
                 已读取配料表，但没有命中当前诊断对应的适合或风险规则。这不等于产品一定适合，只表示现有规则库没有足够证据评分。
               </div>
@@ -2400,35 +2488,12 @@ function App() {
             </div>
 
             {rankedProducts.map((p, i) => (
-              <div key={p.id} style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", marginBottom: 10, background: "#fff" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: MUTE, marginRight: 8 }}>#{i + 1}</span>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: INK }}>{p.brand} · {p.name}</span>
-                  </div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: i === 0 ? TEAL : MUTE, fontWeight: 600 }}>{p.score}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 7 }}>
-                  <Tag>{p.category}</Tag>
-                  <a href={p.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none" }}>
-                    品牌成分页 <ExternalLink size={11} />
-                  </a>
-                </div>
-                {p.matchedGood.length > 0 && (
-                  <div style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>命中适合成分:{p.matchedGood.join("、")}</div>
-                )}
-                {p.matchedRisky.length > 0 && (
-                  <div style={{ fontSize: 12, color: "#7A3D2C" }}>命中风险成分:{p.matchedRisky.join("、")}</div>
-                )}
-                {p.matchedGood.length === 0 && p.matchedRisky.length === 0 && (
-                  <div style={{ fontSize: 12, color: MUTE }}>未命中已知的适合或风险成分,中性评分</div>
-                )}
-              </div>
+              <ProductRecommendationCard key={p.id} product={p} index={i} />
             ))}
 
             <SectionLabel>打分逻辑</SectionLabel>
             <BodyText>
-              命中适合成分加分、命中风险成分减分,且位置越靠前(浓度估计越高)权重越大——和成分匹配分析用的是同一套判断依据,只是这里换成了主动去匹配一批产品,而不是等用户上传。
+              命中适合成分加分、命中风险成分减分，且位置越靠前权重越大。结果同时受产品配方完整度和有效证据数量约束；证据不足的产品不显示精确分数，也不会排在有证据的产品前面。
             </BodyText>
 
             <PrimaryButton onClick={resetAll}>重新开始演示</PrimaryButton>
