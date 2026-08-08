@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ingredientMatches,
+  parseIngredientDetails,
   parseIngredientText,
 } from "../src/intelligence/ingredientParser.ts";
 
@@ -38,4 +39,20 @@ test("preserves ingredient order from the photographed label", () => {
 
 test("recognizes common INCI aliases not written out in the display name", () => {
   assert.equal(ingredientMatches("Salicylic Acid", library[2].name), true);
+});
+
+test("reports unknown OCR rows instead of silently discarding them", () => {
+  const result = parseIngredientDetails(
+    "Niacinamide, Mystery Botanical Extract, Ceramide NP",
+    library,
+  );
+  assert.equal(result.recognized.length, 2);
+  assert.deepEqual(result.unknown.map((item) => item.raw), ["Mystery Botanical Extract"]);
+  assert.equal(result.coverage, 67);
+});
+
+test("conservatively corrects a close OCR typo", () => {
+  const result = parseIngredientDetails("Niacinarnide", library);
+  assert.equal(result.recognized[0].canonicalName, library[0].name);
+  assert.equal(result.recognized[0].matchType, "fuzzy");
 });
