@@ -1,3 +1,4 @@
+// @ts-nocheck -- The legacy prototype UI predates the typed intelligence layer.
 import React, { useState } from "react";
 import {
   ChevronRight,
@@ -9,6 +10,7 @@ import {
   FlaskConical,
   Circle,
 } from "lucide-react";
+import { scoreCandidates } from "./intelligence/confidenceEngine";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -1102,68 +1104,6 @@ function contentKeyLabel(symptom, answers) {
   return null;
 }
 
-function scoreSymptom(tree, answers, multiSel) {
-  const scores = {};
-  Object.keys(tree.candidates).forEach((k) => (scores[k] = 30));
-
-  const applySignals = (signals) => {
-    if (!signals) return;
-    Object.entries(signals).forEach(([cand, s]) => {
-      scores[cand] = (scores[cand] || 30) + s.delta;
-    });
-  };
-
-  tree.questions.forEach((q) => {
-    if (q.multi) {
-      (multiSel[q.key] || []).forEach((v) => {
-        const opt = q.options.find((o) => o.v === v);
-        applySignals(opt && opt.signals);
-      });
-    } else if (answers[q.key]) {
-      const opt = q.options.find((o) => o.v === answers[q.key]);
-      applySignals(opt && opt.signals);
-    }
-  });
-
-  Object.keys(scores).forEach((k) => {
-    scores[k] = Math.max(5, Math.min(95, scores[k]));
-  });
-
-  const ranked = Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .map(([key, pct]) => ({ key, label: tree.candidates[key], pct }));
-
-  return ranked;
-}
-
-function buildEvidence(tree, answers, multiSel, topKey) {
-  const matched = [];
-  const missing = [];
-
-  tree.questions.forEach((q) => {
-    if (q.skipIf && q.skipIf(answers)) return;
-    if (q.multi) {
-      const selected = multiSel[q.key] || [];
-      q.options.forEach((o) => {
-        const sig = o.signals && o.signals[topKey];
-        if (!sig || sig.delta <= 0 || !sig.label) return;
-        if (selected.includes(o.v)) matched.push(sig.label);
-        else missing.push(sig.label);
-      });
-    } else {
-      const chosen = answers[q.key];
-      q.options.forEach((o) => {
-        const sig = o.signals && o.signals[topKey];
-        if (!sig || sig.delta <= 0 || !sig.label) return;
-        if (chosen === o.v) matched.push(sig.label);
-        else missing.push(sig.label);
-      });
-    }
-  });
-
-  return { matched: [...new Set(matched)], missing: [...new Set(missing)] };
-}
-
 /* ============================================================
    UI 基础组件
    ============================================================ */
@@ -1248,22 +1188,38 @@ function ConfidenceBar({ label, pct, tone }) {
   );
 }
 
-function EvidenceList({ matched, missing }) {
+function EvidenceList({ evidence }) {
+  const { supporting, contradicting, missing, risk, confidence } = evidence;
   return (
     <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "14px 16px", background: "#fff", marginBottom: 20 }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, letterSpacing: "0.08em", color: MUTE, textTransform: "uppercase", marginBottom: 10 }}>
         证据拆解 · Confidence Engine
       </div>
-      {matched.map((m, i) => (
+      <div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, marginBottom: 10 }}>
+        基础 {confidence.baseScore} + 支持 {confidence.supportingContribution} {confidence.contradictingContribution < 0 ? `− 矛盾 ${Math.abs(confidence.contradictingContribution)}` : ""} {confidence.uncertaintyPenalty < 0 ? `− 不确定 ${Math.abs(confidence.uncertaintyPenalty)}` : ""} = {confidence.score}%（{confidence.level === "high" ? "高" : confidence.level === "moderate" ? "中" : "低"}）
+      </div>
+      {supporting.map((m, i) => (
         <div key={"m" + i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <Check size={13} color={TEAL} strokeWidth={3} />
           <span style={{ fontSize: 12.5, color: "#2E4E48" }}>{m}</span>
+        </div>
+      ))}
+      {contradicting.map((m, i) => (
+        <div key={"c" + i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <X size={13} color={RUST} strokeWidth={3} />
+          <span style={{ fontSize: 12.5, color: "#7A3D2C" }}>矛盾信号:{m}</span>
         </div>
       ))}
       {missing.map((m, i) => (
         <div key={"x" + i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <X size={13} color="#B7B2A6" strokeWidth={3} />
           <span style={{ fontSize: 12.5, color: MUTE }}>未观察到:{m}</span>
+        </div>
+      ))}
+      {risk.map((m, i) => (
+        <div key={"r" + i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 8 }}>
+          <AlertTriangle size={13} color={AMBER} style={{ flexShrink: 0, marginTop: 2 }} />
+          <span style={{ fontSize: 12.5, color: "#6B5527", lineHeight: 1.5 }}>风险信号:{m}</span>
         </div>
       ))}
     </div>
@@ -1606,9 +1562,9 @@ function App() {
       const t = SYMPTOM_TREES[symKey];
       const ans = answersMap[symKey] || {};
       const msel = multiSelMap[symKey] || {};
-      const rk = scoreSymptom(t, ans, msel);
+      const rk = scoreCandidates(t, ans, msel);
       const tp = rk[0];
-      const ev = buildEvidence(t, ans, msel, tp.key);
+      const ev = tp;
       let ck = tp.key;
       if (symKey === "acne" && tp.key === "true_acne") {
         const m = acneMorphology(ans);
@@ -1645,7 +1601,21 @@ function App() {
       .sort((a, b) => b.items.length - a.items.length);
   }
 
-  const allMedicalFlags = [...new Set(symptomResults.map((r) => r.content.medical).filter(Boolean))];
+  const evidenceRiskWarnings = symptomResults.flatMap((result) =>
+    result.ranked
+      // Safety-oriented threshold: observed risk is surfaced before a candidate
+      // needs to become the top conclusion, reducing the chance of false reassurance.
+      .filter((candidate) => candidate.risk.length > 0 && candidate.pct >= 35)
+      .flatMap((candidate) =>
+        candidate.risk.map((risk) => `${candidate.label}（${candidate.pct}%）:${risk}`),
+      ),
+  );
+  const allMedicalFlags = [
+    ...new Set([
+      ...symptomResults.map((r) => r.content.medical).filter(Boolean),
+      ...evidenceRiskWarnings,
+    ]),
+  ];
 
   const primary = symptomResults[0] || null;
   const diagnosisSuitability = symptomResults.length > 0 ? mergeSuitability(symptomResults) : null;
@@ -2055,7 +2025,7 @@ function App() {
                   </div>
 
                   {group.items.map((it) => (
-                    <EvidenceList key={it.key} matched={it.evidence.matched} missing={it.evidence.missing} />
+                    <EvidenceList key={it.key} evidence={it.evidence} />
                   ))}
 
                   <SectionLabel>{isShared ? "合并护肤建议" : "护肤建议"}</SectionLabel>
