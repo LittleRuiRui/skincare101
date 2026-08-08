@@ -1,2 +1,2 @@
-# skincare101
-app to help you glow
+# SkinContext
+Because skincare isn't one-size-fits-all.
