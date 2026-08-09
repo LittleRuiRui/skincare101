@@ -1,5 +1,5 @@
 // @ts-nocheck -- The legacy prototype UI predates the typed intelligence layer.
-import React, { useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -18,6 +18,8 @@ import { scoreCandidates } from "./intelligence/confidenceEngine";
 import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
 import { rankProducts } from "./intelligence/productScoring";
 import { PRODUCT_CATALOG } from "./data/productCatalog";
+import ProductContributionPanel from "./components/ProductContributionPanel";
+import { loadSharedProductCatalog } from "./lib/supabase";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -1492,6 +1494,7 @@ function App() {
   const [uploadedProduct, setUploadedProduct] = useState(null);
   const [uploadedParseResult, setUploadedParseResult] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [ingredientPhotoFile, setIngredientPhotoFile] = useState(null);
   const [ocrText, setOcrText] = useState("");
   const [ocrStatus, setOcrStatus] = useState("idle");
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -1499,7 +1502,32 @@ function App() {
   const [quickCandidateKey, setQuickCandidateKey] = useState(null);
   const [quickRecommendKey, setQuickRecommendKey] = useState(null);
   const [history, setHistory] = useState(["intro"]);
+  const [sharedProducts, setSharedProducts] = useState([]);
+  const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
   const photoInputRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    loadSharedProductCatalog()
+      .then((records) => {
+        if (!active) return;
+        setSharedProducts(records);
+        setSharedCatalogStatus("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+        setSharedCatalogStatus("offline");
+      });
+    return () => { active = false; };
+  }, []);
+
+  const productCatalog = useMemo(() => {
+    const sharedKeys = new Set(sharedProducts.map((item) => `${item.brand}|${item.name}`.toLowerCase()));
+    const offlineFallback = PRODUCT_CATALOG.filter(
+      (item) => !sharedKeys.has(`${item.brand}|${item.name}`.toLowerCase()),
+    );
+    return [...sharedProducts, ...offlineFallback];
+  }, [sharedProducts]);
 
   function goTo(nextScreen) {
     setHistory((h) => [...h, nextScreen]);
@@ -1533,6 +1561,7 @@ function App() {
     setUploadedProduct(null);
     setUploadedParseResult(null);
     setPhotoPreview("");
+    setIngredientPhotoFile(null);
     setOcrText("");
     setOcrStatus("idle");
     setOcrProgress(0);
@@ -1544,6 +1573,8 @@ function App() {
   async function handleIngredientPhoto(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setIngredientPhotoFile(file);
 
     setUploadedProduct(null);
     setUploadedParseResult(null);
@@ -1771,11 +1802,11 @@ function App() {
     ? mergeSuitabilityKeys((QUICK_RECOMMEND_OPTIONS.find((o) => o.key === quickRecommendKey) || {}).keys || [])
     : null;
   const suitability = diagnosisSuitability || quickIngredientSuitability || quickRecommendSuitability;
-  const selectedProduct = uploadedProduct || PRODUCT_CATALOG.find((p) => p.id === selectedUploadId) || null;
+  const selectedProduct = uploadedProduct || productCatalog.find((p) => p.id === selectedUploadId) || null;
   const liveOcrResult = ocrText.trim() ? parseIngredientDetails(ocrText, INGREDIENT_LIBRARY) : null;
   const selectedProductAnalysis = selectedProduct && suitability ? buildUploadedAnalysis(selectedProduct, suitability) : [];
   const rankedProducts = suitability
-    ? rankProducts(PRODUCT_CATALOG, suitability)
+    ? rankProducts(productCatalog, suitability)
     : [];
 
   return (
@@ -1961,7 +1992,7 @@ function App() {
             <div style={{ display: "flex", gap: 10, border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", marginBottom: 20, background: "#fff" }}>
               <Database size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 12, color: MUTE, lineHeight: 1.6 }}>
-                已收录 {PRODUCT_CATALOG.length} 款真实产品，成分依据品牌官方页面建立。配方可能因地区与批次调整，购买或使用前仍应与手中包装核对。
+                已收录 {productCatalog.length} 款真实产品（共享库 {sharedProducts.length} 款，本地离线备份 {productCatalog.length - sharedProducts.length} 款）。配方可能因地区与批次调整，购买或使用前仍应与手中包装核对。
               </span>
             </div>
             {rankedProducts.map((p, i) => (
@@ -2383,10 +2414,16 @@ function App() {
               </div>
             )}
 
+            <ProductContributionPanel
+              rawIngredients={ocrText}
+              parseResult={liveOcrResult}
+              photoFile={ingredientPhotoFile}
+            />
+
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.08em", color: MUTE, textTransform: "uppercase", marginBottom: 12 }}>
-              或者从产品数据库选择
+              或者从产品数据库选择 {sharedCatalogStatus === "offline" ? "（共享库暂时离线，已使用本地备份）" : ""}
             </div>
-            {PRODUCT_CATALOG.map((p) => (
+            {productCatalog.map((p) => (
               <OptionCard
                 key={p.id}
                 label={`${p.brand} · ${p.name}`}
@@ -2483,7 +2520,7 @@ function App() {
             <div style={{ display: "flex", gap: 10, border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", marginBottom: 20, background: "#fff" }}>
               <Database size={15} color={TEAL} style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{ fontSize: 12, color: MUTE, lineHeight: 1.6 }}>
-                当前数据库收录 {PRODUCT_CATALOG.length} 款真实产品，成分数据来自品牌官方页面。打分依据是 {INGREDIENT_LIBRARY.length} 条成分规则{symptomResults.length > 1 ? ",并综合本次所有已选症状" : ""}；配方可能因地区与批次变化，请以包装为准。
+                当前数据库收录 {productCatalog.length} 款真实产品，其中共享审核库 {sharedProducts.length} 款。打分依据是 {INGREDIENT_LIBRARY.length} 条成分规则{symptomResults.length > 1 ? ",并综合本次所有已选症状" : ""}；配方可能因地区与批次变化，请以包装为准。
               </span>
             </div>
 
