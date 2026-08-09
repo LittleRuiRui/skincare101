@@ -8,9 +8,11 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup:sqlite": "python scripts/export_supabase_to_sqlite.py"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.112.2",
     "lucide-react": "^0.383.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,8 +21,8 @@
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "6.0.5",
     "typescript": "^5.5.3",
-    "vite": "^5.3.4"
+    "vite": "8.2.1"
   }
 }
