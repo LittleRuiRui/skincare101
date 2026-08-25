@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-08-25",
+  "scope": "Open-data candidate layer pending official or retailer formula verification.",
+  "products": [
+    {
+      "sourceProductCode": "obf-3433422404366",
+      "brand": "La Roche-Posay",
+      "name": "Effaclar Deep Cleaning Foaming Crem",
+      "category": "乳霜",
+      "market": "global",
+      "sourceName": "Open Beauty Facts",
+      "sourceType": "open_data",
+      "region": "GLOBAL",
+      "externalProductId": "3433422404366",
+      "sourceUrl": "https://world.openbeautyfacts.org/product/3433422404366",
+      "rawIngredients": "AQUA/WATER; GLYCERIN; MYRISTIC ACID; POTASSIUM HYDROXIDE; GLYCERYL STEARATE SE; STEARIC ACID; LAURIC ACID; PALMITIC ACID; COCO-GLUCOSIDE; TETRASODIUM EDTA; SALICYLIC ACID; PARFUM/FRAGRANCE",
+      "ingredientListType": "partial",
+      "dataCompleteness": 59
+    },
+    {
+      "sourceProductCode": "obf-3401360223776",
+      "brand": "Bioderma",
+      "name": "Photoderm Kids Spray FPS50+",
+      "category": "乳霜",
+      "market": "france",
+      "sourceName": "Open Beauty Facts",
+      "sourceType": "open_data",
+      "region": "FR",
+      "externalProductId": "3401360223776",
+      "sourceUrl": "https://world.openbeautyfacts.org/product/3401360223776",
+      "rawIngredients": "Aqua/Water/Eau; Dicaprylyl Carbonate; Diisopropyl Sebacate; Methylene Bis-Benzotriazolyl Tetramethylbutylphenol [Nano]; Butyl Methoxydibenzoylmethane; Ethylhexyl Triazone; Glycerin; Cyclopentasiloxane; Decyl Glucoside; Methylpropanediol; C20-22 Alkyl Phosphate; C20-22 Alcohols; Ectoin; Complexe Breveté D.A.F; Fructooligosaccharides",
+      "ingredientListType": "partial",
+      "dataCompleteness": 59
+    },
+    {
+      "sourceProductCode": "obf-7922470515323",
+      "brand": "CeraVe",
+      "name": "AM Facial Moisturizing Lotion SPF 30",
+      "category": "防晒",
+      "market": "global",
+      "sourceName": "Open Beauty Facts",
+      "sourceType": "open_data",
+      "region": "GLOBAL",
+      "externalProductId": "7922470515323",
+      "sourceUrl": "https://world.openbeautyfacts.org/product/7922470515323",
+      "rawIngredients": "Active Ingredients: Homosalate 10.0%; Octisalate 5.0%; Octocrylene 2.7%; Zinc Oxide 7.3% Inactive Ingredients: Water; Cyclopentasiloxane; Glycerin; Caprylic/Capric Triglyceride; Niacinamide; PEG-100 Stearate; Glyceryl Stearate; Dimethicone; Cetearyl Alcohol; Behentrimonium Methosulfate; Phenoxyethanol; Sodium Hyaluronate",
+      "ingredientListType": "partial",
+      "dataCompleteness": 59
+    }
+  ]
+}
