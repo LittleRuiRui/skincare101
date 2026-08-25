@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
     "preview": "vite preview",
-    "backup:sqlite": "python scripts/export_supabase_to_sqlite.py"
+    "backup:sqlite": "python scripts/export_supabase_to_sqlite.py",
+    "data:pilot": "python scripts/build_pilot_catalog.py",
+    "data:pilot-sql": "python scripts/generate_pilot_sql.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",

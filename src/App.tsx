@@ -14,6 +14,7 @@ import {
   Database,
   ExternalLink,
   FileDown,
+  Search,
 } from "lucide-react";
 import { scoreCandidates } from "./intelligence/confidenceEngine";
 import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
@@ -1460,11 +1461,21 @@ function ProductRecommendationCard({ product, index }) {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           <Tag>{product.category}</Tag>
           <Tag>{product.ingredientListType === "full" ? "完整配方" : "部分配方"}</Tag>
+          {product.popularityTier === "multi-source-popular" && <Tag>多平台热门</Tag>}
+          {product.popularityTier === "retailer-bestseller" && <Tag>亚洲零售榜单</Tag>}
+          {product.popularityTier === "open-data-popular" && <Tag>开放数据热门</Tag>}
         </div>
         <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: TEAL, fontSize: 11.5, textDecoration: "none", whiteSpace: "nowrap" }}>
           数据来源 <ExternalLink size={11} />
         </a>
       </div>
+
+      {product.popularitySources?.length > 0 && (
+        <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 9 }}>
+          热门度依据：{product.popularitySources.join(" + ")}
+          {product.asiaAvailabilityStatus === "unverified" ? " · 亚洲可购待核验" : " · 亚洲跨境渠道已见"}
+        </div>
+      )}
 
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: MUTE, marginBottom: 5 }}>
@@ -1655,6 +1666,8 @@ function App() {
   const [quickCandidateKey, setQuickCandidateKey] = useState(null);
   const [quickRecommendKey, setQuickRecommendKey] = useState(null);
   const [recommendCategory, setRecommendCategory] = useState("全部");
+  const [productSearch, setProductSearch] = useState("");
+  const [visibleProductCount, setVisibleProductCount] = useState(24);
   const [history, setHistory] = useState(hasPendingReport ? ["intro", "report"] : ["intro"]);
   const [sharedProducts, setSharedProducts] = useState([]);
   const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
@@ -1727,6 +1740,8 @@ function App() {
     setQuickCandidateKey(null);
     setQuickRecommendKey(null);
     setRecommendCategory("全部");
+    setProductSearch("");
+    setVisibleProductCount(24);
     setPdfStatus("idle");
     setPdfError("");
   }
@@ -2025,9 +2040,16 @@ function App() {
     ? rankProducts(productCatalog, suitability)
     : [];
   const productCategories = ["全部", ...new Set(productCatalog.map((product) => product.category))];
-  const filteredRankedProducts = recommendCategory === "全部"
+  const categoryRankedProducts = recommendCategory === "全部"
     ? rankedProducts
     : rankedProducts.filter((product) => product.category === recommendCategory);
+  const normalizedProductSearch = productSearch.trim().toLowerCase();
+  const filteredRankedProducts = normalizedProductSearch
+    ? categoryRankedProducts.filter((product) =>
+        `${product.brand} ${product.name}`.toLowerCase().includes(normalizedProductSearch),
+      )
+    : categoryRankedProducts;
+  const visibleRankedProducts = filteredRankedProducts.slice(0, visibleProductCount);
 
   return (
     <div style={{ minHeight: "100vh", background: PAPER, color: INK, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "32px 16px" }}>
@@ -2228,10 +2250,41 @@ function App() {
                 已收录 {productCatalog.length} 款真实产品（共享库 {sharedProducts.length} 款，本地离线备份 {productCatalog.length - sharedProducts.length} 款）。配方可能因地区与批次调整，购买或使用前仍应与手中包装核对。
               </span>
             </div>
-            <ProductCategoryFilter categories={productCategories} selected={recommendCategory} onSelect={setRecommendCategory} />
-            {filteredRankedProducts.map((p, i) => (
+            <ProductCategoryFilter
+              categories={productCategories}
+              selected={recommendCategory}
+              onSelect={(category) => {
+                setRecommendCategory(category);
+                setVisibleProductCount(24);
+              }}
+            />
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <Search size={14} color={MUTE} style={{ position: "absolute", left: 12, top: 11 }} />
+              <input
+                value={productSearch}
+                onChange={(event) => {
+                  setProductSearch(event.target.value);
+                  setVisibleProductCount(24);
+                }}
+                placeholder="搜索品牌或产品名"
+                aria-label="搜索品牌或产品名"
+                style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 9, padding: "9px 12px 9px 34px", background: "#fff", color: INK, fontSize: 12.5, outline: "none" }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: MUTE, marginBottom: 12 }}>
+              找到 {filteredRankedProducts.length} 款，当前显示 {Math.min(visibleProductCount, filteredRankedProducts.length)} 款
+            </div>
+            {visibleRankedProducts.map((p, i) => (
               <ProductRecommendationCard key={p.id} product={p} index={i} />
             ))}
+            {visibleProductCount < filteredRankedProducts.length && (
+              <button
+                onClick={() => setVisibleProductCount((count) => count + 24)}
+                style={{ width: "100%", border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 14px", marginBottom: 20, background: "#fff", color: TEAL, fontSize: 12.5, cursor: "pointer" }}
+              >
+                再显示 24 款
+              </button>
+            )}
             <SectionLabel>为什么不是黑箱推荐?</SectionLabel>
             <BodyText>
               每个分数都会展示加分、减分、配料位置、有效证据数量和数据完整度。没有相关证据时直接标记“证据不足”，不会用默认中性分数假装完成推荐。

@@ -25,6 +25,12 @@ export interface SharedProductRecord {
   sourceUrl: string;
   verifiedAt: string;
   formulaDna?: FormulaDna;
+  popularityRank?: number;
+  popularityBasis?: string;
+  popularitySources?: string[];
+  popularityTier?: "multi-source-popular" | "retailer-bestseller" | "open-data-popular";
+  asiaAvailabilityStatus?: "cross_border_verified" | "unverified";
+  qualityFlags?: string[];
   source: "shared";
 }
 
@@ -37,7 +43,7 @@ export interface ParsedSubmission {
 export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]> {
   const { data, error } = await supabase
     .from("approved_product_catalog")
-    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,verified_at,formula_dna,formula_analysis_version")
+    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,verified_at,formula_dna,formula_analysis_version,popularity_rank,popularity_basis,popularity_sources,popularity_tier,asia_availability_status,quality_flags")
     .order("brand", { ascending: true });
 
   if (error) throw error;
@@ -55,6 +61,12 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
     formulaDna: row.formula_analysis_version === "formula-dna-v1" && row.formula_dna?.version === "formula-dna-v1"
       ? row.formula_dna as FormulaDna
       : undefined,
+    popularityRank: row.popularity_rank || undefined,
+    popularityBasis: row.popularity_basis || undefined,
+    popularitySources: row.popularity_sources || [],
+    popularityTier: row.popularity_tier || undefined,
+    asiaAvailabilityStatus: row.asia_availability_status || "unverified",
+    qualityFlags: row.quality_flags || [],
     source: "shared",
   }));
 }

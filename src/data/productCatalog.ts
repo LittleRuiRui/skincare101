@@ -2,7 +2,7 @@ export interface ProductRecord {
   id: string;
   brand: string;
   name: string;
-  category: "洁面" | "精华" | "乳霜" | "防晒" | "焕肤";
+  category: "洁面" | "化妆水" | "精华" | "乳霜" | "防晒" | "焕肤" | "祛痘" | "面膜" | "眼部";
   ingredients: string[];
   ingredientListType: "full" | "partial";
   dataCompleteness: number;

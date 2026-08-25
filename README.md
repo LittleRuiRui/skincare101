@@ -2,6 +2,12 @@
 
 可解释的肤质建档、成分匹配和产品推荐 Web App。生产网站使用 GitHub Pages，审核产品库、用户投稿和私有图片使用 Supabase；SQLite 是可重复生成的离线备份。
 
+## 300 款试验产品库
+
+当前产品库使用 300 款产品作为分类、配方分析、推荐排序和页面性能的验证样本：100 款来自 YesStyle 2026 上半年按品类销量排列的亚洲护肤榜单，其余来自 Open Beauty Facts 的热度候选。缺少可核验配料表的热门产品仍可搜索，但不会获得证据型推荐分数。
+
+Open Beauty Facts 产品数据由其社区贡献者提供，采用 Open Database License（ODbL 1.0）。本仓库保留条码、来源链接、热门度口径和质量标记，并按相同数据库许可重新发布衍生数据。YesStyle 排名事实均链接并注明其 2026 年 6 月榜单来源。
+
 ## 开发
 
 ```bash
@@ -20,7 +26,7 @@ Supabase 浏览器配置使用 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABL
 - 审核后的产品、配方版本、标准成分和配方顺序；
 - 用户投稿、私有成分照片和审核记录；
 - 所有公开表的 RLS、最小权限 GRANT 和审核 RPC；
-- 8 款初始审核产品。
+- 8 款初始审核产品及 300 款候选试验数据的来源字段。
 
 投稿状态：`draft → pending → reviewing → approved / rejected`。普通用户只能读取和修改自己的草稿；匿名访客只能读取 `approved_product_catalog`；审核身份来自不可由用户修改的 `app_metadata.role`。
 
