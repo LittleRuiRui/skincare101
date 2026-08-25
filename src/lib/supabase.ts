@@ -69,6 +69,36 @@ export async function currentSession(): Promise<Session | null> {
   return data.session;
 }
 
+export interface SkinProfileInput {
+  skinAnswers: Record<string, string>;
+  profileAnswers: Record<string, string>;
+  selectedSymptoms: string[];
+  symptomAnswers: Record<string, Record<string, string>>;
+  multiSelectAnswers: Record<string, Record<string, string[]>>;
+  redFlag: string | null;
+}
+
+export async function saveMySkinProfile(input: SkinProfileInput): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userData.user) throw new Error("请先登录再保存皮肤档案。");
+
+  const { error } = await supabase
+    .from("skin_profiles")
+    .upsert({
+      user_id: userData.user.id,
+      skin_answers: input.skinAnswers,
+      profile_answers: input.profileAnswers,
+      selected_symptoms: input.selectedSymptoms,
+      symptom_answers: input.symptomAnswers,
+      multi_select_answers: input.multiSelectAnswers,
+      red_flag: input.redFlag,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+
+  if (error) throw error;
+}
+
 export interface ProductSubmissionInput {
   brand: string;
   productName: string;

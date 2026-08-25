@@ -13,13 +13,16 @@ import {
   ScanText,
   Database,
   ExternalLink,
+  FileDown,
 } from "lucide-react";
 import { scoreCandidates } from "./intelligence/confidenceEngine";
 import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
 import { rankProducts } from "./intelligence/productScoring";
 import { PRODUCT_CATALOG } from "./data/productCatalog";
 import ProductContributionPanel from "./components/ProductContributionPanel";
+import ProfileSavePanel from "./components/ProfileSavePanel";
 import { loadSharedProductCatalog } from "./lib/supabase";
+import { clearPendingProfileDraft, loadPendingProfileDraft } from "./lib/profileDraft";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -1187,6 +1190,34 @@ function TextButton({ children, onClick }) {
   );
 }
 
+function QuestionnaireBackButton({ children, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        minHeight: 40,
+        padding: "9px 13px",
+        marginBottom: 18,
+        border: `1px solid ${LINE}`,
+        borderRadius: 10,
+        background: "#fff",
+        color: INK,
+        fontFamily: "'IBM Plex Sans', sans-serif",
+        fontSize: 13,
+        fontWeight: 500,
+        cursor: "pointer",
+      }}
+    >
+      <ChevronLeft size={15} />
+      {children}
+    </button>
+  );
+}
+
 function ConfidenceBar({ label, pct, tone }) {
   const color = tone === "primary" ? TEAL : "#C7C2B8";
   return (
@@ -1478,17 +1509,19 @@ const CANDIDATE_FAMILY = {
 };
 
 function App() {
-  const [screen, setScreen] = useState("intro");
-  const [skinAnswers, setSkinAnswers] = useState({});
+  const pendingProfile = useMemo(() => loadPendingProfileDraft(), []);
+  const hasPendingReport = Boolean(pendingProfile?.selectedSymptoms?.length);
+  const [screen, setScreen] = useState(hasPendingReport ? "report" : "intro");
+  const [skinAnswers, setSkinAnswers] = useState(pendingProfile?.skinAnswers || {});
   const [skinStep, setSkinStep] = useState(0);
-  const [profileAnswers, setProfileAnswers] = useState({});
+  const [profileAnswers, setProfileAnswers] = useState(pendingProfile?.profileAnswers || {});
   const [profileStep, setProfileStep] = useState(0);
-  const [redFlag, setRedFlag] = useState(null);
-  const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [redFlag, setRedFlag] = useState(pendingProfile?.redFlag || null);
+  const [selectedSymptoms, setSelectedSymptoms] = useState(pendingProfile?.selectedSymptoms || []);
   const [symptomIndex, setSymptomIndex] = useState(0);
   const [qStep, setQStep] = useState(0);
-  const [answersMap, setAnswersMap] = useState({});
-  const [multiSelMap, setMultiSelMap] = useState({});
+  const [answersMap, setAnswersMap] = useState(pendingProfile?.symptomAnswers || {});
+  const [multiSelMap, setMultiSelMap] = useState(pendingProfile?.multiSelectAnswers || {});
   const [multiDraft, setMultiDraft] = useState([]);
   const [selectedUploadId, setSelectedUploadId] = useState(null);
   const [uploadedProduct, setUploadedProduct] = useState(null);
@@ -1501,10 +1534,13 @@ function App() {
   const [ocrError, setOcrError] = useState("");
   const [quickCandidateKey, setQuickCandidateKey] = useState(null);
   const [quickRecommendKey, setQuickRecommendKey] = useState(null);
-  const [history, setHistory] = useState(["intro"]);
+  const [history, setHistory] = useState(hasPendingReport ? ["intro", "report"] : ["intro"]);
   const [sharedProducts, setSharedProducts] = useState([]);
   const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
+  const [pdfStatus, setPdfStatus] = useState("idle");
+  const [pdfError, setPdfError] = useState("");
   const photoInputRef = useRef(null);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -1544,6 +1580,7 @@ function App() {
   }
 
   function resetAll() {
+    clearPendingProfileDraft();
     setScreen("intro");
     setHistory(["intro"]);
     setSkinAnswers({});
@@ -1568,6 +1605,62 @@ function App() {
     setOcrError("");
     setQuickCandidateKey(null);
     setQuickRecommendKey(null);
+    setPdfStatus("idle");
+    setPdfError("");
+  }
+
+  async function exportReportPdf() {
+    if (!reportRef.current || pdfStatus === "working") return;
+    setPdfStatus("working");
+    setPdfError("");
+
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: PAPER,
+        logging: false,
+        ignoreElements: (element) => element.hasAttribute("data-html2canvas-ignore"),
+      });
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const margin = 10;
+      const usableWidth = 210 - margin * 2;
+      const usableHeight = 297 - margin * 2;
+      const pageHeightPx = Math.floor((canvas.width * usableHeight) / usableWidth);
+      let offsetY = 0;
+      let page = 0;
+
+      while (offsetY < canvas.height) {
+        const sliceHeight = Math.min(pageHeightPx, canvas.height - offsetY);
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const context = pageCanvas.getContext("2d");
+        if (!context) throw new Error("无法生成 PDF 页面。");
+        context.fillStyle = PAPER;
+        context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        context.drawImage(canvas, 0, offsetY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+        if (page > 0) pdf.addPage();
+        const sliceHeightMm = (sliceHeight * usableWidth) / canvas.width;
+        pdf.addImage(pageCanvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin, usableWidth, sliceHeightMm, undefined, "FAST");
+        offsetY += sliceHeight;
+        page += 1;
+      }
+
+      const date = new Date().toISOString().slice(0, 10);
+      pdf.save(`skin-profile-report-${date}.pdf`);
+      setPdfStatus("done");
+    } catch (error) {
+      setPdfStatus("error");
+      setPdfError("PDF 生成失败，请刷新页面后重试。");
+    }
   }
 
   async function handleIngredientPhoto(event) {
@@ -2009,9 +2102,9 @@ function App() {
         {/* ---------------- SKIN TYPE ---------------- */}
         {screen === "skin" && (
           <div style={{ paddingTop: 24 }}>
-            <TextButton onClick={backSkin}>
-              <ChevronLeft size={14} /> 上一步
-            </TextButton>
+            <QuestionnaireBackButton onClick={backSkin}>
+              {skinStep > 0 ? "返回上一题" : "返回首页"}
+            </QuestionnaireBackButton>
             <Eyebrow>第一步 · 肤质建档</Eyebrow>
             <JourneyProgress stage={0} />
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
@@ -2164,7 +2257,7 @@ function App() {
 
         {/* ---------------- REPORT ---------------- */}
         {screen === "report" && symptomResults.length > 0 && (
-          <div style={{ paddingTop: 24, paddingBottom: 40 }}>
+          <div ref={reportRef} style={{ paddingTop: 24, paddingBottom: 40 }}>
             <Eyebrow>整合诊断报告 · {symptomResults.map((r) => r.label).join(" / ")}</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 24, fontWeight: 500, marginBottom: 20, marginTop: 0 }}>
               病因判断
@@ -2302,13 +2395,36 @@ function App() {
               </div>
             )}
 
-            <PrimaryButton onClick={() => goTo("upload")}>
-              <FlaskConical size={15} /> 查看成分匹配分析
-            </PrimaryButton>
-            {suitability && (
-              <PrimaryButton onClick={() => goTo("recommend")}>从产品数据库为我匹配</PrimaryButton>
-            )}
-            <TextButton onClick={resetAll}>重新开始</TextButton>
+            <div data-html2canvas-ignore="true">
+              <PrimaryButton onClick={exportReportPdf} disabled={pdfStatus === "working"}>
+                <FileDown size={15} /> {pdfStatus === "working" ? "正在生成 PDF…" : "导出 PDF 报告"}
+              </PrimaryButton>
+              {pdfStatus === "done" && (
+                <div style={{ marginTop: 8, color: TEAL, fontSize: 11.5 }}>PDF 已生成并开始下载。</div>
+              )}
+              {pdfError && (
+                <div style={{ marginTop: 8, color: RUST, fontSize: 11.5 }}>{pdfError}</div>
+              )}
+
+              <ProfileSavePanel
+                profile={{
+                  skinAnswers,
+                  profileAnswers,
+                  selectedSymptoms,
+                  symptomAnswers: answersMap,
+                  multiSelectAnswers: multiSelMap,
+                  redFlag,
+                }}
+              />
+
+              <PrimaryButton onClick={() => goTo("upload")}>
+                <FlaskConical size={15} /> 查看成分匹配分析
+              </PrimaryButton>
+              {suitability && (
+                <PrimaryButton onClick={() => goTo("recommend")}>从产品数据库为我匹配</PrimaryButton>
+              )}
+              <TextButton onClick={resetAll}>重新开始</TextButton>
+            </div>
           </div>
         )}
 
