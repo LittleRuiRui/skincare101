@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { scoreCandidates } from "./intelligence/confidenceEngine";
 import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
+import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "./intelligence/formulaDna";
 import { rankProducts } from "./intelligence/productScoring";
 import { PRODUCT_CATALOG } from "./data/productCatalog";
 import ProductContributionPanel from "./components/ProductContributionPanel";
@@ -954,11 +955,27 @@ const INGREDIENT_LIBRARY = [
   { name: "硫酸锌/硫酸铜 (Zinc/Copper Sulfate)", system: "微量元素体系", func: "微量元素补充,常见于身体调理类配方", goodFor: ["barrier"] },
 ];
 
+const CANDIDATE_SYSTEM_TARGETS = {
+  barrier: ["barrier", "lipid", "hydration", "soothing"],
+  compensatory: ["hydration", "barrier", "lipid"],
+  sensitive: ["soothing", "barrier", "hydration"],
+  rosacea: ["soothing", "barrier", "hydration"],
+  overexfoliate: ["barrier", "lipid", "hydration", "soothing"],
+  true_acne: ["oilControl", "soothing"],
+  fungal_acne: ["oilControl", "soothing"],
+  buildup: ["oilControl", "hydration"],
+  oily: ["oilControl", "hydration"],
+  pigmentation: ["antiAging", "soothing"],
+  photodamage: ["antiAging", "hydration", "barrier"],
+  aging: ["antiAging", "hydration", "barrier"],
+  antioxidant: ["antiAging", "barrier"],
+};
+
 function getSuitability(candidateKey) {
   const good = INGREDIENT_LIBRARY.filter((i) => i.goodFor && i.goodFor.includes(candidateKey));
   const risky = INGREDIENT_LIBRARY.filter((i) => i.riskyFor && i.riskyFor.includes(candidateKey));
   if (good.length === 0 && risky.length === 0) return null;
-  return { good, risky };
+  return { good, risky, conflicting: [], targetSystems: CANDIDATE_SYSTEM_TARGETS[candidateKey] || [] };
 }
 
 /* 合并所有已选症状的适合/风险成分,而不是只看第一个症状——
@@ -967,9 +984,11 @@ function getSuitability(candidateKey) {
 function mergeSuitability(results) {
   const goodMap = {};
   const riskyMap = {};
+  const targetSystems = new Set();
   results.forEach((r) => {
     const su = getSuitability(r.top.key);
     if (!su) return;
+    su.targetSystems.forEach((system) => targetSystems.add(system));
     su.good.forEach((g) => {
       if (!goodMap[g.name]) goodMap[g.name] = g;
     });
@@ -983,7 +1002,7 @@ function mergeSuitability(results) {
   const conflictNames = new Set(conflicting.map((c) => c.name));
   const good = Object.values(goodMap).filter((g) => !conflictNames.has(g.name));
   const risky = Object.values(riskyMap).filter((r) => !conflictNames.has(r.name));
-  return { good, risky, conflicting };
+  return { good, risky, conflicting, targetSystems: [...targetSystems] };
 }
 
 /* 用真实成分库分析一份(模拟的)已上传产品配料表——按成分在配料表中的位置估算权重,
@@ -1332,6 +1351,96 @@ function IngredientRow({ name, position, status, note }) {
   );
 }
 
+const formulaConfidenceLabel = { high: "高", medium: "中", low: "低" };
+const alcoholLabel = { none: "未识别", low: "推测较低", medium: "推测中等", high: "推测较高" };
+
+function FormulaDnaPanel({ dna, compact = false }) {
+  const visibleSystems = compact
+    ? FORMULA_SYSTEM_ORDER
+        .map((key) => dna.systems[key])
+        .filter((system) => system.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4)
+    : FORMULA_SYSTEM_ORDER.map((key) => dna.systems[key]);
+
+  if (compact) {
+    return (
+      <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 10, marginTop: 10 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 7 }}>
+          <Tag>{dna.baseType}</Tag>
+          {visibleSystems.map((system) => <Tag key={system.key}>{system.label} {system.score}/5</Tag>)}
+          <Tag>酒精 {alcoholLabel[dna.alcohol.level]}</Tag>
+        </div>
+        <div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.55 }}>
+          肤感：{dna.sensory.labels.join("、")} · 配方画像可信度 {formulaConfidenceLabel[dna.confidence]}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 16px", background: "#fff", marginBottom: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>Formula DNA · 配方结构</div>
+          <div style={{ fontSize: 11.5, color: MUTE, marginTop: 3 }}>
+            {dna.baseType} · {dna.listType === "full" ? `前 ${dna.topZone.length} 位进入骨架分析` : `现有 ${dna.topZone.length} 个重点成分不代表真实排位`}
+          </div>
+        </div>
+        <Tag>可信度 {formulaConfidenceLabel[dna.confidence]}</Tag>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px 14px", marginBottom: 14 }}>
+        {visibleSystems.map((system) => (
+          <div key={system.key}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, marginBottom: 5 }}>
+              <span style={{ color: INK }}>{system.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: system.score >= 3 ? TEAL : MUTE }}>{system.score}/5</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 4, background: LINE, overflow: "hidden" }}>
+              <div style={{ width: `${system.score * 20}%`, height: "100%", background: system.score >= 3 ? TEAL : AMBER }} />
+            </div>
+            <div style={{ fontSize: 10.5, color: MUTE, marginTop: 4 }}>{system.interpretation}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 11, fontSize: 11.5, color: "#514D45", lineHeight: 1.6 }}>
+        <div><b>酒精：</b>{alcoholLabel[dna.alcohol.level]}。{dna.alcohol.note}</div>
+        <div style={{ marginTop: 4 }}><b>肤感：</b>{dna.sensory.summary}</div>
+      </div>
+      {dna.caveats.map((note, index) => (
+        <div key={index} style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginTop: 6 }}>＊ {note}</div>
+      ))}
+    </div>
+  );
+}
+
+function ProductCategoryFilter({ categories, selected, onSelect }) {
+  return (
+    <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 8, marginBottom: 12 }}>
+      {categories.map((category) => (
+        <button
+          key={category}
+          onClick={() => onSelect(category)}
+          style={{
+            border: `1px solid ${selected === category ? TEAL : LINE}`,
+            background: selected === category ? TEAL_SOFT : "#fff",
+            color: selected === category ? TEAL : MUTE,
+            borderRadius: 999,
+            padding: "7px 11px",
+            fontSize: 11.5,
+            whiteSpace: "nowrap",
+            cursor: "pointer",
+          }}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ProductRecommendationCard({ product, index }) {
   const confidenceLabel = { high: "高", medium: "中", low: "低" }[product.confidence];
   const scoreColor = product.score === null ? MUTE : index === 0 ? TEAL : INK;
@@ -1382,11 +1491,22 @@ function ProductRecommendationCard({ product, index }) {
           方向冲突 · {name}：不同症状下适用性相反，不计入分数
         </div>
       ))}
+      {product.systemEvidence.map((evidence) => (
+        <div key={`system-${evidence.key}`} style={{ fontSize: 12, color: "#2E4E48", marginBottom: 4 }}>
+          +{evidence.points} · {evidence.label}协同（体系强度 {evidence.score}/5）
+        </div>
+      ))}
+      {product.formulaPenalty < 0 && (
+        <div style={{ fontSize: 12, color: "#7A3D2C", marginBottom: 4 }}>
+          {product.formulaPenalty} · 当前需求偏温和，但挥发性酒精位置较高
+        </div>
+      )}
       {!product.recommendationAvailable && (
         <div style={{ fontSize: 12, color: MUTE, lineHeight: 1.55 }}>
           当前配方数据或相关证据不足，因此不生成精确推荐分数，也不会把它当作首选。
         </div>
       )}
+      <FormulaDnaPanel dna={product.formulaDna} compact />
     </div>
   );
 }
@@ -1534,6 +1654,7 @@ function App() {
   const [ocrError, setOcrError] = useState("");
   const [quickCandidateKey, setQuickCandidateKey] = useState(null);
   const [quickRecommendKey, setQuickRecommendKey] = useState(null);
+  const [recommendCategory, setRecommendCategory] = useState("全部");
   const [history, setHistory] = useState(hasPendingReport ? ["intro", "report"] : ["intro"]);
   const [sharedProducts, setSharedProducts] = useState([]);
   const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
@@ -1605,6 +1726,7 @@ function App() {
     setOcrError("");
     setQuickCandidateKey(null);
     setQuickRecommendKey(null);
+    setRecommendCategory("全部");
     setPdfStatus("idle");
     setPdfError("");
   }
@@ -1896,11 +2018,16 @@ function App() {
     : null;
   const suitability = diagnosisSuitability || quickIngredientSuitability || quickRecommendSuitability;
   const selectedProduct = uploadedProduct || productCatalog.find((p) => p.id === selectedUploadId) || null;
+  const selectedFormulaDna = selectedProduct ? analyzeFormulaDna(selectedProduct) : null;
   const liveOcrResult = ocrText.trim() ? parseIngredientDetails(ocrText, INGREDIENT_LIBRARY) : null;
   const selectedProductAnalysis = selectedProduct && suitability ? buildUploadedAnalysis(selectedProduct, suitability) : [];
   const rankedProducts = suitability
     ? rankProducts(productCatalog, suitability)
     : [];
+  const productCategories = ["全部", ...new Set(productCatalog.map((product) => product.category))];
+  const filteredRankedProducts = recommendCategory === "全部"
+    ? rankedProducts
+    : rankedProducts.filter((product) => product.category === recommendCategory);
 
   return (
     <div style={{ minHeight: "100vh", background: PAPER, color: INK, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "32px 16px" }}>
@@ -2041,6 +2168,19 @@ function App() {
               </div>
             )}
 
+            <SectionLabel>按配方体系匹配的产品</SectionLabel>
+            <BodyText>
+              不只检查单个明星成分，还会综合前15位配方骨架、脂质/屏障/保湿等体系、酒精位置和数据完整度。
+            </BodyText>
+            {rankedProducts.filter((product) => product.recommendationAvailable).slice(0, 3).map((product, index) => (
+              <ProductRecommendationCard key={product.id} product={product} index={index} />
+            ))}
+            {rankedProducts.filter((product) => product.recommendationAvailable).length === 0 && (
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "13px 14px", color: MUTE, fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
+                当前产品库还没有足够完整的配方支持这一方向。系统选择诚实留空，不用残缺数据硬凑推荐。
+              </div>
+            )}
+
             <PrimaryButton onClick={() => goTo("upload")}>
               <FlaskConical size={15} /> 分析一瓶具体产品
             </PrimaryButton>
@@ -2088,7 +2228,8 @@ function App() {
                 已收录 {productCatalog.length} 款真实产品（共享库 {sharedProducts.length} 款，本地离线备份 {productCatalog.length - sharedProducts.length} 款）。配方可能因地区与批次调整，购买或使用前仍应与手中包装核对。
               </span>
             </div>
-            {rankedProducts.map((p, i) => (
+            <ProductCategoryFilter categories={productCategories} selected={recommendCategory} onSelect={setRecommendCategory} />
+            {filteredRankedProducts.map((p, i) => (
               <ProductRecommendationCard key={p.id} product={p} index={i} />
             ))}
             <SectionLabel>为什么不是黑箱推荐?</SectionLabel>
@@ -2600,6 +2741,8 @@ function App() {
               </div>
             )}
 
+            {selectedFormulaDna && <FormulaDnaPanel dna={selectedFormulaDna} />}
+
             {selectedProductAnalysis.map((ing, i) => (
               <IngredientRow key={i} name={ing.name} position={ing.position} status={ing.status} note={ing.note} />
             ))}
@@ -2640,13 +2783,14 @@ function App() {
               </span>
             </div>
 
-            {rankedProducts.map((p, i) => (
+            <ProductCategoryFilter categories={productCategories} selected={recommendCategory} onSelect={setRecommendCategory} />
+            {filteredRankedProducts.map((p, i) => (
               <ProductRecommendationCard key={p.id} product={p} index={i} />
             ))}
 
             <SectionLabel>打分逻辑</SectionLabel>
             <BodyText>
-              命中适合成分加分、命中风险成分减分，且位置越靠前权重越大。结果同时受产品配方完整度和有效证据数量约束；证据不足的产品不显示精确分数，也不会排在有证据的产品前面。
+              评分同时使用单个成分证据和 Formula DNA 体系协同：前1–5位、6–10位、11–15位分区加权，低浓度高效活性物单独处理；敏感与屏障方向还会考虑高位挥发性酒精。证据不足的产品不显示精确分数。
             </BodyText>
 
             <PrimaryButton onClick={resetAll}>重新开始演示</PrimaryButton>

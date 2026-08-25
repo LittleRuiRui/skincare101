@@ -1,4 +1,5 @@
 import { createClient, type Session } from "@supabase/supabase-js";
+import type { FormulaDna } from "../intelligence/formulaDna";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://tepiqcwytynhrjhtvnws.supabase.co";
 const supabasePublishableKey =
@@ -23,6 +24,7 @@ export interface SharedProductRecord {
   dataCompleteness: number;
   sourceUrl: string;
   verifiedAt: string;
+  formulaDna?: FormulaDna;
   source: "shared";
 }
 
@@ -35,7 +37,7 @@ export interface ParsedSubmission {
 export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]> {
   const { data, error } = await supabase
     .from("approved_product_catalog")
-    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,verified_at")
+    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,verified_at,formula_dna,formula_analysis_version")
     .order("brand", { ascending: true });
 
   if (error) throw error;
@@ -50,6 +52,9 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
     dataCompleteness: row.data_completeness || 0,
     sourceUrl: row.source_url || "https://tepiqcwytynhrjhtvnws.supabase.co",
     verifiedAt: row.verified_at || "",
+    formulaDna: row.formula_analysis_version === "formula-dna-v1" && row.formula_dna?.version === "formula-dna-v1"
+      ? row.formula_dna as FormulaDna
+      : undefined,
     source: "shared",
   }));
 }

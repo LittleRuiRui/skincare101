@@ -1,4 +1,9 @@
 import { ingredientMatches } from "./ingredientParser.ts";
+import {
+  analyzeFormulaDna,
+  type FormulaDna,
+  type FormulaSystemKey,
+} from "./formulaDna.ts";
 
 interface IngredientRule {
   name: string;
@@ -8,12 +13,16 @@ interface Suitability {
   good: IngredientRule[];
   risky: IngredientRule[];
   conflicting?: IngredientRule[];
+  targetSystems?: FormulaSystemKey[];
 }
 
 interface Product {
   id: string;
   ingredients: string[];
   dataCompleteness: number;
+  ingredientListType?: "full" | "partial";
+  category?: string;
+  formulaDna?: FormulaDna;
 }
 
 export interface ProductEvidence {
@@ -32,6 +41,9 @@ export interface ProductScore {
   conflictingEvidence: string[];
   evidenceCount: number;
   dataCompleteness: number;
+  formulaDna: FormulaDna;
+  systemEvidence: Array<{ key: FormulaSystemKey; label: string; score: number; points: number }>;
+  formulaPenalty: number;
 }
 
 const clamp = (value: number) => Math.max(5, Math.min(98, Math.round(value)));
@@ -42,7 +54,7 @@ export function scoreProduct(product: Product, suitability: Suitability): Produc
   const conflictingEvidence: string[] = [];
 
   product.ingredients.forEach((ingredient, index) => {
-    const weight = Math.max(1, 8 - index);
+    const weight = index < 5 ? 8 - index : index < 10 ? 3 : index < 15 ? 2 : 1;
     const conflict = (suitability.conflicting || []).find((rule) =>
       ingredientMatches(ingredient, rule.name),
     );
@@ -62,10 +74,29 @@ export function scoreProduct(product: Product, suitability: Suitability): Produc
     }
   });
 
+  const formulaDna = analyzeFormulaDna(product);
+  const systemEvidence = [...new Set(suitability.targetSystems || [])]
+    .map((key) => formulaDna.systems[key])
+    .filter((system) => system.score >= 2)
+    .map((system) => ({
+      key: system.key,
+      label: system.label,
+      score: system.score,
+      points: Math.max(2, (system.score - 1) * 2),
+    }));
+  const systemBonus = Math.min(16, systemEvidence.reduce((sum, evidence) => sum + evidence.points, 0));
+  const needsGentleFormula = (suitability.targetSystems || []).some((key) => key === "barrier" || key === "soothing");
+  const formulaPenalty = needsGentleFormula
+    ? formulaDna.alcohol.level === "high"
+      ? -12
+      : formulaDna.alcohol.level === "medium"
+        ? -7
+        : 0
+    : 0;
   const positive = positiveEvidence.reduce((sum, evidence) => sum + evidence.points, 0);
   const negative = negativeEvidence.reduce((sum, evidence) => sum + evidence.points, 0);
-  const rawScore = clamp(50 + positive + negative);
-  const evidenceCount = positiveEvidence.length + negativeEvidence.length + conflictingEvidence.length;
+  const rawScore = clamp(50 + positive + negative + systemBonus + formulaPenalty);
+  const evidenceCount = positiveEvidence.length + negativeEvidence.length + conflictingEvidence.length + systemEvidence.length;
   const recommendationAvailable = product.dataCompleteness >= 60 && evidenceCount > 0;
   const confidence =
     product.dataCompleteness >= 85 && evidenceCount >= 3
@@ -84,6 +115,9 @@ export function scoreProduct(product: Product, suitability: Suitability): Produc
     conflictingEvidence,
     evidenceCount,
     dataCompleteness: product.dataCompleteness,
+    formulaDna,
+    systemEvidence,
+    formulaPenalty,
   };
 }
 
