@@ -14,6 +14,7 @@ declare
   v_product_id uuid;
   v_formula_type text;
   v_completeness smallint;
+  v_should_replace_formula boolean;
 begin
   for v in select value from jsonb_array_elements($payload${payload}$payload$::jsonb)
   loop
@@ -21,29 +22,49 @@ begin
     v_completeness := coalesce((v ->> 'dataCompleteness')::smallint,
       case when v_formula_type = 'full' then 90 else 78 end);
 
-    insert into public.products (
-      brand, name, category, market, source_url, catalog_origin,
-      source_product_code, popularity_sources, asia_availability_status
-    ) values (
-      trim(v ->> 'brand'), trim(v ->> 'name'), v ->> 'category', v ->> 'market',
-      v ->> 'sourceUrl', 'official-expansion', v ->> 'sourceProductCode',
-      array[v ->> 'sourceName'],
-      case when v ->> 'region' in ('SG', 'JP', 'KR', 'CN', 'HK', 'TW', 'MY', 'TH')
-        then 'verified' else 'unverified' end
-    )
-    on conflict (source_product_code) where source_product_code is not null and archived_at is null
-    do update set
-      brand = excluded.brand, name = excluded.name, category = excluded.category,
-      market = excluded.market, source_url = excluded.source_url,
-      popularity_sources = excluded.popularity_sources,
-      asia_availability_status = excluded.asia_availability_status,
-      updated_at = now()
-    returning id into v_product_id;
+    select id into v_product_id from public.products
+    where archived_at is null and (
+      source_product_code = v ->> 'sourceProductCode'
+      or (lower(brand) = lower(v ->> 'brand') and lower(name) = lower(v ->> 'name')
+        and market = v ->> 'market')
+    ) order by (source_product_code = v ->> 'sourceProductCode') desc limit 1;
 
-    update public.product_formulas set is_current = false, updated_at = now()
-    where product_id = v_product_id and market = v ->> 'market' and is_current;
+    if v_product_id is null then
+      insert into public.products (
+        brand, name, category, market, source_url, catalog_origin,
+        source_product_code, popularity_sources, asia_availability_status
+      ) values (
+        trim(v ->> 'brand'), trim(v ->> 'name'), v ->> 'category', v ->> 'market',
+        v ->> 'sourceUrl',
+        case when v ->> 'sourceType' = 'brand_official' then 'official-expansion'
+          else 'candidate-expansion' end,
+        v ->> 'sourceProductCode', array[v ->> 'sourceName'],
+        case when v ->> 'region' in ('SG', 'JP', 'KR', 'CN', 'HK', 'TW', 'MY', 'TH')
+          then 'verified' else 'unverified' end
+      ) returning id into v_product_id;
+    else
+      update public.products set
+        category = v ->> 'category', source_url = v ->> 'sourceUrl',
+        popularity_sources = array(select distinct value from unnest(
+          popularity_sources || array[v ->> 'sourceName']) value),
+        asia_availability_status = case
+          when v ->> 'region' in ('SG', 'JP', 'KR', 'CN', 'HK', 'TW', 'MY', 'TH')
+          then 'verified' else asia_availability_status end,
+        updated_at = now()
+      where id = v_product_id;
+    end if;
 
-    insert into public.product_formulas (
+    select not exists (
+      select 1 from public.product_formulas
+      where product_id = v_product_id and market = v ->> 'market'
+        and is_current and data_completeness >= v_completeness
+    ) into v_should_replace_formula;
+
+    if v_should_replace_formula then
+      update public.product_formulas set is_current = false, updated_at = now()
+      where product_id = v_product_id and market = v ->> 'market' and is_current;
+
+      insert into public.product_formulas (
       product_id, market, raw_ingredients, ingredient_names,
       ingredient_list_type, data_completeness, source_url, verified_at,
       is_current, quality_flags
@@ -52,10 +73,15 @@ begin
       array(select trim(part) from unnest(string_to_array(v ->> 'rawIngredients', ';')) part
         where trim(part) <> ''),
       v_formula_type, v_completeness, v ->> 'sourceUrl', current_date, true,
-      case when v_formula_type = 'full'
-        then array['full_formula_verified', 'brand_official_source']::text[]
-        else array['top15_formula_verified', 'full_formula_not_stored', 'brand_official_source']::text[] end
-    );
+      case
+        when v_formula_type = 'full' and v ->> 'sourceType' = 'brand_official'
+          then array['full_formula_verified', 'brand_official_source']::text[]
+        when v ->> 'sourceType' = 'brand_official'
+          then array['top15_formula_verified', 'full_formula_not_stored', 'brand_official_source']::text[]
+        else array['top15_candidate', 'official_verification_pending', v ->> 'sourceType']::text[]
+      end
+      );
+    end if;
 
     insert into public.product_sources (
       product_id, source_type, source_name, region, source_url,
@@ -64,7 +90,7 @@ begin
     ) values (
       v_product_id, v ->> 'sourceType', v ->> 'sourceName', v ->> 'region',
       v ->> 'sourceUrl', v ->> 'externalProductId', v ->> 'formulaVersion',
-      true, true, true, current_date
+      true, true, (v ->> 'region') <> 'GLOBAL', current_date
     ) on conflict (product_id, source_url) do update set
       source_type = excluded.source_type, source_name = excluded.source_name,
       region = excluded.region, external_product_id = excluded.external_product_id,
@@ -101,8 +127,8 @@ def validate(products: list[dict]) -> None:
             raise ValueError(f"{code} has {len(ingredients)} retained ingredients")
         if not item["sourceUrl"].startswith("https://"):
             raise ValueError(f"Non-HTTPS source for {code}")
-        if item["sourceType"] != "brand_official":
-            raise ValueError(f"First batch must use official brand sources: {code}")
+        if item["sourceType"] not in {"brand_official", "authorized_retailer", "retailer", "open_data"}:
+            raise ValueError(f"Unsupported source type for {code}")
 
 
 def main() -> None:
