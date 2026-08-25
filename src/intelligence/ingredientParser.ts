@@ -38,6 +38,12 @@ const EXTRA_ALIASES: Record<string, string[]> = {
   "果酸 (Glycolic/Lactic/Mandelic Acid)": ["Glycolic Acid", "Lactic Acid", "Mandelic Acid", "AHA"],
   "二氧化钛/氧化锌 (物理防晒剂)": ["Titanium Dioxide", "Zinc Oxide"],
   "阿伏苯宗/奥克立林等 (化学防晒剂)": ["Avobenzone", "Octocrylene", "Homosalate", "Octisalate"],
+  "尼泊金酯类防腐剂 (Methyl/Propyl/Butyl/Ethylparaben)": [
+    "Methylparaben",
+    "Propylparaben",
+    "Butylparaben",
+    "Ethylparaben",
+  ],
 };
 
 const referenceAliases = (reference: string) => {
@@ -61,7 +67,11 @@ export function ingredientMatches(rawIngredient: string, referenceName: string) 
   if (!raw) return false;
   return referenceAliases(referenceName).some((alias) => {
     const candidate = normalize(alias);
-    return raw.includes(candidate) || candidate.includes(raw);
+    // Exact matching covers normal INCI rows. A long alias may also appear in a
+    // decorated row such as "Niacinamide 5%". Never reverse-match a short raw
+    // value into a longer alias: that made Water match plant waters, Betaine
+    // match Cocamidopropyl Betaine, and Butylene match the word "Butyl".
+    return raw === candidate || (candidate.length >= 8 && raw.includes(candidate));
   });
 }
 
