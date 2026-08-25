@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { ArrowLeft, Check } from "lucide-react";
 import type { SkinProfileRecord } from "../lib/skinProfile";
 import { summarizeSkinProfile } from "../lib/skinProfile";
+import type { SharedProductRecord } from "../lib/supabase";
+import { rankForProfile, type BrowseConcern } from "../lib/productPresentation";
 
 const INK = "#211F1B";
 const PAPER = "#F7F3EC";
@@ -22,7 +24,18 @@ const TEMPLATES: Record<string, { am: string[]; pm: string[]; note: string }> = 
   "Fine lines": { am: ["Hydrating serum", "Antioxidant serum", "Moisturizer", "SPF"], pm: ["Cleanser", "Retinoid if tolerated", "Moisturizer"], note: "先把缺水细纹和真正的结构性细纹分开。" },
 };
 
-export default function V3RoutineBuilder({ profile, onBack, onExplore }: { profile: SkinProfileRecord | null; onBack: () => void; onExplore: () => void; }) {
+const GOAL_CONCERN: Record<string, BrowseConcern> = { Acne: "acne", Blackheads: "pores", Pores: "pores", Redness: "redness", Barrier: "barrier", Dehydration: "hydration", Pigmentation: "pigmentation", Dullness: "pigmentation", "Fine lines": "aging", Firmness: "aging", "Oil control": "pores" };
+
+function categoryForStep(step: string) {
+  const value = step.toLowerCase();
+  if (value.includes("clean")) return "洁面";
+  if (value.includes("spf")) return "防晒";
+  if (value.includes("moistur")) return "乳霜";
+  if (value.includes("bha") || value.includes("treatment") || value.includes("retinoid")) return "祛痘";
+  return "精华";
+}
+
+export default function V3RoutineBuilder({ profile, products, onBack, onExplore, onProduct }: { profile: SkinProfileRecord | null; products: SharedProductRecord[]; onBack: () => void; onExplore: () => void; onProduct: (product: SharedProductRecord, concern: BrowseConcern) => void; }) {
   const [goal, setGoal] = useState("Barrier");
   const [complexity, setComplexity] = useState<"minimal" | "standard">("standard");
   const summary = summarizeSkinProfile(profile);
@@ -34,6 +47,13 @@ export default function V3RoutineBuilder({ profile, onBack, onExplore }: { profi
   }, [base, complexity]);
 
   const sensitiveConstraint = profile?.skinAnswers?.sensitive === "yes";
+  const selectedConcern = GOAL_CONCERN[goal] || "barrier";
+  const rankedProducts = useMemo(() => rankForProfile(
+    products.filter((product) => product.ingredientListType === "full" && product.dataCompleteness >= 85),
+    profile,
+    selectedConcern,
+  ).filter((product) => product.recommendationAvailable), [products, profile, selectedConcern]);
+  const productForStep = (step: string) => rankedProducts.find((product) => product.category === categoryForStep(step));
 
   return <div style={{ minHeight: "100vh", background: PAPER, color: INK, padding: "22px 16px 50px" }}><div style={{ maxWidth: 560, margin: "0 auto" }}>
     <button onClick={onBack} style={{ border: 0, background: "transparent", padding: 0, color: MUTE, fontSize: 12, cursor: "pointer", marginBottom: 22, display: "flex", gap: 6, alignItems: "center" }}><ArrowLeft size={14}/> Home</button>
@@ -48,7 +68,7 @@ export default function V3RoutineBuilder({ profile, onBack, onExplore }: { profi
 
     {sensitiveConstraint && <div style={{ border: `1px solid ${ROSE}`, background: "#F6ECE8", borderRadius: 14, padding: "11px 13px", fontSize: 11.5, color: "#775D59", lineHeight: 1.55, marginBottom: 13 }}>Your sensitivity profile is active. Strong acids / retinoids should be introduced more conservatively rather than simply maximizing efficacy.</div>}
 
-    {[["AM", routine.am],["PM", routine.pm]].map(([period, steps]: any) => <section key={period} style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.65)", marginBottom: 10 }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: ".08em", color: period === "AM" ? SAGE : ROSE, marginBottom: 11 }}>{period} ROUTINE</div>{steps.map((step: string, i: number) => <div key={step} style={{ display: "flex", gap: 10, alignItems: "center", padding: "9px 0", borderTop: i ? `1px solid ${LINE}` : "none" }}><span style={{ width: 21, height: 21, border: `1px solid ${LINE}`, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 9.5, color: MUTE }}>{i+1}</span><span style={{ fontSize: 12.5 }}>{step}</span></div>)}</section>)}
+    {[["AM", routine.am],["PM", routine.pm]].map(([period, steps]: any) => <section key={period} style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.65)", marginBottom: 10 }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: ".08em", color: period === "AM" ? SAGE : ROSE, marginBottom: 11 }}>{period} ROUTINE</div>{steps.map((step: string, i: number) => { const recommendation = productForStep(step); return <div key={step} style={{ padding: "10px 0", borderTop: i ? `1px solid ${LINE}` : "none" }}><div style={{ display: "flex", gap: 10, alignItems: "center" }}><span style={{ width: 21, height: 21, border: `1px solid ${LINE}`, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 9.5, color: MUTE }}>{i+1}</span><span style={{ fontSize: 12.5 }}>{step}</span></div>{recommendation && <button onClick={() => onProduct(recommendation, selectedConcern)} style={{ margin: "8px 0 0 31px", border: 0, padding: 0, background: "transparent", color: SAGE, textAlign: "left", fontSize: 10.8, lineHeight: 1.45, cursor: "pointer" }}>Best verified match: {recommendation.brand} · {recommendation.name} ({recommendation.score}%) →</button>}</div>; })}</section>)}
 
     <div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "13px 0 16px" }}>{routine.note}</div>
     <button onClick={onExplore} style={{ width: "100%", border: 0, borderRadius: 999, padding: "11px 14px", background: INK, color: "white", fontSize: 12, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: 7 }}><Check size={14}/> Find products for these steps</button>

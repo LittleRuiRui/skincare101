@@ -96,11 +96,14 @@ def extract(url: str) -> dict | None:
         "region": "SG",
         "externalProductId": code,
         "sourceUrl": url,
-        "rawIngredients": "; ".join(parts[:15]),
-        "ingredientListType": "full" if len(parts) <= 15 else "partial",
-        "dataCompleteness": 90 if len(parts) <= 15 else 78,
+        # Storage keeps the complete official INCI. The recommendation view,
+        # not the source record, is responsible for slicing the first 15 items.
+        "rawIngredients": "; ".join(parts),
+        "ingredientListType": "full",
+        "dataCompleteness": 100,
+        "analysisIngredientCount": min(15, len(parts)),
         "formulaFingerprint": hashlib.sha256(
-            "|".join(part.casefold() for part in parts[:15]).encode("utf-8")
+            "|".join(part.casefold() for part in parts).encode("utf-8")
         ).hexdigest(),
     }
 
