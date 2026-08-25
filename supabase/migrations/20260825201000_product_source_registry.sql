@@ -29,11 +29,10 @@ create policy product_sources_public_read
   on public.product_sources for select to anon, authenticated using (true);
 create policy product_sources_reviewer_insert
   on public.product_sources for insert to authenticated
-  with check (coalesce((select auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'reviewer');
+  with check (coalesce((select auth.jwt()) -> 'app_metadata' ->> 'role', '') = 'reviewer');
 create policy product_sources_reviewer_update
   on public.product_sources for update to authenticated
-  using (coalesce((select auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'reviewer')
-  with check (coalesce((select auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'reviewer');
+  using (coalesce((select auth.jwt()) -> 'app_metadata' ->> 'role', '') = 'reviewer')
+  with check (coalesce((select auth.jwt()) -> 'app_metadata' ->> 'role', '') = 'reviewer');
 
 grant select on public.product_sources to anon, authenticated;
-
