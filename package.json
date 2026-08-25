@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "backup:sqlite": "python scripts/export_supabase_to_sqlite.py",
     "data:pilot": "python scripts/build_pilot_catalog.py",
-    "data:pilot-sql": "python scripts/generate_pilot_sql.py"
+    "data:pilot-sql": "python scripts/generate_pilot_sql.py",
+    "data:enrichment-sql": "python scripts/generate_formula_enrichment_sql.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",

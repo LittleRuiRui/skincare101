@@ -5,6 +5,9 @@ import { rankProducts } from "../src/intelligence/productScoring.ts";
 
 const payload = JSON.parse(readFileSync(new URL("../data/pilot_products.json", import.meta.url), "utf8"));
 const products = payload.products;
+const enrichments = JSON.parse(
+  readFileSync(new URL("../data/pilot_formula_enrichments.json", import.meta.url), "utf8"),
+);
 
 test("pilot catalog has exactly 300 unique, sourced products", () => {
   assert.equal(products.length, 300);
@@ -14,6 +17,25 @@ test("pilot catalog has exactly 300 unique, sourced products", () => {
     300,
   );
   assert.ok(products.every((product: any) => /^https:\/\//.test(product.sourceUrl)));
+});
+
+test("first enrichment batch contains 50 sourced top-15 formulas", () => {
+  assert.equal(enrichments.products.length, 50);
+  const pilotCodes = new Set(products.map((product: any) => product.sourceProductCode));
+  const codes = new Set<string>();
+
+  enrichments.products.forEach((product: any) => {
+    assert.ok(pilotCodes.has(product.sourceProductCode));
+    assert.match(product.sourceUrl, /^https:\/\//);
+    const ingredients = product.rawIngredients
+      .split(";")
+      .map((value: string) => value.trim())
+      .filter(Boolean);
+    assert.ok(ingredients.length >= 4 && ingredients.length <= 15);
+    codes.add(product.sourceProductCode);
+  });
+
+  assert.equal(codes.size, 50);
 });
 
 test("pilot covers the expected skincare categories and formula-quality split", () => {

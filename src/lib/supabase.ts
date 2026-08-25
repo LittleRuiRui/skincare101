@@ -42,8 +42,8 @@ export interface ParsedSubmission {
 
 export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]> {
   const { data, error } = await supabase
-    .from("approved_product_catalog")
-    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,verified_at,formula_dna,formula_analysis_version,popularity_rank,popularity_basis,popularity_sources,popularity_tier,asia_availability_status,quality_flags")
+    .from("approved_product_catalog_summary")
+    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status")
     .order("brand", { ascending: true });
 
   if (error) throw error;
@@ -57,16 +57,11 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
     ingredientListType: row.ingredient_list_type === "full" ? "full" : "partial",
     dataCompleteness: row.data_completeness || 0,
     sourceUrl: row.source_url || "https://tepiqcwytynhrjhtvnws.supabase.co",
-    verifiedAt: row.verified_at || "",
-    formulaDna: row.formula_analysis_version === "formula-dna-v1" && row.formula_dna?.version === "formula-dna-v1"
-      ? row.formula_dna as FormulaDna
-      : undefined,
-    popularityRank: row.popularity_rank || undefined,
-    popularityBasis: row.popularity_basis || undefined,
+    verifiedAt: "",
     popularitySources: row.popularity_sources || [],
     popularityTier: row.popularity_tier || undefined,
     asiaAvailabilityStatus: row.asia_availability_status || "unverified",
-    qualityFlags: row.quality_flags || [],
+    qualityFlags: [],
     source: "shared",
   }));
 }
