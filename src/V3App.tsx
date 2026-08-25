@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import LegacyApp from "./App";
 import V3Home from "./components/V3Home";
 import V3MySkin from "./components/V3MySkin";
-import { loadSharedProductCatalog } from "./lib/supabase";
+import V3Explore from "./components/V3Explore";
+import V3RoutineBuilder from "./components/V3RoutineBuilder";
+import { loadSharedProductCatalog, type SharedProductRecord } from "./lib/supabase";
 import { loadMySkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 
@@ -10,11 +12,13 @@ const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 `;
 
+type Route = "home" | "mySkin" | "explore" | "routine" | "legacy";
+
 export default function V3App() {
-  const [route, setRoute] = useState<"home" | "mySkin" | "legacy">("home");
+  const [route, setRoute] = useState<Route>("home");
   const [profile, setProfile] = useState<SkinProfileRecord | null>(null);
   const [profileChecked, setProfileChecked] = useState(false);
-  const [productCount, setProductCount] = useState(0);
+  const [products, setProducts] = useState<SharedProductRecord[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -24,20 +28,16 @@ export default function V3App() {
       .finally(() => { if (active) setProfileChecked(true); });
 
     loadSharedProductCatalog()
-      .then((products) => { if (active) setProductCount(products.length); })
+      .then((result) => { if (active) setProducts(result); })
       .catch(() => {});
 
     return () => { active = false; };
   }, [route]);
 
   function goTo(target: string) {
-    if (target === "report" || target === "mySkin") {
-      setRoute("mySkin");
-      return;
-    }
-    // During the V3 migration, existing diagnosis / OCR / recommendation tools
-    // remain intact inside the legacy application. We progressively replace
-    // these destinations without breaking the working prototype.
+    if (target === "report" || target === "mySkin") return setRoute("mySkin");
+    if (target === "recommend" || target === "quickRecommend") return setRoute("explore");
+    if (target === "routine") return setRoute("routine");
     setRoute("legacy");
   }
 
@@ -54,30 +54,22 @@ export default function V3App() {
   }
 
   if (route === "mySkin") {
-    return (
-      <>
-        <style>{FONT_IMPORT}</style>
-        <V3MySkin
-          profile={profile}
-          onBack={() => setRoute("home")}
-          onRetake={() => setRoute("legacy")}
-          onFindProducts={() => setRoute("legacy")}
-          onBuildRoutine={() => setRoute("legacy")}
-          onOpenLegacyReport={() => setRoute("legacy")}
-        />
-      </>
-    );
+    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={() => setRoute("legacy")} onFindProducts={() => setRoute("explore")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => setRoute("legacy")} /></>;
+  }
+
+  if (route === "explore") {
+    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} onBack={() => setRoute("home")} onProduct={() => setRoute("legacy")} /></>;
+  }
+
+  if (route === "routine") {
+    return <><style>{FONT_IMPORT}</style><V3RoutineBuilder profile={profile} onBack={() => setRoute("home")} onExplore={() => setRoute("explore")} /></>;
   }
 
   return (
     <div style={{ minHeight: "100vh", background: "#F7F3EC", color: "#211F1B", fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}>
       <style>{FONT_IMPORT}</style>
       <div style={{ width: "100%", maxWidth: 520 }}>
-        {!profileChecked ? (
-          <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div>
-        ) : (
-          <V3Home goTo={goTo} hasProfile={Boolean(profile)} productCount={productCount} />
-        )}
+        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} hasProfile={Boolean(profile)} productCount={products.length} />}
       </div>
     </div>
   );
