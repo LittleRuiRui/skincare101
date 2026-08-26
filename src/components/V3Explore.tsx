@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Search } from "lucide-react";
 import type { SharedProductRecord } from "../lib/supabase";
 import type { SkinProfileRecord } from "../lib/skinProfile";
@@ -18,20 +18,33 @@ const NICHE = new Set(["Facetheory", "The Inkey List", "Purito SEOUL", "mixsoon"
 const SKIN_TYPES: Array<[BrowseSkinType, string]> = [["all", "All skin types"], ["dry", "Dry"], ["oily", "Oily"], ["combination", "Combination"], ["sensitive", "Sensitive"], ["acne", "Acne-prone"]];
 const CONCERNS: Array<[BrowseConcern, string]> = [["all", "All concerns"], ["hydration", "Dehydration"], ["barrier", "Barrier"], ["redness", "Redness"], ["pores", "Pores"], ["acne", "Acne"], ["pigmentation", "Pigmentation"], ["aging", "Anti-aging"]];
 
-export default function V3Explore({ products, profile, onBack, onProduct }: { products: SharedProductRecord[]; profile: SkinProfileRecord | null; onBack: () => void; onProduct: (product: SharedProductRecord, concern: BrowseConcern) => void; }) {
+export type ExploreEntry = "forYou" | "explore" | "search" | "brands" | "concerns" | "luxury" | "niche";
+
+export default function V3Explore({ products, profile, entry = "explore", onBack, onProduct }: { products: SharedProductRecord[]; profile: SkinProfileRecord | null; entry?: ExploreEntry; onBack: () => void; onProduct: (product: SharedProductRecord, concern: BrowseConcern) => void; }) {
   const [query, setQuery] = useState("");
   const [brand, setBrand] = useState("All brands");
   const [category, setCategory] = useState("All categories");
   const [skinType, setSkinType] = useState<BrowseSkinType>("all");
   const [concern, setConcern] = useState<BrowseConcern>(profile ? profileConcern(profile) : "all");
-  const [sort, setSort] = useState<"match" | "brand" | "quality">(profile ? "match" : "quality");
-  const [edit, setEdit] = useState<"all" | "luxury" | "niche">("all");
+  const [sort, setSort] = useState<"match" | "brand" | "quality">(entry === "brands" ? "brand" : profile ? "match" : "quality");
+  const [edit, setEdit] = useState<"all" | "luxury" | "niche">(entry === "luxury" ? "luxury" : entry === "niche" ? "niche" : "all");
   const [visible, setVisible] = useState(40);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (entry === "search") searchRef.current?.focus(); }, [entry]);
   const summary = summarizeSkinProfile(profile);
   const brands = useMemo(() => ["All brands", ...Array.from(new Set(products.map((p) => p.brand))).sort()], [products]);
   const categories = useMemo(() => ["All categories", ...Array.from(new Set(products.map((p) => p.category))).sort()], [products]);
   const selectedBrand = brand === "All brands" ? null : getBrandProfile(brand);
   const selectedBrandCount = brand === "All brands" ? 0 : products.filter((product) => product.brand === brand).length;
+  const entryCopy: Record<ExploreEntry, [string, string]> = {
+    forYou: ["FOR YOU", "Products ranked for the selected skin profile."],
+    explore: ["EXPLORE SKINCARE", "Browse the full verified-formula library."],
+    search: ["SEARCH", "Search directly by brand or product name."],
+    brands: ["BROWSE BY BRAND", "Compare complete product lines brand by brand."],
+    concerns: ["BROWSE BY CONCERN", "Choose a concern and rank formulas by relevant evidence."],
+    luxury: ["LUXURY EDIT", "Explore prestige formulas with their evidence kept separate from price."],
+    niche: ["NICHE FINDS", "Independent and less obvious brands with complete formula data."],
+  };
 
   const filtered = useMemo(() => {
     const rows = products.filter((p) => {
@@ -55,12 +68,13 @@ export default function V3Explore({ products, profile, onBack, onProduct }: { pr
   const selectStyle = { minWidth: 0, border: `1px solid ${LINE}`, borderRadius: 11, padding: 10, background: "white", fontSize: 11.5 } as const;
   return <div style={{ minHeight: "100vh", background: PAPER, color: INK, padding: "22px 16px 50px" }}><div style={{ maxWidth: 680, margin: "0 auto" }}>
     <button onClick={onBack} style={{ border: 0, background: "transparent", padding: 0, color: MUTE, fontSize: 12, cursor: "pointer", marginBottom: 22, display: "flex", gap: 6, alignItems: "center" }}><ArrowLeft size={14}/> Home</button>
-    <div style={{ fontFamily: "'IBM Plex Mono', monospace", color: SAGE, fontSize: 9.5, letterSpacing: ".1em", marginBottom: 7 }}>EXPLORE SKINCARE</div>
+    <div style={{ fontFamily: "'IBM Plex Mono', monospace", color: SAGE, fontSize: 9.5, letterSpacing: ".1em", marginBottom: 7 }}>{entryCopy[entry][0]}</div>
     <h1 style={{ fontFamily: "'Newsreader', serif", fontSize: 35, fontWeight: 500, margin: "0 0 7px" }}>Find products.<br/><i>Keep the context.</i></h1>
-    <p style={{ fontSize: 12.5, color: MUTE, lineHeight: 1.6, margin: "0 0 19px" }}>{profile ? `For You 已连接：${summary.skinType} · ${summary.sensitivity}${summary.concerns.length ? ` · ${summary.concerns.join(" / ")}` : ""}` : "你可以按品牌、肤质、问题和类别浏览；建档后会增加个人匹配排序。"}</p>
+    <p style={{ fontSize: 12.5, color: MUTE, lineHeight: 1.6, margin: "0 0 8px" }}>{entryCopy[entry][1]}</p>
+    <p style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "0 0 19px" }}>{profile ? `当前档案：${profile.name} · ${summary.skinType} · ${summary.sensitivity}${summary.concerns.length ? ` · ${summary.concerns.join(" / ")}` : ""}` : "建档后会增加个人匹配排序。"}</p>
 
     <div style={{ display: "flex", gap: 7, marginBottom: 12, overflowX: "auto" }}>{[["all","All"],["luxury","Luxury Edit"],["niche","Niche Finds"]].map(([key,label]) => <button key={key} onClick={() => setEdit(key as "all" | "luxury" | "niche")} style={{ border: `1px solid ${edit === key ? INK : LINE}`, borderRadius: 999, padding: "7px 10px", background: edit === key ? INK : "rgba(255,255,255,.55)", color: edit === key ? "white" : INK, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap" }}>{label}</button>)}</div>
-    <div style={{ position: "relative", marginBottom: 9 }}><Search size={15} color={MUTE} style={{ position: "absolute", left: 12, top: 12 }}/><input value={query} onChange={(e) => { setQuery(e.target.value); setVisible(40); }} placeholder="Search brand or product" style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 12, background: "rgba(255,255,255,.72)", padding: "11px 12px 11px 36px", fontSize: 12.5 }}/></div>
+    <div style={{ position: "relative", marginBottom: 9 }}><Search size={15} color={MUTE} style={{ position: "absolute", left: 12, top: 12 }}/><input ref={searchRef} value={query} onChange={(e) => { setQuery(e.target.value); setVisible(40); }} placeholder="Search brand or product" style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 12, background: "rgba(255,255,255,.72)", padding: "11px 12px 11px 36px", fontSize: 12.5 }}/></div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8, marginBottom: 8 }}>
       <select aria-label="Brand" value={brand} onChange={(e) => { setBrand(e.target.value); setVisible(40); }} style={selectStyle}>{brands.map((x) => <option key={x}>{x}</option>)}</select>
       <select aria-label="Skin type" value={skinType} onChange={(e) => { setSkinType(e.target.value as BrowseSkinType); setVisible(40); }} style={selectStyle}>{SKIN_TYPES.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select>
@@ -80,3 +94,4 @@ export default function V3Explore({ products, profile, onBack, onProduct }: { pr
     {filtered.length > visible && <button onClick={() => setVisible((count) => count + 40)} style={{ width: "100%", marginTop: 12, border: `1px solid ${LINE}`, background: "rgba(255,255,255,.65)", borderRadius: 999, padding: 10, color: INK, fontSize: 11.5, cursor: "pointer" }}>Show 40 more</button>}
   </div></div>;
 }
+
