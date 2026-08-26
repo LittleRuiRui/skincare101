@@ -91,7 +91,7 @@ export default function ProfileSavePanel({ profile }: Props) {
 
   return (
     <section style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 14px", background: "#fff", marginTop: 10, marginBottom: 18 }}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: INK, marginBottom: 5 }}>保存为我的皮肤档案</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 5 }}>保存到网页护肤档案</div>
       <p style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "0 0 12px" }}>
         保存本次肤质、基础信息、症状和问卷答案。你可以为自己或家人建立多份档案，档案只对当前账号可见。
       </p>
@@ -121,7 +121,7 @@ export default function ProfileSavePanel({ profile }: Props) {
             disabled={busy || !email.trim()}
             style={{ flexShrink: 0, border: 0, borderRadius: 9, padding: "0 13px", color: "#fff", background: busy || !email.trim() ? MUTE : TEAL, cursor: busy || !email.trim() ? "default" : "pointer" }}
           >
-            {busy ? "发送中" : "登录后保存"}
+            {busy ? "发送中" : "发送验证邮件并自动保存"}
           </button>
         </div>
       ) : (

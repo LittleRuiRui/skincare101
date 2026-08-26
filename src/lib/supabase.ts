@@ -104,7 +104,9 @@ export async function loadProductDetail(productId: string): Promise<ProductDetai
 }
 
 export async function sendSignInLink(email: string): Promise<void> {
-  const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
+  const redirectUrl = window.location.hostname === "localhost"
+    ? `${window.location.origin}${import.meta.env.BASE_URL}`
+    : "https://littleruirui.github.io/skincare101/?auth=callback";
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: redirectUrl },

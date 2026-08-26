@@ -2458,6 +2458,19 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
               病因判断
             </h2>
 
+            <div data-html2canvas-ignore="true" style={{ marginBottom: 24 }}>
+              <ProfileSavePanel
+                profile={{
+                  skinAnswers,
+                  profileAnswers,
+                  selectedSymptoms,
+                  symptomAnswers: answersMap,
+                  multiSelectAnswers: multiSelMap,
+                  redFlag,
+                }}
+              />
+            </div>
+
             {familyGroups.map((group) => {
               const isShared = group.items.length > 1;
               return (
@@ -2600,17 +2613,6 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
               {pdfError && (
                 <div style={{ marginTop: 8, color: RUST, fontSize: 11.5 }}>{pdfError}</div>
               )}
-
-              <ProfileSavePanel
-                profile={{
-                  skinAnswers,
-                  profileAnswers,
-                  selectedSymptoms,
-                  symptomAnswers: answersMap,
-                  multiSelectAnswers: multiSelMap,
-                  redFlag,
-                }}
-              />
 
               <PrimaryButton onClick={() => goTo("upload")}>
                 <FlaskConical size={15} /> 查看成分匹配分析
