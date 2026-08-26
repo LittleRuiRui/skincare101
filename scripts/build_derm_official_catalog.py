@@ -287,7 +287,7 @@ def extract(site: str, url: str) -> dict | None:
     if excluded(name, url) or len(ingredients) < 4:
         return None
     source = SOURCES[site]
-    retained = ingredients[:15]
+    retained = ingredients
     stable_code = url.rstrip("/").rsplit("/", 1)[-1] if site == "lrp" else external_id
     result = {
         "sourceProductCode": f"official-{source['region'].lower()}-{site}-{stable_code.casefold()}",
@@ -301,8 +301,9 @@ def extract(site: str, url: str) -> dict | None:
         "externalProductId": external_id,
         "sourceUrl": url,
         "rawIngredients": "; ".join(retained),
-        "ingredientListType": "full" if len(ingredients) <= 15 else "partial",
-        "dataCompleteness": 90 if len(ingredients) <= 15 else 78,
+        "ingredientListType": "full",
+        "dataCompleteness": 100,
+        "analysisIngredientCount": min(15, len(ingredients)),
         "formulaFingerprint": hashlib.sha256(
             "|".join(part.casefold() for part in retained).encode("utf-8")
         ).hexdigest(),
@@ -316,9 +317,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=Path("data/derm_official_catalog.json"))
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--site", choices=sorted(SOURCES), help="Collect one brand site for isolated retries and audits.")
     args = parser.parse_args()
 
-    site_urls = {site: product_urls(site) for site in SOURCES}
+    selected_sites = [args.site] if args.site else list(SOURCES)
+    site_urls = {site: product_urls(site) for site in selected_sites}
     records: list[dict] = []
     errors: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
@@ -357,7 +360,7 @@ def main() -> None:
         "errors": errors,
     }
     args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    counts = {site: sum(item["sourceName"] == SOURCES[site]["source"] for item in unique) for site in SOURCES}
+    counts = {site: sum(item["sourceName"] == SOURCES[site]["source"] for item in unique) for site in selected_sites}
     print(json.dumps({"pages": payload["sourceProductPages"], "products": counts, "errors": len(errors)}))
 
 

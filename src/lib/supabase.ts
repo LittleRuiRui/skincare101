@@ -34,6 +34,12 @@ export interface SharedProductRecord {
   source: "shared";
 }
 
+export interface ProductDetailRecord extends SharedProductRecord {
+  market: string;
+  formulaId: string;
+  fullIngredients: string[];
+}
+
 export interface ParsedSubmission {
   recognized: Array<{ canonicalName: string }>;
   unknown: Array<{ raw: string }>;
@@ -44,6 +50,10 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
   const { data, error } = await supabase
     .from("approved_product_catalog_summary")
     .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status")
+    // V3 is a decision tool, so its public catalog only surfaces products whose
+    // complete ingredient list is stored. Partial candidates remain in the
+    // database for review and are still available to the legacy fallback.
+    .eq("ingredient_list_type", "full")
     .order("brand", { ascending: true });
 
   if (error) throw error;
@@ -64,6 +74,33 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
     qualityFlags: [],
     source: "shared",
   }));
+}
+
+export async function loadProductDetail(productId: string): Promise<ProductDetailRecord> {
+  const id = productId.replace(/^shared-/, "");
+  const { data, error } = await supabase
+    .from("approved_product_catalog")
+    .select("id,brand,name,category,market,source_url,formula_id,ingredient_names,ingredient_list_type,data_completeness,verified_at")
+    .eq("id", id)
+    .limit(1)
+    .single();
+
+  if (error) throw error;
+  return {
+    id: `shared-${data.id}`,
+    brand: data.brand || "未知品牌",
+    name: data.name || "未命名产品",
+    category: data.category || "其他",
+    market: data.market || "global",
+    formulaId: data.formula_id || "",
+    ingredients: (data.ingredient_names || []).slice(0, 15),
+    fullIngredients: data.ingredient_names || [],
+    ingredientListType: data.ingredient_list_type === "full" ? "full" : "partial",
+    dataCompleteness: data.data_completeness || 0,
+    sourceUrl: data.source_url || "https://tepiqcwytynhrjhtvnws.supabase.co",
+    verifiedAt: data.verified_at || "",
+    source: "shared",
+  };
 }
 
 export async function sendSignInLink(email: string): Promise<void> {

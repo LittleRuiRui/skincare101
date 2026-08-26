@@ -123,8 +123,10 @@ def validate(products: list[dict]) -> None:
             raise ValueError(f"Duplicate product identity: {identity}")
         identities.add(identity)
         ingredients = [part.strip() for part in item["rawIngredients"].split(";") if part.strip()]
-        if not 4 <= len(ingredients) <= 15:
-            raise ValueError(f"{code} has {len(ingredients)} retained ingredients")
+        if not 4 <= len(ingredients) <= 250:
+            raise ValueError(f"{code} has an implausible {len(ingredients)}-item full formula")
+        if item.get("ingredientListType") == "full" and item.get("analysisIngredientCount") != min(15, len(ingredients)):
+            raise ValueError(f"{code} does not declare the top-zone analysis count")
         if not item["sourceUrl"].startswith("https://"):
             raise ValueError(f"Non-HTTPS source for {code}")
         if item["sourceType"] not in {"brand_official", "authorized_retailer", "retailer", "open_data"}:

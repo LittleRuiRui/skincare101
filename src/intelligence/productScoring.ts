@@ -9,7 +9,7 @@ interface IngredientRule {
   name: string;
 }
 
-interface Suitability {
+export interface Suitability {
   good: IngredientRule[];
   risky: IngredientRule[];
   conflicting?: IngredientRule[];
@@ -46,7 +46,12 @@ export interface ProductScore {
   formulaPenalty: number;
 }
 
-const clamp = (value: number) => Math.max(5, Math.min(98, Math.round(value)));
+const clampMatch = (value: number) => Math.max(5, Math.min(95, Math.round(value)));
+
+// Evidence used to be added linearly, which made many reasonably supported
+// products hit the old 98-point ceiling. A saturating curve preserves ordering
+// while avoiding false precision and diminishing the value of repeated signals.
+const calibrateMatch = (netEvidence: number) => clampMatch(50 + 44 * Math.tanh(netEvidence / 65));
 
 export function scoreProduct(product: Product, suitability: Suitability): ProductScore {
   const positiveEvidence: ProductEvidence[] = [];
@@ -95,7 +100,7 @@ export function scoreProduct(product: Product, suitability: Suitability): Produc
     : 0;
   const positive = positiveEvidence.reduce((sum, evidence) => sum + evidence.points, 0);
   const negative = negativeEvidence.reduce((sum, evidence) => sum + evidence.points, 0);
-  const rawScore = clamp(50 + positive + negative + systemBonus + formulaPenalty);
+  const rawScore = calibrateMatch(positive + negative + systemBonus + formulaPenalty);
   const evidenceCount = positiveEvidence.length + negativeEvidence.length + conflictingEvidence.length + systemEvidence.length;
   const recommendationAvailable = product.dataCompleteness >= 60 && evidenceCount > 0;
   const confidence =

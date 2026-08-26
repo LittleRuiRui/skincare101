@@ -20,7 +20,19 @@ test("exposes positive and negative score contributions", () => {
   );
   assert.equal(score.positiveEvidence[0].points, 24);
   assert.equal(score.negativeEvidence[0].points, -28);
-  assert.equal(score.score, 46);
+  assert.equal(score.score, 47);
+});
+
+test("calibrates match scores instead of saturating ordinary formulas at 98", () => {
+  const score = scoreProduct(
+    {
+      id: "many-signals",
+      dataCompleteness: 100,
+      ingredients: ["Niacinamide", "Ceramide NP", "Ceramide AP", "Glycerin"],
+    },
+    { good: [{ name: "Niacinamide" }, { name: "Ceramide NP" }, { name: "Ceramide AP" }, { name: "Glycerin" }], risky: [] },
+  );
+  assert.ok(score.score !== null && score.score < 95);
 });
 
 test("withholds a recommendation when no relevant evidence exists", () => {

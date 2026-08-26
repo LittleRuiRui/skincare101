@@ -112,11 +112,14 @@ def extract(url: str) -> dict | None:
         "externalProductId": external_id,
         "formulaVersion": formula_code,
         "sourceUrl": url,
-        "rawIngredients": "; ".join(parts[:15]),
-        "ingredientListType": "full" if len(parts) <= 15 else "partial",
-        "dataCompleteness": 90 if len(parts) <= 15 else 78,
+        # Save the complete official formula. Formula DNA reads the top zone
+        # later; truncating here would permanently destroy database evidence.
+        "rawIngredients": "; ".join(parts),
+        "ingredientListType": "full",
+        "dataCompleteness": 100,
+        "analysisIngredientCount": min(15, len(parts)),
         "formulaFingerprint": hashlib.sha256(
-            "|".join(part.casefold() for part in parts[:15]).encode("utf-8")
+            "|".join(part.casefold() for part in parts).encode("utf-8")
         ).hexdigest(),
     }
 
