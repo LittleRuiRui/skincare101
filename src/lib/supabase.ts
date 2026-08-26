@@ -127,15 +127,24 @@ export interface SkinProfileInput {
   redFlag: string | null;
 }
 
-export async function saveMySkinProfile(input: SkinProfileInput): Promise<void> {
+export async function saveMySkinProfile(input: SkinProfileInput, name = "我的肤质档案"): Promise<void> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!userData.user) throw new Error("请先登录再保存皮肤档案。");
 
+  const { error: clearError } = await supabase
+    .from("skin_profiles")
+    .update({ is_active: false })
+    .eq("user_id", userData.user.id)
+    .eq("is_active", true);
+  if (clearError) throw clearError;
+
   const { error } = await supabase
     .from("skin_profiles")
-    .upsert({
+    .insert({
       user_id: userData.user.id,
+      name: name.trim() || "我的肤质档案",
+      is_active: true,
       skin_answers: input.skinAnswers,
       profile_answers: input.profileAnswers,
       selected_symptoms: input.selectedSymptoms,
@@ -143,7 +152,7 @@ export async function saveMySkinProfile(input: SkinProfileInput): Promise<void> 
       multi_select_answers: input.multiSelectAnswers,
       red_flag: input.redFlag,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    });
 
   if (error) throw error;
 }
@@ -259,3 +268,4 @@ export async function rejectSubmission(id: string, reason: string): Promise<void
   });
   if (error) throw error;
 }
+
