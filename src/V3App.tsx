@@ -5,7 +5,7 @@ import V3Explore from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
 import { loadSharedProductCatalog, type SharedProductRecord } from "./lib/supabase";
-import { loadMySkinProfile } from "./lib/mySkin";
+import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 import type { BrowseConcern } from "./lib/productPresentation";
 
@@ -20,16 +20,30 @@ type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "legacy";
 export default function V3App() {
   const [route, setRoute] = useState<Route>("home");
   const [profile, setProfile] = useState<SkinProfileRecord | null>(null);
+  const [profiles, setProfiles] = useState<SkinProfileRecord[]>([]);
   const [profileChecked, setProfileChecked] = useState(false);
   const [products, setProducts] = useState<SharedProductRecord[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SharedProductRecord | null>(null);
   const [selectedConcern, setSelectedConcern] = useState<BrowseConcern>("all");
 
+  async function refreshProfiles() {
+    try {
+      const result = await loadMySkinProfiles();
+      setProfiles(result);
+      setProfile(result.find((item) => item.isActive) || result[0] || null);
+    } catch {
+      setProfiles([]);
+      setProfile(null);
+    } finally {
+      setProfileChecked(true);
+    }
+  }
+
   useEffect(() => {
     let active = true;
-    loadMySkinProfile()
-      .then((result) => { if (active) setProfile(result); })
-      .catch(() => { if (active) setProfile(null); })
+    loadMySkinProfiles()
+      .then((result) => { if (active) { setProfiles(result); setProfile(result.find((item) => item.isActive) || result[0] || null); } })
+      .catch(() => { if (active) { setProfiles([]); setProfile(null); } })
       .finally(() => { if (active) setProfileChecked(true); });
 
     loadSharedProductCatalog()
@@ -38,6 +52,14 @@ export default function V3App() {
 
     return () => { active = false; };
   }, []);
+
+  async function chooseProfile(profileId: string) {
+    const selected = profiles.find((item) => item.id === profileId);
+    if (!selected) return;
+    setProfile(selected);
+    setProfiles((items) => items.map((item) => ({ ...item, isActive: item.id === profileId })));
+    await setActiveSkinProfile(profileId);
+  }
 
   function openProduct(product: SharedProductRecord, concern: BrowseConcern = "all") {
     setSelectedProduct(product);
@@ -58,7 +80,7 @@ export default function V3App() {
       <>
         <style>{FONT_IMPORT}</style>
         <div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}>
-          <button onClick={() => setRoute("home")} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← V3 Home</button>
+          <button onClick={() => { void refreshProfiles().finally(() => setRoute("home")); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
         </div>
         <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>Loading the full analysis tools…</div>}><LegacyApp /></React.Suspense>
       </>
@@ -85,7 +107,7 @@ export default function V3App() {
     <div style={{ minHeight: "100vh", background: "#F7F3EC", color: "#211F1B", fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}>
       <style>{FONT_IMPORT}</style>
       <div style={{ width: "100%", maxWidth: 520 }}>
-        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} hasProfile={Boolean(profile)} productCount={products.length} />}
+        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={() => setRoute("legacy")} productCount={products.length} />}
       </div>
     </div>
   );
