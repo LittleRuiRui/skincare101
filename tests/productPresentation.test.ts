@@ -19,7 +19,7 @@ const baseProduct = {
 };
 
 test("keeps formula data quality separate from personalized match", () => {
-  assert.equal(formulaDataLabel(baseProduct).label, "Verified full formula");
+  assert.equal(formulaDataLabel(baseProduct).label, "完整配方已核验");
   const match = personalizedScore(baseProduct, {
     skinAnswers: { sensitive: "yes", wash: "dry" },
     profileAnswers: {},
@@ -41,7 +41,7 @@ test("Formula DNA analyzes the top zone while the product may retain a full list
 
 test("partial formulas are never described as verified full formulas", () => {
   const status = formulaDataLabel({ ...baseProduct, ingredientListType: "partial" as const, dataCompleteness: 78 });
-  assert.equal(status.label, "Partial formula");
+  assert.equal(status.label, "部分配方");
 });
 
 test("price guides are clearly approximate Singapore ranges", () => {
