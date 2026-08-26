@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-for (const file of ["chanel_official_catalog.json", "dior_official_catalog.json"]) {
+for (const file of ["chanel_official_catalog.json", "dior_official_catalog.json", "derm_official_catalog.json"]) {
   test(`${file} retains complete official formulas instead of only the first 15`, () => {
     const payload = JSON.parse(readFileSync(new URL(`../data/${file}`, import.meta.url), "utf8"));
-    assert.ok(payload.products.length > 40);
+    assert.ok(payload.products.length > (file === "derm_official_catalog.json" ? 120 : 40));
     assert.ok(payload.products.some((product: any) => product.rawIngredients.split(";").filter(Boolean).length > 15));
     for (const product of payload.products) {
       const count = product.rawIngredients.split(";").filter(Boolean).length;

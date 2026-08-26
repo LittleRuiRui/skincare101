@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "../intelligence/formulaDna";
-import { getBrandProfile } from "../data/brandProfiles";
+import { approximatePriceGuide, getBrandProfile } from "../data/brandProfiles";
 import { loadProductDetail, type ProductDetailRecord, type SharedProductRecord } from "../lib/supabase";
 import type { SkinProfileRecord } from "../lib/skinProfile";
 import { formulaDataLabel, oneLineVerdict, personalizedScore, type BrowseConcern } from "../lib/productPresentation";
@@ -88,7 +88,8 @@ export default function V3ProductDetail({ product, profile, concern, onBack }: {
       <div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6 }}>{brand.description}</div>
       <div style={{ fontSize: 11.5, marginTop: 9 }}><b>Known for:</b> {brand.knownFor}</div>
       <div style={{ fontSize: 11.5, marginTop: 5 }}><b>Best for:</b> {brand.bestFor}</div>
-      <div style={{ fontSize: 11.5, marginTop: 5 }}><b>Price:</b> {brand.pricePositioning} · 单品价格待零售来源核验</div>
+      <div style={{ fontSize: 11.5, marginTop: 5 }}><b>Price:</b> {approximatePriceGuide(brand, product.category)}</div>
+      <div style={{ fontSize: 9.5, color: MUTE, lineHeight: 1.5, marginTop: 4 }}>这是帮助筛选预算的估算区间，不是实时售价；促销、容量和零售渠道会造成差异。</div>
     </section>
 
     <a href={current.sourceUrl} target="_blank" rel="noreferrer" style={{ width: "100%", boxSizing: "border-box", borderRadius: 999, padding: "11px 14px", background: INK, color: "white", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12 }}>View formula source / purchase page <ExternalLink size={13}/></a>

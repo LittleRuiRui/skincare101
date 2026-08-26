@@ -50,6 +50,10 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
   const { data, error } = await supabase
     .from("approved_product_catalog_summary")
     .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status")
+    // V3 is a decision tool, so its public catalog only surfaces products whose
+    // complete ingredient list is stored. Partial candidates remain in the
+    // database for review and are still available to the legacy fallback.
+    .eq("ingredient_list_type", "full")
     .order("brand", { ascending: true });
 
   if (error) throw error;

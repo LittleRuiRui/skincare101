@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { analyzeFormulaDna } from "../src/intelligence/formulaDna.ts";
+import { approximatePriceGuide, getBrandProfile } from "../src/data/brandProfiles.ts";
 import { formulaDataLabel, personalizedScore } from "../src/lib/productPresentation.ts";
 
 const baseProduct = {
@@ -41,4 +42,9 @@ test("Formula DNA analyzes the top zone while the product may retain a full list
 test("partial formulas are never described as verified full formulas", () => {
   const status = formulaDataLabel({ ...baseProduct, ingredientListType: "partial" as const, dataCompleteness: 78 });
   assert.equal(status.label, "Partial formula");
+});
+
+test("price guides are clearly approximate Singapore ranges", () => {
+  assert.match(approximatePriceGuide(getBrandProfile("Chanel"), "精华"), /^S\$\d+–\d+/);
+  assert.match(approximatePriceGuide(getBrandProfile("CeraVe"), "洁面"), /新加坡常见品牌级预算区间/);
 });

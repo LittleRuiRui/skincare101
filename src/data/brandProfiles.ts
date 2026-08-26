@@ -48,3 +48,23 @@ export function getBrandProfile(name: string): BrandProfile {
     pricePositioning: "价格待补充",
   };
 }
+
+export function approximatePriceGuide(profile: BrandProfile, category: string): string {
+  const segment = `${profile.segment} ${profile.pricePositioning}`.toLowerCase();
+  const isLuxury = segment.includes("luxury") || segment.includes("超高端");
+  const isPrestige = segment.includes("prestige") || segment.includes("高端");
+  const isDerm = segment.includes("dermo") || segment.includes("药妆");
+  const categoryKey = category.includes("精华") || category.includes("眼") ? "treatment"
+    : category.includes("乳霜") ? "cream"
+    : category.includes("防晒") ? "sunscreen"
+    : category.includes("洁面") ? "cleanser"
+    : "other";
+  const bands = isLuxury
+    ? { cleanser: "S$65–120", sunscreen: "S$80–150", treatment: "S$180–550", cream: "S$180–650", other: "S$80–250" }
+    : isPrestige
+      ? { cleanser: "S$45–85", sunscreen: "S$55–110", treatment: "S$90–250", cream: "S$90–280", other: "S$55–150" }
+      : isDerm
+        ? { cleanser: "S$18–40", sunscreen: "S$25–55", treatment: "S$30–85", cream: "S$25–70", other: "S$20–55" }
+        : { cleanser: "S$10–30", sunscreen: "S$15–45", treatment: "S$20–70", cream: "S$18–60", other: "S$15–45" };
+  return `${bands[categoryKey]}（新加坡常见品牌级预算区间）`;
+}
