@@ -1669,6 +1669,8 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
   const [recommendCategory, setRecommendCategory] = useState("全部");
   const [productSearch, setProductSearch] = useState("");
   const [visibleProductCount, setVisibleProductCount] = useState(24);
+  const [uploadProductSearch, setUploadProductSearch] = useState("");
+  const [visibleUploadProductCount, setVisibleUploadProductCount] = useState(40);
   const [history, setHistory] = useState(initialScreen ? [initialScreen] : hasPendingReport ? ["intro", "report"] : ["intro"]);
   const [sharedProducts, setSharedProducts] = useState([]);
   const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
@@ -1744,6 +1746,8 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
     setRecommendCategory("全部");
     setProductSearch("");
     setVisibleProductCount(24);
+    setUploadProductSearch("");
+    setVisibleUploadProductCount(40);
     setPdfStatus("idle");
     setPdfError("");
   }
@@ -2052,6 +2056,11 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
       )
     : categoryRankedProducts;
   const visibleRankedProducts = filteredRankedProducts.slice(0, visibleProductCount);
+  const normalizedUploadSearch = uploadProductSearch.trim().toLowerCase();
+  const filteredUploadProducts = normalizedUploadSearch
+    ? productCatalog.filter((product) => `${product.brand} ${product.name} ${product.category}`.toLowerCase().includes(normalizedUploadSearch))
+    : productCatalog;
+  const visibleUploadProducts = filteredUploadProducts.slice(0, visibleUploadProductCount);
 
   return (
     <div style={{ minHeight: "100vh", background: PAPER, color: INK, fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "32px 16px" }}>
@@ -2737,7 +2746,18 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.08em", color: MUTE, textTransform: "uppercase", marginBottom: 12 }}>
               或者从产品数据库选择 {sharedCatalogStatus === "offline" ? "（共享库暂时离线，已使用本地备份）" : ""}
             </div>
-            {productCatalog.map((p) => (
+            <div style={{ position: "relative", marginBottom: 8 }}>
+              <Search size={15} color={MUTE} style={{ position: "absolute", left: 12, top: 12 }} />
+              <input
+                value={uploadProductSearch}
+                onChange={(event) => { setUploadProductSearch(event.target.value); setVisibleUploadProductCount(40); }}
+                placeholder="搜索品牌、产品名或类别"
+                aria-label="搜索产品数据库"
+                style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 11, background: "#fff", padding: "11px 12px 11px 36px", fontSize: 13, color: INK }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: MUTE, marginBottom: 12 }}>找到 {filteredUploadProducts.length} 款，当前显示 {Math.min(visibleUploadProductCount, filteredUploadProducts.length)} 款</div>
+            {visibleUploadProducts.map((p) => (
               <OptionCard
                 key={p.id}
                 label={`${p.brand} · ${p.name}`}
@@ -2750,6 +2770,8 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
                 }}
               />
             ))}
+            {filteredUploadProducts.length === 0 && <div style={{ border: `1px solid ${LINE}`, borderRadius: 11, padding: "18px 14px", color: MUTE, fontSize: 12.5, textAlign: "center", background: "#fff" }}>没有找到相关产品。可以换一个品牌、产品名或类别关键词。</div>}
+            {visibleUploadProductCount < filteredUploadProducts.length && <button onClick={() => setVisibleUploadProductCount((count) => count + 40)} style={{ width: "100%", border: `1px solid ${LINE}`, borderRadius: 999, padding: "10px 14px", background: "#fff", color: TEAL, fontSize: 12, cursor: "pointer", marginTop: 4 }}>再显示 40 款</button>}
           </div>
         )}
 
