@@ -19,6 +19,11 @@ const TEAL = "#3D6B63";
 const TEAL_SOFT = "#E8EEEC";
 const MUTE = "#8A8579";
 const RUST = "#A8503A";
+const EMAIL_COOLDOWN_KEY = "skincare101.auth-email-cooldown-until";
+
+function storedCooldown(): number {
+  try { return Number(localStorage.getItem(EMAIL_COOLDOWN_KEY) || 0); } catch { return 0; }
+}
 
 interface Props {
   profile: SkinProfileInput;
@@ -31,7 +36,18 @@ export default function ProfileSavePanel({ profile }: Props) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [cooldownUntil, setCooldownUntil] = useState(storedCooldown);
+  const [clock, setClock] = useState(Date.now());
   const savingPendingRef = useRef(false);
+
+  const cooldownMs = Math.max(0, cooldownUntil - clock);
+  const cooldownLabel = cooldownMs > 60_000 ? `约 ${Math.ceil(cooldownMs / 60_000)} 分钟后可重试` : cooldownMs > 0 ? `${Math.ceil(cooldownMs / 1000)} 秒后可重试` : "";
+
+  useEffect(() => {
+    if (!cooldownMs) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldownMs > 0]);
 
   useEffect(() => {
     async function handleSession(nextSession: Session | null) {
@@ -60,15 +76,29 @@ export default function ProfileSavePanel({ profile }: Props) {
   }, []);
 
   async function requestSignInLink() {
+    if (cooldownMs > 0) return;
     setBusy(true);
     setMessage("");
     setError("");
     try {
       savePendingProfileDraft(profile);
       await sendSignInLink(email.trim());
+      const nextCooldown = Date.now() + 60_000;
+      localStorage.setItem(EMAIL_COOLDOWN_KEY, String(nextCooldown));
+      setCooldownUntil(nextCooldown);
+      setClock(Date.now());
       setMessage("登录链接已发送。完成登录后，本次问卷会自动保存；临时草稿会在两小时后失效。");
     } catch (err: any) {
-      setError(err?.message || "发送登录邮件失败，请稍后再试。");
+      const rateLimited = err?.status === 429 || err?.code === "over_email_send_rate_limit" || /rate limit/i.test(err?.message || "");
+      if (rateLimited) {
+        const nextCooldown = Date.now() + 60 * 60 * 1000;
+        localStorage.setItem(EMAIL_COOLDOWN_KEY, String(nextCooldown));
+        setCooldownUntil(nextCooldown);
+        setClock(Date.now());
+        setError("验证邮件已达到小时发送上限。本次问卷仍保存在此设备，请约一小时后再发送一次。");
+      } else {
+        setError(err?.message || "发送登录邮件失败，请稍后再试。");
+      }
     } finally {
       setBusy(false);
     }
@@ -118,10 +148,10 @@ export default function ProfileSavePanel({ profile }: Props) {
           <button
             type="button"
             onClick={requestSignInLink}
-            disabled={busy || !email.trim()}
-            style={{ flexShrink: 0, border: 0, borderRadius: 9, padding: "0 13px", color: "#fff", background: busy || !email.trim() ? MUTE : TEAL, cursor: busy || !email.trim() ? "default" : "pointer" }}
+            disabled={busy || !email.trim() || cooldownMs > 0}
+            style={{ flexShrink: 0, border: 0, borderRadius: 9, padding: "0 13px", color: "#fff", background: busy || !email.trim() || cooldownMs > 0 ? MUTE : TEAL, cursor: busy || !email.trim() || cooldownMs > 0 ? "default" : "pointer" }}
           >
-            {busy ? "发送中" : "发送验证邮件并自动保存"}
+            {busy ? "发送中" : cooldownLabel || "发送验证邮件并自动保存"}
           </button>
         </div>
       ) : (
