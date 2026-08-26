@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import V3Home from "./components/V3Home";
 import V3MySkin from "./components/V3MySkin";
 import V3Explore from "./components/V3Explore";
+import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
 import { loadSharedProductCatalog, type SharedProductRecord } from "./lib/supabase";
@@ -26,6 +27,7 @@ export default function V3App() {
   const [products, setProducts] = useState<SharedProductRecord[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SharedProductRecord | null>(null);
   const [selectedConcern, setSelectedConcern] = useState<BrowseConcern>("all");
+  const [exploreEntry, setExploreEntry] = useState<ExploreEntry>("explore");
   const [legacyStart, setLegacyStart] = useState<string | undefined>();
 
   async function refreshProfiles() {
@@ -71,7 +73,8 @@ export default function V3App() {
 
   function goTo(target: string) {
     if (target === "report" || target === "mySkin") return setRoute("mySkin");
-    if (target === "recommend" || target === "quickRecommend") return setRoute("explore");
+    const exploreTargets: Record<string, ExploreEntry> = { recommend: "forYou", quickRecommend: "explore", explore: "explore", search: "search", brands: "brands", concerns: "concerns", luxury: "luxury", niche: "niche" };
+    if (exploreTargets[target]) { setExploreEntry(exploreTargets[target]); return setRoute("explore"); }
     if (target === "routine") return setRoute("routine");
     if (target === "skin") return createProfile();
     if (target === "upload" || target === "quickIngredient") {
@@ -101,11 +104,11 @@ export default function V3App() {
   }
 
   if (route === "mySkin") {
-    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => setRoute("explore")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
+    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => goTo("recommend")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
   }
 
   if (route === "explore") {
-    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} onBack={() => setRoute("home")} onProduct={openProduct} /></>;
+    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} entry={exploreEntry} onBack={() => setRoute("home")} onProduct={openProduct} /></>;
   }
 
   if (route === "routine") {
@@ -120,7 +123,7 @@ export default function V3App() {
     <div style={{ minHeight: "100vh", background: "#F7F3EC", color: "#211F1B", fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}>
       <style>{FONT_IMPORT}</style>
       <div style={{ width: "100%", maxWidth: 520 }}>
-        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={createProfile} productCount={products.length} />}
+        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={createProfile} />}
       </div>
     </div>
   );
