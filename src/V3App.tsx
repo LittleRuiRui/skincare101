@@ -49,6 +49,7 @@ export default function V3App() {
     if (target === "report" || target === "mySkin") return setRoute("mySkin");
     if (target === "recommend" || target === "quickRecommend") return setRoute("explore");
     if (target === "routine") return setRoute("routine");
+    if (target === "skin" || target === "upload" || target === "quickIngredient") return setRoute("legacy");
     setRoute("legacy");
   }
 
@@ -89,3 +90,4 @@ export default function V3App() {
     </div>
   );
 }
+
