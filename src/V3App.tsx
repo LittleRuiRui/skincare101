@@ -8,6 +8,7 @@ import { loadSharedProductCatalog, type SharedProductRecord } from "./lib/supaba
 import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 import type { BrowseConcern } from "./lib/productPresentation";
+import { clearPendingProfileDraft } from "./lib/profileDraft";
 
 const LegacyApp = React.lazy(() => import("./App"));
 
@@ -25,6 +26,7 @@ export default function V3App() {
   const [products, setProducts] = useState<SharedProductRecord[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SharedProductRecord | null>(null);
   const [selectedConcern, setSelectedConcern] = useState<BrowseConcern>("all");
+  const [legacyStart, setLegacyStart] = useState<string | undefined>();
 
   async function refreshProfiles() {
     try {
@@ -71,7 +73,18 @@ export default function V3App() {
     if (target === "report" || target === "mySkin") return setRoute("mySkin");
     if (target === "recommend" || target === "quickRecommend") return setRoute("explore");
     if (target === "routine") return setRoute("routine");
-    if (target === "skin" || target === "upload" || target === "quickIngredient") return setRoute("legacy");
+    if (target === "skin") return createProfile();
+    if (target === "upload" || target === "quickIngredient") {
+      setLegacyStart("upload");
+      return setRoute("legacy");
+    }
+    setLegacyStart(undefined);
+    setRoute("legacy");
+  }
+
+  function createProfile() {
+    clearPendingProfileDraft();
+    setLegacyStart("skin");
     setRoute("legacy");
   }
 
@@ -80,15 +93,15 @@ export default function V3App() {
       <>
         <style>{FONT_IMPORT}</style>
         <div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}>
-          <button onClick={() => { void refreshProfiles().finally(() => setRoute("home")); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
+          <button onClick={() => { void refreshProfiles().finally(() => { setLegacyStart(undefined); setRoute("home"); }); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
         </div>
-        <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>Loading the full analysis tools…</div>}><LegacyApp /></React.Suspense>
+        <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>Loading the full analysis tools…</div>}><LegacyApp initialScreen={legacyStart} /></React.Suspense>
       </>
     );
   }
 
   if (route === "mySkin") {
-    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={() => setRoute("legacy")} onFindProducts={() => setRoute("explore")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => setRoute("legacy")} /></>;
+    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => setRoute("explore")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
   }
 
   if (route === "explore") {
@@ -107,7 +120,7 @@ export default function V3App() {
     <div style={{ minHeight: "100vh", background: "#F7F3EC", color: "#211F1B", fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}>
       <style>{FONT_IMPORT}</style>
       <div style={{ width: "100%", maxWidth: 520 }}>
-        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={() => setRoute("legacy")} productCount={products.length} />}
+        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={createProfile} productCount={products.length} />}
       </div>
     </div>
   );
