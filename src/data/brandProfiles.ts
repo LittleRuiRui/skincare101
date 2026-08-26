@@ -20,7 +20,7 @@ const PROFILES: Record<string, BrandProfile> = {
   "The Ordinary": { name: "The Ordinary", country: "加拿大", segment: "Ingredient-led", description: "以单一或少数组合活性和透明定价闻名，适合有一定成分基础的人。", knownFor: "烟酰胺、酸类、A醇、多肽", bestFor: "预算有限且愿意自己管理活性叠加的人", pricePositioning: "大众" },
   "SK-II": { name: "SK-II", country: "日本", segment: "Prestige skincare", description: "以 PITERA 发酵滤液和精华水为品牌核心的高端亚洲护肤品牌。", knownFor: "Facial Treatment Essence", bestFor: "偏好发酵精华、肤感和通透感护理的人", pricePositioning: "高端" },
   Shiseido: { name: "Shiseido", country: "日本", segment: "Prestige skincare", description: "日本综合美妆集团旗舰品牌，覆盖保湿、抗老、提亮与防晒。", knownFor: "Ultimune、Vital Perfection、Benefiance", bestFor: "希望从成熟日系产品线选择综合护理的人", pricePositioning: "中高端 / 高端" },
-  "SKIN 1004": { name: "SKIN1004", country: "韩国", segment: "K-beauty / masstige", description: "以马达加斯加积雪草为核心叙事的韩系护肤品牌，产品多围绕舒缓、轻薄保湿和痘肌护理。", knownFor: "Madagascar Centella 系列", bestFor: "偏好清爽肤感、舒缓和基础屏障护理的人", pricePositioning: "大众 / 中端" },
+  SKIN1004: { name: "SKIN1004", country: "韩国", segment: "K-beauty / masstige", description: "以马达加斯加积雪草为核心叙事的韩系护肤品牌，产品多围绕舒缓、轻薄保湿和痘肌护理。", knownFor: "Madagascar Centella 系列", bestFor: "偏好清爽肤感、舒缓和基础屏障护理的人", pricePositioning: "大众 / 中端" },
   Anua: { name: "Anua", country: "韩国", segment: "K-beauty / trending", description: "以鱼腥草等舒缓植萃切入的韩系热门品牌，化妆水、精华和温和清洁产品讨论度较高。", knownFor: "Heartleaf 鱼腥草系列", bestFor: "油敏、泛红或偏好轻薄植萃护理的人", pricePositioning: "大众 / 中端" },
   medicube: { name: "medicube", country: "韩国", segment: "Clinical K-beauty", description: "围绕毛孔、痘肌、焕肤和家用美容设备建立产品线，功效导向较强。", knownFor: "Zero Pore、AGE-R、Collagen 系列", bestFor: "关注毛孔、肤质平滑和功效型护理的人", pricePositioning: "中端" },
   Nivea: { name: "Nivea", country: "德国", segment: "Mass market", description: "覆盖面部、身体和防晒的大众护理品牌，产品分布广、价格易接近。", knownFor: "基础保湿、防晒、洁面", bestFor: "预算有限并需要基础护理的人", pricePositioning: "大众" },
@@ -35,6 +35,15 @@ const PROFILES: Record<string, BrandProfile> = {
   "haruharu wonder": { name: "haruharu wonder", country: "韩国", segment: "K-beauty / indie", description: "以黑米发酵提取物和轻薄保湿产品为特色的韩系品牌。", knownFor: "Black Rice 系列", bestFor: "缺水、轻敏或偏好发酵抗氧化护理的人", pricePositioning: "大众 / 中端" },
   "Purito SEOUL": { name: "Purito SEOUL", country: "韩国", segment: "Sensitive-skin K-beauty", description: "以敏感肌、积雪草和屏障护理为核心的韩系品牌。", knownFor: "Wonder Releaf Centella、Oat-in、Dermide", bestFor: "敏感、泛红和屏障护理", pricePositioning: "大众 / 中端" },
   Eucerin: { name: "Eucerin", country: "德国", segment: "Dermocosmetic", description: "拜尔斯道夫旗下皮肤科学品牌，覆盖干燥、色沉、痘肌和防晒。", knownFor: "UreaRepair、Anti-Pigment、DermoPure", bestFor: "干燥、色沉、痘肌和功效型药妆需求", pricePositioning: "大众药妆 / 中端" },
+  Vichy: { name: "Vichy", country: "法国", segment: "Dermocosmetic", description: "欧莱雅集团旗下法国药妆品牌，围绕火山温泉水、玻尿酸、抗老和头皮护理建立产品线。", knownFor: "Minéral 89、Liftactiv、Capital Soleil", bestFor: "缺水、初老和日常防晒需求", pricePositioning: "大众药妆 / 中端" },
+  SVR: { name: "SVR", country: "法国", segment: "Dermocosmetic", description: "法国功效型药妆品牌，以较明确的活性浓度和敏感肌可用性为特点。", knownFor: "Sebiaclear、Sensifine、Ampoule", bestFor: "油痘、敏感和希望使用功效活性的人", pricePositioning: "大众药妆 / 中端" },
+  Uriage: { name: "Uriage", country: "法国", segment: "Dermocosmetic", description: "以依泉温泉水和屏障护理为核心的法国药妆品牌。", knownFor: "Bariéderm、Hyséac、Eau Thermale", bestFor: "敏感、屏障不稳和油痘肌", pricePositioning: "大众药妆" },
+  Curél: { name: "Curél", country: "日本", segment: "Sensitive-skin dermocosmetic", description: "花王旗下敏感肌护理品牌，核心叙事围绕神经酰胺功能成分和干燥敏感。", knownFor: "潤浸保湿、皮脂トラブル系列", bestFor: "干敏、屏障不稳和希望使用简洁日系护理的人", pricePositioning: "大众 / 中端" },
+  "La Mer": { name: "La Mer", country: "美国", segment: "Luxury skincare", description: "以发酵海藻复合物、厚润肤感和奢华修护定位闻名。", knownFor: "Crème de la Mer、Treatment Lotion、Concentrate", bestFor: "偏干、重视包裹感和奢华护理体验的人", pricePositioning: "超高端" },
+  "La Prairie": { name: "La Prairie", country: "瑞士", segment: "Ultra-luxury skincare", description: "瑞士超高端护肤品牌，以鱼子精华、奢华质地和紧致抗老产品线著称。", knownFor: "Skin Caviar、Platinum Rare、White Caviar", bestFor: "预算充足并重视紧致、肤感和完整奢护体验的人", pricePositioning: "超高端" },
+  Lancôme: { name: "Lancôme", country: "法国", segment: "Prestige skincare", description: "欧莱雅集团旗下高端美妆品牌，护肤覆盖修护、抗老、提亮和眼部护理。", knownFor: "Advanced Génifique、Absolue、Rénergie", bestFor: "希望从成熟高端产品线选择综合抗老护理的人", pricePositioning: "高端" },
+  "Estée Lauder": { name: "Estée Lauder", country: "美国", segment: "Prestige skincare", description: "雅诗兰黛集团旗舰品牌，核心护肤线覆盖夜间修护、抗老和眼部护理。", knownFor: "Advanced Night Repair、Revitalizing Supreme、Re-Nutriv", bestFor: "希望使用成熟修护和抗老产品线的人", pricePositioning: "高端" },
+  Sulwhasoo: { name: "Sulwhasoo", country: "韩国", segment: "Luxury K-beauty", description: "爱茉莉太平洋旗下高端韩系护肤品牌，以人参研究、韩方植萃和奢华质地为特色。", knownFor: "First Care Activating Serum、Concentrated Ginseng", bestFor: "偏好滋养肤感、抗老和高端韩系护理的人", pricePositioning: "高端 / 超高端" },
 };
 
 export function getBrandProfile(name: string): BrandProfile {
@@ -67,4 +76,14 @@ export function approximatePriceGuide(profile: BrandProfile, category: string): 
         ? { cleanser: "S$18–40", sunscreen: "S$25–55", treatment: "S$30–85", cream: "S$25–70", other: "S$20–55" }
         : { cleanser: "S$10–30", sunscreen: "S$15–45", treatment: "S$20–70", cream: "S$18–60", other: "S$15–45" };
   return `${bands[categoryKey]}（新加坡常见品牌级预算区间）`;
+}
+
+export type ProductPriceTier = "budget" | "mid" | "premium";
+
+export function priceTierForBrand(name: string): ProductPriceTier {
+  const profile = getBrandProfile(name);
+  const value = `${profile.segment} ${profile.pricePositioning}`.toLowerCase();
+  if (value.includes("luxury") || value.includes("prestige") || value.includes("高端")) return "premium";
+  if (value.includes("中端") || value.includes("masstige") || value.includes("clinical")) return "mid";
+  return "budget";
 }

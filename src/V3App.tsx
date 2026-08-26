@@ -77,7 +77,7 @@ export default function V3App() {
   }
 
   if (route === "product" && selectedProduct) {
-    return <><style>{FONT_IMPORT}</style><V3ProductDetail product={selectedProduct} profile={profile} concern={selectedConcern} onBack={() => setRoute("explore")} /></>;
+    return <><style>{FONT_IMPORT}</style><V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={() => setRoute("explore")} onProduct={openProduct} /></>;
   }
 
   return (

@@ -2,6 +2,7 @@ import { analyzeFormulaDna, type FormulaDna, type FormulaSystemKey } from "../in
 import { rankProducts, scoreProduct, type ProductScore, type Suitability } from "../intelligence/productScoring.ts";
 import type { SharedProductRecord } from "./supabase.ts";
 import type { SkinProfileRecord } from "./skinProfile.ts";
+import { productExperienceAdjustment } from "./productFeedback.ts";
 
 export type BrowseSkinType = "all" | "dry" | "oily" | "combination" | "sensitive" | "acne";
 export type BrowseConcern = "all" | "hydration" | "barrier" | "redness" | "pores" | "acne" | "pigmentation" | "aging";
@@ -85,7 +86,10 @@ export function personalizedScore(product: SharedProductRecord, profile?: SkinPr
 }
 
 export function rankForProfile(products: SharedProductRecord[], profile?: SkinProfileRecord | null, concern?: BrowseConcern) {
-  return rankProducts(products, suitabilityFor(profile, concern));
+  return rankProducts(products, suitabilityFor(profile, concern)).sort((a, b) => {
+    const feedbackDifference = productExperienceAdjustment(b.id) - productExperienceAdjustment(a.id);
+    return feedbackDifference || (b.score || 0) - (a.score || 0);
+  });
 }
 
 export function formulaDataLabel(product: SharedProductRecord) {

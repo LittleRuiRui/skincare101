@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "../intelligence/formulaDna";
-import { approximatePriceGuide, getBrandProfile } from "../data/brandProfiles";
+import { approximatePriceGuide, getBrandProfile, priceTierForBrand } from "../data/brandProfiles";
 import { loadProductDetail, type ProductDetailRecord, type SharedProductRecord } from "../lib/supabase";
 import type { SkinProfileRecord } from "../lib/skinProfile";
-import { formulaDataLabel, oneLineVerdict, personalizedScore, type BrowseConcern } from "../lib/productPresentation";
+import { formulaDataLabel, oneLineVerdict, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
+import { loadProductExperience, saveProductExperience, type ProductReaction } from "../lib/productFeedback";
 
 const INK = "#211F1B";
 const PAPER = "#F7F3EC";
@@ -18,10 +19,15 @@ function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone
   return <span style={{ display: "inline-flex", border: `1px solid ${tone === "neutral" ? LINE : colors[1]}`, borderRadius: 999, padding: "5px 8px", background: colors[0], color: colors[1], fontSize: 10.5 }}>{children}</span>;
 }
 
-export default function V3ProductDetail({ product, profile, concern, onBack }: { product: SharedProductRecord; profile: SkinProfileRecord | null; concern?: BrowseConcern; onBack: () => void }) {
+export default function V3ProductDetail({ product, products, profile, concern, onBack, onProduct }: { product: SharedProductRecord; products: SharedProductRecord[]; profile: SkinProfileRecord | null; concern?: BrowseConcern; onBack: () => void; onProduct: (product: SharedProductRecord, concern: BrowseConcern) => void }) {
   const [detail, setDetail] = useState<ProductDetailRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [reaction, setReaction] = useState<ProductReaction>("neutral");
+  const [texture, setTexture] = useState<"love" | "okay" | "dislike">("okay");
+  const [repurchase, setRepurchase] = useState<"yes" | "maybe" | "no">("maybe");
+  const [note, setNote] = useState("");
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -33,6 +39,15 @@ export default function V3ProductDetail({ product, profile, concern, onBack }: {
     return () => { active = false; };
   }, [product.id]);
 
+  useEffect(() => {
+    const experience = loadProductExperience(product.id);
+    setReaction(experience?.reaction || "neutral");
+    setTexture(experience?.texture || "okay");
+    setRepurchase(experience?.repurchase || "maybe");
+    setNote(experience?.note || "");
+    setSaved(Boolean(experience));
+  }, [product.id]);
+
   const current = detail || product;
   const dna = useMemo(() => analyzeFormulaDna(current), [current]);
   const match = personalizedScore(product, profile, concern);
@@ -40,6 +55,10 @@ export default function V3ProductDetail({ product, profile, concern, onBack }: {
   const brand = getBrandProfile(product.brand);
   const fullIngredients = detail?.fullIngredients || product.ingredients;
   const visibleSystems = FORMULA_SYSTEM_ORDER.map((key) => dna.systems[key]).filter((system) => system.score > 0).sort((a, b) => b.score - a.score);
+  const alternatives = useMemo(() => rankForProfile(products.filter((candidate) => candidate.id !== product.id && candidate.category === product.category), profile, concern).filter((candidate) => candidate.recommendationAvailable), [products, product.id, product.category, profile, concern]);
+  const similar = alternatives[0];
+  const budgetAlternative = alternatives.find((candidate) => priceTierForBrand(candidate.brand) === "budget");
+  const premiumAlternative = alternatives.find((candidate) => priceTierForBrand(candidate.brand) === "premium");
 
   return <div style={{ minHeight: "100vh", background: PAPER, color: INK, padding: "22px 16px 54px" }}><div style={{ maxWidth: 620, margin: "0 auto" }}>
     <button onClick={onBack} style={{ border: 0, background: "transparent", padding: 0, color: MUTE, fontSize: 12, cursor: "pointer", marginBottom: 24, display: "flex", gap: 6, alignItems: "center" }}><ArrowLeft size={14}/> Explore</button>
@@ -91,6 +110,10 @@ export default function V3ProductDetail({ product, profile, concern, onBack }: {
       <div style={{ fontSize: 11.5, marginTop: 5 }}><b>Price:</b> {approximatePriceGuide(brand, product.category)}</div>
       <div style={{ fontSize: 9.5, color: MUTE, lineHeight: 1.5, marginTop: 4 }}>这是帮助筛选预算的估算区间，不是实时售价；促销、容量和零售渠道会造成差异。</div>
     </section>
+
+    {(similar || budgetAlternative || premiumAlternative) && <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ fontSize: 10, color: MUTE, letterSpacing: ".08em", marginBottom: 10 }}>ALTERNATIVES</div>{[{ label: "Similar formula match", candidate: similar }, { label: "Budget alternative", candidate: budgetAlternative }, { label: "Premium alternative", candidate: premiumAlternative }].map(({ label, candidate }) => candidate && <button key={`${label}-${candidate.id}`} onClick={() => onProduct(candidate, concern || "all")} style={{ width: "100%", border: 0, borderTop: `1px solid ${LINE}`, background: "transparent", padding: "10px 0", textAlign: "left", cursor: "pointer" }}><div style={{ fontSize: 9.5, color: SAGE, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 11.5 }}>{candidate.brand} · {candidate.name}</div></button>)}</section>}
+
+    <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 5 }}>HOW DID IT WORK FOR YOU?</div><div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 11 }}>记录真实使用反馈，后续推荐可以据此理解你的耐受和肤感偏好。</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginBottom: 8 }}><select aria-label="Skin reaction" value={reaction} onChange={(event) => setReaction(event.target.value as ProductReaction)}><option value="better">Skin improved</option><option value="neutral">No clear change</option><option value="irritated">Irritated</option></select><select aria-label="Texture" value={texture} onChange={(event) => setTexture(event.target.value as typeof texture)}><option value="love">Love texture</option><option value="okay">Texture okay</option><option value="dislike">Dislike texture</option></select><select aria-label="Repurchase" value={repurchase} onChange={(event) => setRepurchase(event.target.value as typeof repurchase)}><option value="yes">Repurchase</option><option value="maybe">Maybe</option><option value="no">No repurchase</option></select></div><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="例如：第二天闷痘、脸颊刺痛、湿热天气太黏…" style={{ width: "100%", boxSizing: "border-box", minHeight: 68, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 10, padding: 9, fontSize: 11, marginBottom: 8 }}/><button onClick={() => { saveProductExperience({ productId: product.id, reaction, texture, repurchase, note: note.trim() }); setSaved(true); }} style={{ width: "100%", border: 0, borderRadius: 999, padding: 9, background: SAGE, color: "white", fontSize: 11, cursor: "pointer" }}>{saved ? "Feedback saved" : "Save my experience"}</button><div style={{ fontSize: 9.5, color: MUTE, marginTop: 7 }}>当前先保存在此设备；登录后的跨设备同步将在账户数据迁移后开启。</div></section>
 
     <a href={current.sourceUrl} target="_blank" rel="noreferrer" style={{ width: "100%", boxSizing: "border-box", borderRadius: 999, padding: "11px 14px", background: INK, color: "white", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12 }}>View formula source / purchase page <ExternalLink size={13}/></a>
   </div></div>;
