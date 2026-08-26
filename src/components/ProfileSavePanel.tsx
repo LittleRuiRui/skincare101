@@ -27,6 +27,7 @@ interface Props {
 export default function ProfileSavePanel({ profile }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
+  const [profileName, setProfileName] = useState("我的肤质档案");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +41,7 @@ export default function ProfileSavePanel({ profile }: Props) {
       savingPendingRef.current = true;
       setBusy(true);
       try {
-        await saveMySkinProfile(pending);
+        await saveMySkinProfile(pending, profileName);
         clearPendingProfileDraft();
         setMessage("登录成功，本次问卷已自动保存为你的皮肤档案。");
       } catch (err: any) {
@@ -78,9 +79,9 @@ export default function ProfileSavePanel({ profile }: Props) {
     setMessage("");
     setError("");
     try {
-      await saveMySkinProfile(profile);
+      await saveMySkinProfile(profile, profileName);
       clearPendingProfileDraft();
-      setMessage("已保存为我的皮肤档案。以后再次保存会更新这份档案。");
+      setMessage(`已保存并切换到“${profileName.trim() || "我的肤质档案"}”。`);
     } catch (err: any) {
       setError(err?.message || "保存失败，请稍后再试。");
     } finally {
@@ -92,8 +93,17 @@ export default function ProfileSavePanel({ profile }: Props) {
     <section style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 14px", background: "#fff", marginTop: 10, marginBottom: 18 }}>
       <div style={{ fontSize: 14, fontWeight: 600, color: INK, marginBottom: 5 }}>保存为我的皮肤档案</div>
       <p style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "0 0 12px" }}>
-        保存本次肤质、基础信息、症状和问卷答案。档案只对你本人可见，再次保存会更新当前档案。
+        保存本次肤质、基础信息、症状和问卷答案。你可以为自己或家人建立多份档案，档案只对当前账号可见。
       </p>
+
+      <input
+        value={profileName}
+        onChange={(event) => setProfileName(event.target.value)}
+        placeholder="档案名称，例如：我 / 妈妈"
+        aria-label="档案名称"
+        maxLength={40}
+        style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 11px", fontSize: 13, color: INK, marginBottom: 10 }}
+      />
 
       {!session ? (
         <div style={{ display: "flex", gap: 8 }}>
@@ -123,7 +133,7 @@ export default function ProfileSavePanel({ profile }: Props) {
             disabled={busy}
             style={{ width: "100%", border: 0, borderRadius: 9, padding: "11px 12px", color: "#fff", background: busy ? MUTE : TEAL, cursor: busy ? "default" : "pointer", fontWeight: 600 }}
           >
-            {busy ? "正在保存…" : "保存为我的档案"}
+            {busy ? "正在保存…" : "保存为新档案并使用"}
           </button>
         </>
       )}
@@ -133,3 +143,4 @@ export default function ProfileSavePanel({ profile }: Props) {
     </section>
   );
 }
+
