@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import V3Home from "./components/V3Home";
 import V3MySkin from "./components/V3MySkin";
 import V3Explore from "./components/V3Explore";
 import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
-import { loadSharedProductCatalog, type SharedProductRecord } from "./lib/supabase";
+import { loadSharedProductCatalog, saveMySkinProfile, supabase, type SharedProductRecord } from "./lib/supabase";
 import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 import type { BrowseConcern } from "./lib/productPresentation";
-import { clearPendingProfileDraft } from "./lib/profileDraft";
+import { clearPendingProfileDraft, loadPendingProfileDraftRecord } from "./lib/profileDraft";
 
 const LegacyApp = React.lazy(() => import("./App"));
 
@@ -29,6 +29,7 @@ export default function V3App() {
   const [selectedConcern, setSelectedConcern] = useState<BrowseConcern>("all");
   const [exploreEntry, setExploreEntry] = useState<ExploreEntry>("explore");
   const [legacyStart, setLegacyStart] = useState<string | undefined>();
+  const pendingProfileSaveRef = useRef(false);
 
   async function refreshProfiles() {
     try {
@@ -55,6 +56,37 @@ export default function V3App() {
       .catch(() => {});
 
     return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    async function savePendingProfileAfterAuth() {
+      if (pendingProfileSaveRef.current) return;
+      const pending = loadPendingProfileDraftRecord();
+      if (!pending) return;
+
+      const { data } = await supabase.auth.getSession();
+      if (!data.session?.user) return;
+
+      pendingProfileSaveRef.current = true;
+      try {
+        await saveMySkinProfile(pending.profile, pending.name || "我的肤质档案");
+        clearPendingProfileDraft();
+        await refreshProfiles();
+        setRoute("mySkin");
+      } catch (error) {
+        console.error("Could not autosave pending skin profile after authentication", error);
+      } finally {
+        pendingProfileSaveRef.current = false;
+      }
+    }
+
+    void savePendingProfileAfterAuth();
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        setTimeout(() => { void savePendingProfileAfterAuth(); }, 0);
+      }
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
   async function chooseProfile(profileId: string) {
@@ -128,4 +160,3 @@ export default function V3App() {
     </div>
   );
 }
-
