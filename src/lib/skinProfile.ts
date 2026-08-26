@@ -1,4 +1,7 @@
 export interface SkinProfileRecord {
+  id: string;
+  name: string;
+  isActive: boolean;
   skinAnswers: Record<string, string>;
   profileAnswers: Record<string, string>;
   selectedSymptoms: string[];
@@ -71,3 +74,4 @@ export function profileToRecommendationKey(profile?: SkinProfileRecord | null): 
   const priorities = ["redness", "acne", "pores", "pigmentation", "dryness", "aging"];
   return priorities.find((key) => profile.selectedSymptoms?.includes(key)) || null;
 }
+
