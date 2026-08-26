@@ -9,7 +9,7 @@ import {
 } from "../lib/supabase";
 import {
   clearPendingProfileDraft,
-  loadPendingProfileDraft,
+  loadPendingProfileDraftRecord,
   savePendingProfileDraft,
 } from "../lib/profileDraft";
 
@@ -52,16 +52,16 @@ export default function ProfileSavePanel({ profile }: Props) {
   useEffect(() => {
     async function handleSession(nextSession: Session | null) {
       setSession(nextSession);
-      const pending = nextSession ? loadPendingProfileDraft() : null;
+      const pending = nextSession ? loadPendingProfileDraftRecord() : null;
       if (!pending || savingPendingRef.current) return;
       savingPendingRef.current = true;
       setBusy(true);
       try {
-        await saveMySkinProfile(pending, profileName);
+        await saveMySkinProfile(pending.profile, pending.name || "我的肤质档案");
         clearPendingProfileDraft();
-        setMessage("登录成功，本次问卷已自动保存为你的皮肤档案。");
+        setMessage("邮箱确认成功。账号已建立，本次问卷也已自动保存为你的皮肤档案。");
       } catch (err: any) {
-        setError(err?.message || "登录成功，但自动保存失败，请再点一次保存。");
+        setError(err?.message || "账号已登录，但自动建立档案失败，请再点一次保存。");
       } finally {
         savingPendingRef.current = false;
         setBusy(false);
@@ -81,13 +81,13 @@ export default function ProfileSavePanel({ profile }: Props) {
     setMessage("");
     setError("");
     try {
-      savePendingProfileDraft(profile);
+      savePendingProfileDraft(profile, profileName);
       await sendSignInLink(email.trim());
       const nextCooldown = Date.now() + 60_000;
       localStorage.setItem(EMAIL_COOLDOWN_KEY, String(nextCooldown));
       setCooldownUntil(nextCooldown);
       setClock(Date.now());
-      setMessage("登录链接已发送。完成登录后，本次问卷会自动保存；临时草稿会在两小时后失效。");
+      setMessage("验证邮件已发送。点击邮件中的链接后会自动注册/登录，并立即建立这份皮肤档案；临时草稿两小时后失效。");
     } catch (err: any) {
       const rateLimited = err?.status === 429 || err?.code === "over_email_send_rate_limit" || /rate limit/i.test(err?.message || "");
       if (rateLimited) {
@@ -97,7 +97,7 @@ export default function ProfileSavePanel({ profile }: Props) {
         setClock(Date.now());
         setError("验证邮件已达到小时发送上限。本次问卷仍保存在此设备，请约一小时后再发送一次。");
       } else {
-        setError(err?.message || "发送登录邮件失败，请稍后再试。");
+        setError(err?.message || "发送验证邮件失败，请稍后再试。");
       }
     } finally {
       setBusy(false);
@@ -123,7 +123,7 @@ export default function ProfileSavePanel({ profile }: Props) {
     <section style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 14px", background: "#fff", marginTop: 10, marginBottom: 18 }}>
       <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 5 }}>保存到网页护肤档案</div>
       <p style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "0 0 12px" }}>
-        保存本次肤质、基础信息、症状和问卷答案。你可以为自己或家人建立多份档案，档案只对当前账号可见。
+        第一次使用时只需验证邮箱：确认后自动建立账号并保存本次肤质档案，无需另外注册密码。之后可继续为自己或家人建立多份档案。
       </p>
 
       <input
@@ -142,7 +142,7 @@ export default function ProfileSavePanel({ profile }: Props) {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="邮箱地址"
-            aria-label="用于登录的邮箱地址"
+            aria-label="用于注册或登录的邮箱地址"
             style={{ minWidth: 0, flex: 1, border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 11px", fontSize: 13, color: INK }}
           />
           <button
@@ -151,7 +151,7 @@ export default function ProfileSavePanel({ profile }: Props) {
             disabled={busy || !email.trim() || cooldownMs > 0}
             style={{ flexShrink: 0, border: 0, borderRadius: 9, padding: "0 13px", color: "#fff", background: busy || !email.trim() || cooldownMs > 0 ? MUTE : TEAL, cursor: busy || !email.trim() || cooldownMs > 0 ? "default" : "pointer" }}
           >
-            {busy ? "发送中" : cooldownLabel || "发送验证邮件并自动保存"}
+            {busy ? "发送中" : cooldownLabel || "验证邮箱并建立档案"}
           </button>
         </div>
       ) : (
@@ -173,4 +173,3 @@ export default function ProfileSavePanel({ profile }: Props) {
     </section>
   );
 }
-
