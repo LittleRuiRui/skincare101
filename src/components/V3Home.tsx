@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronRight, FlaskConical, Search, Sparkles, UserRound } from "lucide-react";
+import type { SkinProfileRecord } from "../lib/skinProfile";
 
 const INK = "#211F1B";
 const PAPER = "#F7F3EC";
@@ -40,13 +41,28 @@ function FeatureCard({ eyebrow, title, body, onClick, accent = SAGE }: any) {
   );
 }
 
-export default function V3Home({ goTo, hasProfile = false, productCount = 0 }: any) {
+function ProfileChooser({ profile, profiles, onChoose, onCreate }: { profile: SkinProfileRecord | null; profiles: SkinProfileRecord[]; onChoose: (id: string) => void; onCreate: () => void }) {
+  return <section style={{ border: `1px solid ${profile ? SAGE : ROSE}`, borderRadius: 15, padding: 14, background: profile ? "#EEF1EB" : "#F6ECE8", marginBottom: 22 }}>
+    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, letterSpacing: ".1em", color: profile ? SAGE : ROSE, marginBottom: 7 }}>CURRENT SKIN PROFILE</div>
+    {profiles.length ? <div style={{ display: "flex", gap: 8 }}>
+      <select value={profile?.id || ""} onChange={(event) => onChoose(event.target.value)} aria-label="选择当前护肤档案" style={{ minWidth: 0, flex: 1, border: `1px solid ${LINE}`, borderRadius: 10, padding: "10px 11px", background: "white", color: INK, fontSize: 12 }}>
+        {profiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select>
+      <button onClick={onCreate} style={{ border: `1px solid ${INK}`, borderRadius: 999, padding: "9px 13px", background: INK, color: "white", fontSize: 11, cursor: "pointer" }}>＋ 新建</button>
+    </div> : <div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 20, marginBottom: 8 }}>先选择服务对象</div><div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.5, marginBottom: 11 }}>产品匹配和 Routine 都会使用当前档案，不会混用不同人的肤质。</div><button onClick={onCreate} style={{ border: 0, borderRadius: 999, padding: "9px 14px", background: INK, color: "white", fontSize: 11.5, cursor: "pointer" }}>建立第一份档案</button></div>}
+  </section>;
+}
+
+export default function V3Home({ goTo, profile = null, profiles = [], onChooseProfile, onCreateProfile, productCount = 0 }: { goTo: (target: string) => void; profile: SkinProfileRecord | null; profiles: SkinProfileRecord[]; onChooseProfile: (id: string) => void; onCreateProfile: () => void; productCount?: number }) {
+  const hasProfile = Boolean(profile);
   return (
     <div style={{ padding: "10px 0 46px" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 22 }}>
         <div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 600, letterSpacing: "-.02em" }}>Skincare101</div><div style={{ fontSize: 9.5, letterSpacing: ".12em", color: MUTE }}>YOUR SKIN, EXPLAINED</div></div>
         <button onClick={() => goTo("mySkin")} style={{ border: `1px solid ${LINE}`, borderRadius: 999, width: 36, height: 36, background: "rgba(255,255,255,.7)", display: "grid", placeItems: "center", cursor: "pointer" }} aria-label="My Skin"><UserRound size={16} /></button>
       </header>
+
+      <ProfileChooser profile={profile} profiles={profiles} onChoose={onChooseProfile} onCreate={onCreateProfile} />
 
       <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 5, marginBottom: 28, scrollbarWidth: "none" }}>
         <NavPill active onClick={() => {}}>For You</NavPill><NavPill onClick={() => goTo("quickRecommend")}>Explore</NavPill><NavPill onClick={() => goTo("quickRecommend")}>Brands</NavPill><NavPill onClick={() => goTo("quickRecommend")}>Concerns</NavPill><NavPill onClick={() => goTo("quickRecommend")}>Luxury Edit</NavPill><NavPill onClick={() => goTo("quickRecommend")}>Niche Finds</NavPill>
@@ -71,3 +87,4 @@ export default function V3Home({ goTo, hasProfile = false, productCount = 0 }: a
     </div>
   );
 }
+
