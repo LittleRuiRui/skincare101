@@ -1639,10 +1639,11 @@ const CANDIDATE_FAMILY = {
   aging: "光老化",
 };
 
-function App() {
+function App({ initialScreen }: { initialScreen?: string } = {}) {
   const pendingProfile = useMemo(() => loadPendingProfileDraft(), []);
-  const hasPendingReport = Boolean(pendingProfile?.selectedSymptoms?.length);
-  const [screen, setScreen] = useState(hasPendingReport ? "report" : "intro");
+  const hasPendingReport = !initialScreen && Boolean(pendingProfile?.selectedSymptoms?.length);
+  const startingScreen = initialScreen || (hasPendingReport ? "report" : "intro");
+  const [screen, setScreen] = useState(startingScreen);
   const [skinAnswers, setSkinAnswers] = useState(pendingProfile?.skinAnswers || {});
   const [skinStep, setSkinStep] = useState(0);
   const [profileAnswers, setProfileAnswers] = useState(pendingProfile?.profileAnswers || {});
@@ -1668,7 +1669,7 @@ function App() {
   const [recommendCategory, setRecommendCategory] = useState("全部");
   const [productSearch, setProductSearch] = useState("");
   const [visibleProductCount, setVisibleProductCount] = useState(24);
-  const [history, setHistory] = useState(hasPendingReport ? ["intro", "report"] : ["intro"]);
+  const [history, setHistory] = useState(initialScreen ? [initialScreen] : hasPendingReport ? ["intro", "report"] : ["intro"]);
   const [sharedProducts, setSharedProducts] = useState([]);
   const [sharedCatalogStatus, setSharedCatalogStatus] = useState("loading");
   const [pdfStatus, setPdfStatus] = useState("idle");
@@ -2855,3 +2856,4 @@ function App() {
 }
 
 export default App;
+
