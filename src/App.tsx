@@ -1716,8 +1716,9 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
 
   function resetAll() {
     clearPendingProfileDraft();
-    setScreen("intro");
-    setHistory(["intro"]);
+    const resetScreen = initialScreen ? "skin" : "intro";
+    setScreen(resetScreen);
+    setHistory([resetScreen]);
     setSkinAnswers({});
     setSkinStep(0);
     setProfileAnswers({});
@@ -2297,9 +2298,9 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
         {/* ---------------- SKIN TYPE ---------------- */}
         {screen === "skin" && (
           <div style={{ paddingTop: 24 }}>
-            <QuestionnaireBackButton onClick={backSkin}>
+            {(skinStep > 0 || !initialScreen) && <QuestionnaireBackButton onClick={backSkin}>
               {skinStep > 0 ? "返回上一题" : "返回首页"}
-            </QuestionnaireBackButton>
+            </QuestionnaireBackButton>}
             <Eyebrow>第一步 · 肤质建档</Eyebrow>
             <JourneyProgress stage={0} />
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
@@ -2628,9 +2629,9 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
         {/* ---------------- UPLOAD (拍照/选产品入口) ---------------- */}
         {screen === "upload" && (
           <div style={{ paddingTop: 24, paddingBottom: 40 }}>
-            <TextButton onClick={goBack}>
+            {history.length > 1 && <TextButton onClick={goBack}>
               <ChevronLeft size={14} /> 上一步
-            </TextButton>
+            </TextButton>}
             <Eyebrow>成分匹配分析 · 第一步</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               先告诉我们你在用哪一瓶
