@@ -5,6 +5,7 @@ import V3Explore from "./components/V3Explore";
 import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
+import V3IngredientCheck from "./components/V3IngredientCheck";
 import EmailAccountPanel from "./components/EmailAccountPanel";
 import { loadSharedProductCatalog, saveMySkinProfile, supabase, type SharedProductRecord } from "./lib/supabase";
 import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
@@ -18,7 +19,7 @@ const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 `;
 
-type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "legacy" | "account";
+type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "ingredientCheck" | "legacy" | "account";
 
 export default function V3App() {
   const [route, setRoute] = useState<Route>("home");
@@ -118,10 +119,7 @@ export default function V3App() {
     if (exploreTargets[target]) { setExploreEntry(exploreTargets[target]); return setRoute("explore"); }
     if (target === "routine") return setRoute("routine");
     if (target === "skin") return createProfile();
-    if (target === "upload" || target === "quickIngredient") {
-      setLegacyStart("upload");
-      return setRoute("legacy");
-    }
+    if (target === "upload" || target === "quickIngredient") return setRoute("ingredientCheck");
     setLegacyStart(undefined);
     setRoute("legacy");
   }
@@ -150,6 +148,10 @@ export default function V3App() {
 
   if (route === "mySkin") {
     return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => goTo("recommend")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
+  }
+
+  if (route === "ingredientCheck") {
+    return <><style>{FONT_IMPORT}</style><V3IngredientCheck profile={profile} onBack={() => setRoute("home")} /></>;
   }
 
   if (route === "explore") {
