@@ -1,11 +1,19 @@
 import { analyzeFormulaDna, type FormulaDna, type FormulaSystemKey } from "../intelligence/formulaDna.ts";
 import { rankProducts, scoreProduct, type ProductScore, type Suitability } from "../intelligence/productScoring.ts";
+import { assessPositioningFit, buildMatchExplanation, type PersonalFitContext, type PositioningFit } from "../intelligence/productInterpretation.ts";
 import type { SharedProductRecord } from "./supabase.ts";
 import type { SkinProfileRecord } from "./skinProfile.ts";
 import { productExperienceAdjustment } from "./productFeedback.ts";
 
 export type BrowseSkinType = "all" | "dry" | "oily" | "combination" | "sensitive" | "acne";
 export type BrowseConcern = "all" | "hydration" | "barrier" | "redness" | "pores" | "acne" | "pigmentation" | "aging";
+export interface PersonalizedProductScore extends ProductScore {
+  formulaFitScore: number | null;
+  positioningFit: PositioningFit;
+  positioningPenalty: number;
+  cautionPenalty: number;
+  matchExplanation: string;
+}
 
 const rule = (name: string) => ({ name });
 const CONCERN_RULES: Record<Exclude<BrowseConcern, "all">, Suitability> = {
@@ -20,8 +28,54 @@ const CONCERN_RULES: Record<Exclude<BrowseConcern, "all">, Suitability> = {
 function mergeSuitability(parts:Suitability[]):Suitability { const dedupe=(items:Array<{name:string}>)=>Array.from(new Map(items.map(i=>[i.name,i])).values()); return {good:dedupe(parts.flatMap(p=>p.good)),risky:dedupe(parts.flatMap(p=>p.risky)),conflicting:[],targetSystems:Array.from(new Set(parts.flatMap(p=>p.targetSystems||[])))}; }
 export function profileConcern(profile?:SkinProfileRecord|null):Exclude<BrowseConcern,"all"> { const s=profile?.selectedSymptoms||[]; if(s.includes("redness")||s.includes("sensitivity"))return "redness"; if(s.includes("acne"))return "acne"; if(s.includes("pores"))return "pores"; if(s.includes("pigmentation"))return "pigmentation"; if(s.includes("aging"))return "aging"; if(s.includes("dryness"))return "hydration"; return "barrier"; }
 export function suitabilityFor(profile?:SkinProfileRecord|null,concern?:BrowseConcern):Suitability { const selected:Exclude<BrowseConcern,"all">=concern&&concern!=="all"?concern:profileConcern(profile); const parts=[CONCERN_RULES[selected]]; if(profile?.skinAnswers?.sensitive==="yes"&&selected!=="redness"&&selected!=="barrier")parts.push(CONCERN_RULES.redness); if(profile?.skinAnswers?.wash==="dry"||profile?.skinAnswers?.oil==="dry")parts.push(CONCERN_RULES.hydration); return mergeSuitability(parts); }
-export function personalizedScore(product:SharedProductRecord,profile?:SkinProfileRecord|null,concern?:BrowseConcern):ProductScore|null { if(!profile&&(!concern||concern==="all"))return null; return scoreProduct(product,suitabilityFor(profile,concern)); }
-export function rankForProfile(products:SharedProductRecord[],profile?:SkinProfileRecord|null,concern?:BrowseConcern){return rankProducts(products,suitabilityFor(profile,concern)).sort((a,b)=>{const f=productExperienceAdjustment(b.id)-productExperienceAdjustment(a.id);return f||(b.score||0)-(a.score||0);});}
+
+function personalFitContext(profile?:SkinProfileRecord|null, concern?:BrowseConcern):PersonalFitContext {
+  const skinTypes:string[]=[];
+  const concerns:string[]=[];
+  const oil=profile?.skinAnswers?.oil;
+  const wash=profile?.skinAnswers?.wash;
+  if(oil==="dry"||wash==="dry")skinTypes.push("dry");
+  else if(oil==="oily")skinTypes.push("oily");
+  else if(oil)skinTypes.push("combination");
+  if(profile?.skinAnswers?.sensitive==="yes")skinTypes.push("sensitive");
+  const selected=concern&&concern!=="all"?concern:profileConcern(profile);
+  concerns.push(selected);
+  for(const symptom of profile?.selectedSymptoms||[]) if(!concerns.includes(symptom)) concerns.push(symptom);
+  return {skinTypes,concerns,targetSystems:suitabilityFor(profile,concern).targetSystems};
+}
+
+function cautionPenaltyFor(product:SharedProductRecord, profile?:SkinProfileRecord|null, concern?:BrowseConcern){
+  const sensitive=profile?.skinAnswers?.sensitive==="yes"||profileConcern(profile)==="redness"||concern==="redness";
+  if(!sensitive)return 0;
+  const caveats=(product.formulaCaveats||[]).join(" ").toLowerCase();
+  let penalty=0;
+  if(/fragrance|parfum|香精/.test(caveats))penalty-=4;
+  if(/essential oil|精油|menthol|薄荷/.test(caveats))penalty-=4;
+  if(/high alcohol|alcohol denat|高位酒精/.test(caveats))penalty-=8;
+  return Math.max(-12,penalty);
+}
+
+export function personalizedScore(product:SharedProductRecord,profile?:SkinProfileRecord|null,concern?:BrowseConcern):PersonalizedProductScore|null {
+  if(!profile&&(!concern||concern==="all"))return null;
+  const formulaScore=scoreProduct(product,suitabilityFor(profile,concern));
+  const userContext=personalFitContext(profile,concern);
+  const positioningFit=assessPositioningFit(product,userContext);
+  // Positioning is deliberately a modest ranking penalty, not an exclusion rule.
+  // A strong formula can still be useful outside the brand's marketed audience.
+  const positioningPenalty=positioningFit.level==="low"?-7:positioningFit.level==="medium"?-2:0;
+  const cautionPenalty=cautionPenaltyFor(product,profile,concern);
+  const adjusted=formulaScore.score==null?null:Math.max(5,Math.min(95,Math.round(formulaScore.score+positioningPenalty+cautionPenalty)));
+  const matchedSystems=formulaScore.systemEvidence.map(item=>item.label);
+  return {...formulaScore,score:adjusted,formulaFitScore:formulaScore.score,positioningFit,positioningPenalty,cautionPenalty,matchExplanation:buildMatchExplanation(product,userContext,matchedSystems)};
+}
+
+export function rankForProfile(products:SharedProductRecord[],profile?:SkinProfileRecord|null,concern?:BrowseConcern){
+  return products.map(product=>({ ...product, ...personalizedScore(product,profile,concern)! })).sort((a,b)=>{
+    if(a.recommendationAvailable!==b.recommendationAvailable)return a.recommendationAvailable?-1:1;
+    const f=productExperienceAdjustment(b.id)-productExperienceAdjustment(a.id);
+    return f||(b.score||0)-(a.score||0);
+  });
+}
 export function matchRating(match:ProductScore|null|undefined){
  if(!match?.recommendationAvailable||match.score==null)return {stars:0,starsText:"☆☆☆☆☆",label:"数据不足",detail:"现有配方证据不足，暂不强行判断。",suitable:false,bonus:false};
  const score=match.score;
@@ -37,5 +91,5 @@ export function matchRating(match:ProductScore|null|undefined){
 export function confidenceLabel(confidence:ProductScore["confidence"]|undefined){return confidence==="high"?"高":confidence==="medium"?"中":"低";}
 export function formulaDataLabel(product:SharedProductRecord){if(product.ingredientListType==="full"&&product.dataCompleteness>=85)return {label:"完整配方已核验",detail:"完整 INCI 已保存；分析重点读取前 10–15 位。",tone:"good" as const};if(product.ingredientListType==="full")return {label:"完整配方 · 待复核",detail:"已保存完整列表，但来源或版本仍需进一步复核。",tone:"warn" as const};if(product.ingredients.length>0)return {label:"部分配方",detail:"目前只保存了部分成分，不能据此断言产品不含未显示成分。",tone:"warn" as const};return {label:"配方待补充",detail:"尚无足够 INCI 数据，不进入优先推荐。",tone:"muted" as const};}
 const SYSTEM_PRIORITY:FormulaSystemKey[]=["barrier","hydration","soothing","antiAging","oilControl","lipid"];
-export function oneLineVerdict(product:SharedProductRecord,dna:FormulaDna=analyzeFormulaDna(product)){if(!product.ingredients.length)return "已有产品条目，但配方证据不足，暂不做功效判断。";const systems=SYSTEM_PRIORITY.map(k=>dna.systems[k]).filter(s=>s.score>=2).sort((a,b)=>b.score-a.score);const lead=systems.slice(0,2).map(s=>s.label.replace("体系","")).join("＋")||"基础保湿";const texture=dna.sensory.labels.slice(0,2).join("、");const caution=dna.alcohol.level==="high"?"，但高位酒精让敏感肌需要谨慎":product.ingredientListType==="partial"?"，但目前只有部分配方":"";return `以${lead}为主的${product.category}，预计${texture||"常规肤感"}${caution}。`;}
+export function oneLineVerdict(product:SharedProductRecord,dna:FormulaDna=analyzeFormulaDna(product)){if(product.formulaVerdict)return product.formulaVerdict;if(!product.ingredients.length)return "已有产品条目，但配方证据不足，暂不做功效判断。";const systems=SYSTEM_PRIORITY.map(k=>dna.systems[k]).filter(s=>s.score>=2).sort((a,b)=>b.score-a.score);const lead=systems.slice(0,2).map(s=>s.label.replace("体系","")).join("＋")||"基础保湿";const texture=dna.sensory.labels.slice(0,2).join("、");const caution=dna.alcohol.level==="high"?"，但高位酒精让敏感肌需要谨慎":product.ingredientListType==="partial"?"，但目前只有部分配方":"";return `以${lead}为主的${product.category}，预计${texture||"常规肤感"}${caution}。`;}
 export function matchesSkinType(product:SharedProductRecord,skinType:BrowseSkinType){if(skinType==="all")return true;const dna=analyzeFormulaDna(product);if(skinType==="sensitive")return dna.alcohol.level!=="high"&&dna.systems.soothing.score>=2;if(skinType==="acne")return dna.systems.oilControl.score>=2||product.category==="祛痘";if(skinType==="oily")return dna.systems.oilControl.score>=1||!/厚润|油感/.test(dna.sensory.labels.join(" "));if(skinType==="dry")return dna.systems.hydration.score>=3||dna.systems.lipid.score>=2;return dna.systems.hydration.score>=2&&dna.alcohol.level!=="high";}
