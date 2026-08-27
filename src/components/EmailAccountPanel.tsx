@@ -5,6 +5,7 @@ import { supabase, type SkinProfileInput } from "../lib/supabase";
 import { getSignedInIdentifierLabel, signInWithIdentifier, signUpWithIdentifier, type LoginIdentifierType } from "../lib/accountLogin";
 import { savePendingProfileDraft } from "../lib/profileDraft";
 import { useLanguage } from "../lib/i18n";
+import MyProductHistory from "./MyProductHistory";
 
 const INK = "#211F1B";
 const PAPER = "#F7F3EC";
@@ -152,7 +153,7 @@ export default function EmailAccountPanel({ profile, onBack, onReplayOnboarding 
 
       {!sessionChecked ? <div style={{ padding: "44px 0", color: MUTE, fontSize: 13 }}>{t("正在读取账号状态…", "Checking account status…")}</div> : session ? <>
         <h1 style={{ fontFamily: "'Newsreader', serif", fontWeight: 500, fontSize: 35, lineHeight: 1.05, margin: "0 0 10px" }}>{t("你的账号", "Your account")}</h1>
-        <p style={{ color: MUTE, fontSize: 12.5, lineHeight: 1.65, marginBottom: 22 }}>{t("你的肌肤档案会同步到这个账号。", "Your skin profiles are synced to this account.")}</p>
+        <p style={{ color: MUTE, fontSize: 12.5, lineHeight: 1.65, marginBottom: 22 }}>{t("你的肌肤档案和产品使用记录会同步到这个账号。", "Your skin profiles and product history are synced to this account.")}</p>
 
         <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, background: "white", padding: 17, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 15 }}>
@@ -168,6 +169,8 @@ export default function EmailAccountPanel({ profile, onBack, onReplayOnboarding 
             <button disabled={busy} onClick={logout} style={{ border: `1px solid ${LINE}`, borderRadius: 999, padding: "10px 13px", background: "white", color: INK, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: busy ? "default" : "pointer" }}><LogOut size={14} /> {t("退出登录", "Log out")}</button>
           </div>
         </section>
+
+        <MyProductHistory />
 
         <section style={{ border: `1px solid #E6C9C1`, borderRadius: 17, background: "#FFFDFC", padding: 17 }}>
           <div style={{ fontSize: 11, color: RUST, fontWeight: 600, marginBottom: 5 }}>{t("账号管理", "Account management")}</div>
