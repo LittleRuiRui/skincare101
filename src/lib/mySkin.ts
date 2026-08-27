@@ -59,7 +59,7 @@ export function saveLocalSkinProfile(input: Omit<SkinProfileRecord, "id" | "name
 
 export async function loadMySkinProfiles(): Promise<SkinProfileRecord[]> {
   const localProfiles = readLocalProfiles();
-  const session = await currentSession().catch(() => null);
+  const session = await currentSession().catch((): null => null);
   if (!session?.user) return localProfiles;
 
   const { data, error } = await supabase
