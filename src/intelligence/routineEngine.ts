@@ -1,5 +1,7 @@
 import type { SkinProfileRecord } from "../lib/skinProfile.ts";
 import type { BrowseConcern } from "../lib/productPresentation.ts";
+import { mainCategoryForRoutineNeed } from "./recommendationContext.ts";
+
 export type RoutineGoal="Acne"|"Blackheads"|"Pores"|"Redness"|"Barrier"|"Dehydration"|"Pigmentation"|"Dullness"|"Fine lines"|"Firmness"|"Oil control";
 export type RoutineComplexity="minimal"|"standard";export type ActiveTolerance="none"|"beginner"|"experienced";
 export interface RoutineTemplate{concern:BrowseConcern;am:string[];pm:string[];note:string}
@@ -18,4 +20,4 @@ Firmness:{concern:"aging",am:["Gentle cleanser","Hydrating toner / essence","Ant
 "Oil control":{concern:"pores",am:["Gentle cleanser","Hydrating toner / essence","Niacinamide serum","Light moisturizer","SPF"],pm:["Cleanser","Hydrating toner / essence","BHA 2–3× weekly","Light moisturizer","Eye care · optional"],note:"控油不等于过度清洁；脱水可能让出油体验更明显。"}}
 export function buildRoutine(goal:RoutineGoal,complexity:RoutineComplexity){const template=ROUTINE_TEMPLATES[goal];if(complexity==="standard")return template;const trim=(steps:string[])=>steps.filter(step=>!/toner|essence|eye care|serum/i.test(step));return{...template,am:trim(template.am),pm:trim(template.pm)}}
 export function routineGuardrails(profile:SkinProfileRecord|null,goal:RoutineGoal,tolerance:ActiveTolerance):string[]{const sensitive=profile?.skinAnswers?.sensitive==="yes",barrierGoal=goal==="Barrier"||goal==="Redness",notes:string[]=[];if(sensitive||barrierGoal)notes.push("敏感／屏障限制已开启：一次只新增一个活性，先做局部耐受测试。");if(tolerance==="none")notes.push("暂不安排A醇或强酸；先连续使用基础护理2–4周。");if(tolerance==="beginner"&&["Acne","Blackheads","Pores","Dullness","Fine lines","Firmness"].includes(goal))notes.push("功效产品从每周1–2晚开始，耐受后再增加频率。");if(["Pigmentation","Dullness","Fine lines","Firmness"].includes(goal))notes.push("同一晚避免把强酸和A醇叠加；维C可优先放在早间。");notes.push("若出现持续刺痛、肿胀、渗出或快速加重，应停止新产品并寻求医疗意见。");return notes}
-export function categoryForRoutineStep(step:string){const value=step.toLowerCase();if(value.includes("clean")||value.includes("rinse"))return"洁面";if(value.includes("spf"))return"防晒";if(value.includes("toner")||value.includes("essence"))return"化妆水";if(value.includes("eye care"))return"眼部";if(value.includes("moistur")||value.includes("ceramide"))return"乳液 / 面霜";if(value.includes("bha")||value.includes("exfoliation"))return"焕肤";return"精华"}
+export function categoryForRoutineStep(step:string){return mainCategoryForRoutineNeed(step)}
