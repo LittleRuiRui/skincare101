@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, FlaskConical, Search, UserRound } from "lucide-react";
+import { ChevronRight, Clock3, FlaskConical, Search, ShieldCheck, UserRound } from "lucide-react";
 import type { SkinProfileRecord } from "../lib/skinProfile";
 
 const INK = "#211F1B";
@@ -62,22 +62,23 @@ export default function V3Home({ goTo, profile = null, profiles = [], onChoosePr
         <div style={{ display: "flex", gap: 7 }}><button onClick={() => goTo("search")} style={{ border: `1px solid ${LINE}`, borderRadius: 999, width: 36, height: 36, background: "rgba(255,255,255,.7)", display: "grid", placeItems: "center", cursor: "pointer" }} aria-label="Search products"><Search size={16} /></button><button onClick={() => goTo("mySkin")} style={{ border: `1px solid ${LINE}`, borderRadius: 999, width: 36, height: 36, background: "rgba(255,255,255,.7)", display: "grid", placeItems: "center", cursor: "pointer" }} aria-label="My Skin"><UserRound size={16} /></button></div>
       </header>
 
-      <ProfileChooser profile={profile} profiles={profiles} onChoose={onChooseProfile} onCreate={onCreateProfile} />
+      {!hasProfile && <button onClick={() => goTo("account")} style={{ width: "100%", border: `1px solid ${LINE}`, borderRadius: 999, padding: "9px 13px", background: "rgba(255,255,255,.58)", color: MUTE, fontSize: 11.5, cursor: "pointer", marginBottom: 18 }}>已经建过档？用邮箱找回 →</button>}
 
-      <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 5, marginBottom: 28, scrollbarWidth: "none" }}>
-        <NavPill active onClick={() => {}}>For You</NavPill><NavPill onClick={() => goTo("explore")}>Explore</NavPill><NavPill onClick={() => goTo("mySkin")}>My Skin</NavPill>
-      </div>
+      {hasProfile && <ProfileChooser profile={profile} profiles={profiles} onChoose={onChooseProfile} onCreate={onCreateProfile} />}
 
-      <section style={{ position: "relative", borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}`, padding: "25px 0 24px", marginBottom: 26, minHeight: 175 }}>
-        <div style={{ width: "65%" }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, color: SAGE, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 9 }}>Personal skincare intelligence</div><h1 style={{ fontFamily: "'Newsreader', serif", fontSize: 34, fontWeight: 500, lineHeight: 1.03, letterSpacing: "-.025em", margin: "0 0 12px" }}>Understand your skin.<br /><i>Then choose better.</i></h1><p style={{ fontSize: 12.5, color: MUTE, lineHeight: 1.55, margin: 0 }}>不是给产品一个万能分数，而是告诉你：它适不适合你的皮肤，以及为什么。</p></div>
+      <section style={{ position: "relative", borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}`, padding: "27px 0 25px", marginBottom: 18, minHeight: 208 }}>
+        <div style={{ width: "68%" }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, color: SAGE, letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 9 }}>Your skin, explained</div><h1 style={{ fontFamily: "'Newsreader', serif", fontSize: 35, fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.025em", margin: "0 0 12px" }}>先看懂皮肤，<br /><i>再决定买什么</i></h1><p style={{ fontSize: 12.5, color: MUTE, lineHeight: 1.58, margin: "0 0 15px" }}>同一个泛红、爆痘或出油，原因可能完全不同。用大约3分钟，找到你现在最该处理的方向。</p><button onClick={hasProfile ? () => goTo("mySkin") : onCreateProfile} style={{ border: 0, borderRadius: 999, padding: "11px 17px", background: INK, color: "white", fontSize: 12, cursor: "pointer" }}>{hasProfile ? "查看我的分析 →" : "开始3分钟肌肤分析 →"}</button></div>
         <div style={{ position: "absolute", right: -8, bottom: 5 }}><DoodleFace /></div>
       </section>
 
+      <div style={{ display: "flex", gap: 16, color: MUTE, fontSize: 10.5, marginBottom: 25, flexWrap: "wrap" }}><span style={{ display: "inline-flex", gap: 5, alignItems: "center" }}><Clock3 size={12} /> 约3分钟</span><span style={{ display: "inline-flex", gap: 5, alignItems: "center" }}><ShieldCheck size={12} /> 不是医疗诊断</span><span>结论可解释</span></div>
+
       {hasProfile && <section style={{ borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}`, padding: "18px 0", marginBottom: 16 }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, letterSpacing: ".1em", color: SAGE, marginBottom: 7 }}>FOR {profile?.name.toUpperCase()}</div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 23, marginBottom: 7 }}>Products ranked in your skin context.</div><div style={{ fontSize: 12, lineHeight: 1.55, color: MUTE, marginBottom: 13 }}>推荐会结合当前档案的肤质、敏感度和主要问题，并把配方证据与个人匹配分开显示。</div><button onClick={() => goTo("recommend")} style={{ border: `1px solid ${INK}`, borderRadius: 999, padding: "9px 14px", background: INK, color: "white", fontSize: 11.5, cursor: "pointer" }}>查看全部个人推荐 →</button></section>}
 
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, letterSpacing: ".1em", color: MUTE, marginBottom: 9 }}>或者直接开始</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
-        <FeatureCard eyebrow="Routine" title="Build my routine" body="从问题出发，组合 AM / PM 护肤步骤。" onClick={() => goTo("routine")} accent={ROSE} />
-        <FeatureCard eyebrow="Formula" title="Analyze a product" body="拍配料表或从数据库选择，解释适合与风险。" onClick={() => goTo(hasProfile ? "upload" : "quickIngredient")} accent="#9B805A" />
+        <FeatureCard eyebrow="Formula" title="查一瓶产品" body="拍配料表或搜索产品，看看它是否匹配你。" onClick={() => goTo(hasProfile ? "upload" : "quickIngredient")} accent="#9B805A" />
+        <FeatureCard eyebrow="Explore" title="我知道肤质" body="按肤质和问题浏览有完整证据的产品。" onClick={() => goTo("explore")} accent={ROSE} />
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 22, paddingTop: 15, borderTop: `1px solid ${LINE}`, color: MUTE, fontSize: 10.5, lineHeight: 1.45 }}><FlaskConical size={13} /> Product data supports decisions; your Skin Profile provides the context.</div>
     </div>

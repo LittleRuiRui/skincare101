@@ -3,7 +3,8 @@ import type { Session } from "@supabase/supabase-js";
 import {
   currentSession,
   saveMySkinProfile,
-  sendSignInLink,
+  signInWithPassword,
+  signUpWithPassword,
   supabase,
   type SkinProfileInput,
 } from "../lib/supabase";
@@ -12,6 +13,7 @@ import {
   loadPendingProfileDraftRecord,
   savePendingProfileDraft,
 } from "../lib/profileDraft";
+import { saveLocalSkinProfile } from "../lib/mySkin";
 
 const INK = "#1C1B19";
 const LINE = "#E4E1DA";
@@ -32,6 +34,8 @@ interface Props {
 export default function ProfileSavePanel({ profile }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [profileName, setProfileName] = useState("我的肤质档案");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -39,6 +43,7 @@ export default function ProfileSavePanel({ profile }: Props) {
   const [cooldownUntil, setCooldownUntil] = useState(storedCooldown);
   const [clock, setClock] = useState(Date.now());
   const savingPendingRef = useRef(false);
+  const localSavedRef = useRef(false);
 
   const cooldownMs = Math.max(0, cooldownUntil - clock);
   const cooldownLabel = cooldownMs > 60_000 ? `约 ${Math.ceil(cooldownMs / 60_000)} 分钟后可重试` : cooldownMs > 0 ? `${Math.ceil(cooldownMs / 1000)} 秒后可重试` : "";
@@ -75,30 +80,25 @@ export default function ProfileSavePanel({ profile }: Props) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  async function requestSignInLink() {
-    if (cooldownMs > 0) return;
+  useEffect(() => {
+    if (localSavedRef.current) return;
+    localSavedRef.current = true;
+    saveLocalSkinProfile(profile, profileName);
+    setMessage("已自动保存在此设备。下次打开 Skincare101 会直接读取这份档案。");
+  }, [profile]);
+
+  async function authenticateAccount() {
     setBusy(true);
     setMessage("");
     setError("");
     try {
+      saveLocalSkinProfile(profile, profileName);
       savePendingProfileDraft(profile, profileName);
-      await sendSignInLink(email.trim());
-      const nextCooldown = Date.now() + 60_000;
-      localStorage.setItem(EMAIL_COOLDOWN_KEY, String(nextCooldown));
-      setCooldownUntil(nextCooldown);
-      setClock(Date.now());
-      setMessage("验证邮件已发送。点击邮件中的链接后会自动注册/登录，并立即建立这份皮肤档案；临时草稿两小时后失效。");
+      if (authMode === "register") await signUpWithPassword(email.trim(), password);
+      else await signInWithPassword(email.trim(), password);
+      setMessage("账号已登录，正在把当前档案同步到数据库。");
     } catch (err: any) {
-      const rateLimited = err?.status === 429 || err?.code === "over_email_send_rate_limit" || /rate limit/i.test(err?.message || "");
-      if (rateLimited) {
-        const nextCooldown = Date.now() + 60 * 60 * 1000;
-        localStorage.setItem(EMAIL_COOLDOWN_KEY, String(nextCooldown));
-        setCooldownUntil(nextCooldown);
-        setClock(Date.now());
-        setError("验证邮件已达到小时发送上限。本次问卷仍保存在此设备，请约一小时后再发送一次。");
-      } else {
-        setError(err?.message || "发送验证邮件失败，请稍后再试。");
-      }
+      setError(err?.message || "登录失败，请检查邮箱和密码。");
     } finally {
       setBusy(false);
     }
@@ -109,9 +109,10 @@ export default function ProfileSavePanel({ profile }: Props) {
     setMessage("");
     setError("");
     try {
-      await saveMySkinProfile(profile, profileName);
+      saveLocalSkinProfile(profile, profileName);
+      if (session) await saveMySkinProfile(profile, profileName);
       clearPendingProfileDraft();
-      setMessage(`已保存并切换到“${profileName.trim() || "我的肤质档案"}”。`);
+      setMessage(`已在此设备保存并切换到“${profileName.trim() || "我的肤质档案"}”。`);
     } catch (err: any) {
       setError(err?.message || "保存失败，请稍后再试。");
     } finally {
@@ -121,9 +122,9 @@ export default function ProfileSavePanel({ profile }: Props) {
 
   return (
     <section style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: "15px 14px", background: "#fff", marginTop: 10, marginBottom: 18 }}>
-      <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 5 }}>保存到网页护肤档案</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 5 }}>已保存到此设备</div>
       <p style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, margin: "0 0 12px" }}>
-        第一次使用时只需验证邮箱：确认后自动建立账号并保存本次肤质档案，无需另外注册密码。之后可继续为自己或家人建立多份档案。
+        无需登录，下次用这个浏览器打开会自动读取。邮箱登录只是可选的跨设备同步。
       </p>
 
       <input
@@ -136,7 +137,10 @@ export default function ProfileSavePanel({ profile }: Props) {
       />
 
       {!session ? (
-        <div style={{ display: "flex", gap: 8 }}>
+        <details style={{ borderTop: `1px solid ${LINE}`, paddingTop: 10, marginTop: 4 }}>
+          <summary style={{ cursor: "pointer", color: TEAL, fontSize: 11.5 }}>需要跨设备使用？用邮箱＋密码同步（可选）</summary>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10, marginBottom: 9 }}><button type="button" onClick={() => setAuthMode("register")} style={{ border: `1px solid ${authMode === "register" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "register" ? TEAL_SOFT : "white", color: TEAL }}>创建账号</button><button type="button" onClick={() => setAuthMode("login")} style={{ border: `1px solid ${authMode === "login" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "login" ? TEAL_SOFT : "white", color: TEAL }}>登录已有账号</button></div>
+        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
           <input
             type="email"
             value={email}
@@ -145,15 +149,17 @@ export default function ProfileSavePanel({ profile }: Props) {
             aria-label="用于注册或登录的邮箱地址"
             style={{ minWidth: 0, flex: 1, border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 11px", fontSize: 13, color: INK }}
           />
+          <input type="password" autoComplete={authMode === "login" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={authMode === "register" ? "设置密码（至少8位）" : "输入密码"} minLength={8} style={{ minWidth: 0, border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 11px", fontSize: 13, color: INK }} />
           <button
             type="button"
-            onClick={requestSignInLink}
-            disabled={busy || !email.trim() || cooldownMs > 0}
-            style={{ flexShrink: 0, border: 0, borderRadius: 9, padding: "0 13px", color: "#fff", background: busy || !email.trim() || cooldownMs > 0 ? MUTE : TEAL, cursor: busy || !email.trim() || cooldownMs > 0 ? "default" : "pointer" }}
+            onClick={authenticateAccount}
+            disabled={busy || !email.trim() || password.length < 8}
+            style={{ border: 0, borderRadius: 9, padding: "10px 13px", color: "#fff", background: busy || !email.trim() || password.length < 8 ? MUTE : TEAL, cursor: busy || !email.trim() || password.length < 8 ? "default" : "pointer" }}
           >
-            {busy ? "发送中" : cooldownLabel || "验证邮箱并建立档案"}
+            {busy ? "处理中" : authMode === "register" ? "创建账号并同步" : "登录并同步"}
           </button>
         </div>
+        </details>
       ) : (
         <>
           <div style={{ fontSize: 11.5, color: MUTE, marginBottom: 10 }}>当前账号：{session.user.email}</div>

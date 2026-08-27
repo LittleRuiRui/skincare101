@@ -33,13 +33,15 @@ Supabase 浏览器配置使用 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABL
 
 投稿状态：`draft → pending → reviewing → approved / rejected`。普通用户只能读取和修改自己的草稿；匿名访客只能读取公开审核目录及其轻量摘要视图；审核身份来自不可由用户修改的 `app_metadata.role`。
 
-### 登录回调
+### 邮箱＋密码登录
 
-在 Supabase Dashboard 的 **Authentication → URL Configuration** 中设置：
+生产版使用邮箱＋密码注册/登录，不依赖 Magic Link 回跳。在 Supabase Dashboard 的 **Authentication → Providers → Email** 中：
 
-- Site URL：`https://littleruirui.github.io/skincare101/`
-- Redirect URL：`https://littleruirui.github.io/skincare101/`
-- 本地开发可额外加入：`http://localhost:5173/skincare101/`
+- 开启 Email provider；
+- 关闭 **Confirm email**，让注册后立即取得 session；
+- 密码最少 8 位。
+
+Site URL 仍设置为：`https://littleruirui.github.io/skincare101/`。
 
 ### 指定审核员
 

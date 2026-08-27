@@ -5,6 +5,7 @@ import V3Explore from "./components/V3Explore";
 import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
+import EmailAccountPanel from "./components/EmailAccountPanel";
 import { loadSharedProductCatalog, saveMySkinProfile, supabase, type SharedProductRecord } from "./lib/supabase";
 import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
@@ -17,7 +18,7 @@ const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 `;
 
-type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "legacy";
+type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "legacy" | "account";
 
 export default function V3App() {
   const [route, setRoute] = useState<Route>("home");
@@ -82,8 +83,15 @@ export default function V3App() {
 
     void savePendingProfileAfterAuth();
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+      if (event === "INITIAL_SESSION") {
         setTimeout(() => { void savePendingProfileAfterAuth(); }, 0);
+      }
+      if (event === "SIGNED_IN") {
+        setTimeout(() => {
+          void savePendingProfileAfterAuth()
+            .then(refreshProfiles)
+            .then(() => setRoute("mySkin"));
+        }, 0);
       }
     });
     return () => data.subscription.unsubscribe();
@@ -105,6 +113,7 @@ export default function V3App() {
 
   function goTo(target: string) {
     if (target === "report" || target === "mySkin") return setRoute("mySkin");
+    if (target === "account") return setRoute("account");
     const exploreTargets: Record<string, ExploreEntry> = { recommend: "forYou", quickRecommend: "explore", explore: "explore", search: "search", brands: "brands", concerns: "concerns", luxury: "luxury", niche: "niche" };
     if (exploreTargets[target]) { setExploreEntry(exploreTargets[target]); return setRoute("explore"); }
     if (target === "routine") return setRoute("routine");
@@ -130,9 +139,13 @@ export default function V3App() {
         <div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}>
           <button onClick={() => { void refreshProfiles().finally(() => { setLegacyStart(undefined); setRoute("home"); }); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
         </div>
-        <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>Loading the full analysis tools…</div>}><LegacyApp initialScreen={legacyStart} /></React.Suspense>
+        <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>正在读取你的肌肤档案…</div>}><LegacyApp initialScreen={legacyStart} profileData={profile || undefined} /></React.Suspense>
       </>
     );
+  }
+
+  if (route === "account") {
+    return <><style>{FONT_IMPORT}</style><EmailAccountPanel profile={profile} onBack={() => setRoute("home")} /></>;
   }
 
   if (route === "mySkin") {

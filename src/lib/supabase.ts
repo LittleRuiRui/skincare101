@@ -114,6 +114,19 @@ export async function sendSignInLink(email: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+export async function signUpWithPassword(email: string, password: string): Promise<void> {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  if (!data.session) {
+    throw new Error("账号已创建，但数据库仍要求邮件确认。请关闭 Supabase Auth 的 Confirm email 后再注册。");
+  }
+}
+
 export async function currentSession(): Promise<Session | null> {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;

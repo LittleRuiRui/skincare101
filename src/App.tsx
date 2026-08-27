@@ -1129,7 +1129,7 @@ function Eyebrow({ children }) {
   );
 }
 
-const PROFILE_STAGES = ["肤质", "基础信息", "安全筛查", "问题问诊"];
+const PROFILE_STAGES = ["肤质", "基础信息", "安全提醒", "状态分析"];
 
 function JourneyProgress({ stage }) {
   return (
@@ -1157,7 +1157,7 @@ function JourneyProgress({ stage }) {
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: TEAL }}>
           {stage + 1}/4 · {PROFILE_STAGES[stage]}
         </span>
-        <span style={{ fontSize: 10.5, color: MUTE }}>每完成一阶段，点亮一格</span>
+        <span style={{ fontSize: 10.5, color: MUTE }}>通常约3分钟完成</span>
       </div>
     </div>
   );
@@ -1639,8 +1639,8 @@ const CANDIDATE_FAMILY = {
   aging: "光老化",
 };
 
-function App({ initialScreen }: { initialScreen?: string } = {}) {
-  const pendingProfile = useMemo(() => loadPendingProfileDraft(), []);
+function App({ initialScreen, profileData }: { initialScreen?: string; profileData?: any } = {}) {
+  const pendingProfile = useMemo(() => profileData || loadPendingProfileDraft(), [profileData]);
   const hasPendingReport = !initialScreen && Boolean(pendingProfile?.selectedSymptoms?.length);
   const startingScreen = initialScreen || (hasPendingReport ? "report" : "intro");
   const [screen, setScreen] = useState(startingScreen);
@@ -2301,7 +2301,7 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
             {(skinStep > 0 || !initialScreen) && <QuestionnaireBackButton onClick={backSkin}>
               {skinStep > 0 ? "返回上一题" : "返回首页"}
             </QuestionnaireBackButton>}
-            <Eyebrow>第一步 · 肤质建档</Eyebrow>
+            <Eyebrow>第一步 · 了解肤质</Eyebrow>
             <JourneyProgress stage={0} />
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
               本阶段问题 {skinStep + 1}/{SKIN_QUESTIONS.length}
@@ -2309,7 +2309,7 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               {SKIN_QUESTIONS[skinStep].q}
             </h2>
-            <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>这一层结果会作为后续所有症状判断的先验条件</p>
+            <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>2个问题，帮助后续建议更贴近你的真实状态</p>
             {SKIN_QUESTIONS[skinStep].options.map((o) => (
               <OptionCard key={o.v} label={o.l} sub={o.sub} selected={skinAnswers[SKIN_QUESTIONS[skinStep].key] === o.v} onClick={() => selectSkin(SKIN_QUESTIONS[skinStep].key, o.v)} />
             ))}
@@ -2353,22 +2353,22 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
               {profileAnswers.pregnancy === "yes" && <Tag>怀孕/哺乳期</Tag>}
             </div>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
-              今天想咨询哪些问题?
+              现在最想改善哪些问题?
             </h2>
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>
-              可以多选——如果几个症状最终指向同一个根因,报告会自动合并,而不是给你几份互不相关的建议
+              建议先选1–2个最困扰你的问题，完成会更快；相同的可能原因会自动合并
             </p>
             {Object.entries(SYMPTOM_TREES).map(([key, t]) => (
               <OptionCard
                 key={key}
                 label={t.label}
-                sub={`约 ${t.questions.length} 题鉴别问诊`}
+                sub={`约 ${t.questions.length} 题进一步了解`}
                 selected={selectedSymptoms.includes(key)}
                 onClick={() => toggleSymptom(key)}
               />
             ))}
             <PrimaryButton onClick={beginSymptoms} disabled={selectedSymptoms.length === 0}>
-              开始问诊{selectedSymptoms.length > 0 ? `(${selectedSymptoms.length}个)` : ""} <ChevronRight size={16} />
+              开始分析{selectedSymptoms.length > 0 ? `（${selectedSymptoms.length}个问题）` : ""} <ChevronRight size={16} />
             </PrimaryButton>
           </div>
         )}
@@ -2454,10 +2454,38 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
         {/* ---------------- REPORT ---------------- */}
         {screen === "report" && symptomResults.length > 0 && (
           <div ref={reportRef} style={{ paddingTop: 24, paddingBottom: 40 }}>
-            <Eyebrow>整合诊断报告 · {symptomResults.map((r) => r.label).join(" / ")}</Eyebrow>
+            <Eyebrow>你的肌肤分析 · {symptomResults.map((r) => r.label).join(" / ")}</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 24, fontWeight: 500, marginBottom: 20, marginTop: 0 }}>
-              病因判断
+              先做这三件事
             </h2>
+
+            <div style={{ border: `1px solid ${TEAL}`, borderRadius: 14, padding: "17px 17px 8px", background: TEAL_SOFT, marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#2E4E48", marginBottom: 10 }}>当前优先方向：{familyGroups.map((group) => group.family).join(" + ")}</div>
+              <div style={{ fontSize: 12.5, color: "#2E4E48", lineHeight: 1.6, marginBottom: 8 }}><b>1 · 先简化</b>　暂停近期新增、明显刺激或与你当前方向冲突的产品</div>
+              <div style={{ fontSize: 12.5, color: "#2E4E48", lineHeight: 1.6, marginBottom: 8 }}><b>2 · 保留基础</b>　温和清洁、合适的保湿与白天防晒先保持稳定</div>
+              <div style={{ fontSize: 12.5, color: "#2E4E48", lineHeight: 1.6, marginBottom: 8 }}><b>3 · 再做选择</b>　先看下面的产品匹配，再决定下一件值得买什么</div>
+              <div style={{ borderTop: `1px solid #BFD6D0`, paddingTop: 9, marginTop: 11, marginBottom: 8, fontSize: 11.5, color: MUTE }}>建议观察2–4周；若持续加重、疼痛或出现异常皮损，请及时就医</div>
+            </div>
+
+            {suitability && (
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: "16px", background: "#fff", marginBottom: 20 }}>
+                <SectionLabel>你的成分方向</SectionLabel>
+                <div style={{ fontSize: 11, color: MUTE, marginBottom: 10 }}>买产品时先看体系，不需要追逐一长串明星成分</div>
+                {suitability.good.slice(0, 3).map((item, index) => <div key={`top-good-${index}`} style={{ fontSize: 12.5, color: "#2E4E48", lineHeight: 1.55, marginBottom: 6 }}><Check size={12} color={TEAL} style={{ marginRight: 7, verticalAlign: -2 }} /><b>{item.name}</b> · {item.system}</div>)}
+                {suitability.risky.slice(0, 2).map((item, index) => <div key={`top-risk-${index}`} style={{ fontSize: 12.5, color: "#7A3D2C", lineHeight: 1.55, marginBottom: 6 }}><X size={12} color={RUST} style={{ marginRight: 7, verticalAlign: -2 }} />谨慎：<b>{item.name}</b></div>)}
+              </div>
+            )}
+
+            {suitability && rankedProducts.filter((product) => product.recommendationAvailable).length > 0 && (
+              <div style={{ marginBottom: 22 }}>
+                <SectionLabel>优先看的产品</SectionLabel>
+                {rankedProducts.filter((product) => product.recommendationAvailable).slice(0, 3).map((product, index) => <ProductRecommendationCard key={product.id} product={product} index={index} />)}
+              </div>
+            )}
+
+            <details style={{ marginBottom: 22 }}>
+              <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: TEAL, padding: "10px 0" }}>展开查看判断依据与完整建议</summary>
+              <div style={{ paddingTop: 8 }}>
 
             <div data-html2canvas-ignore="true" style={{ marginBottom: 24 }}>
               <ProfileSavePanel
@@ -2512,7 +2540,7 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
 
                   {group.drugs.length > 0 && (
                     <>
-                      <SectionLabel>药物参考(强度分层,已去重)</SectionLabel>
+                      <SectionLabel>就医时可咨询的治疗方向</SectionLabel>
                       <div style={{ marginBottom: 16 }}>
                         {group.drugs.map((d, i) => (
                           <DrugRow key={i} tier={d.tier} name={d.name} note={d.note} />
@@ -2541,6 +2569,9 @@ function App({ initialScreen }: { initialScreen?: string } = {}) {
                 </span>
               </div>
             )}
+
+              </div>
+            </details>
 
             {allMedicalFlags.length > 0 && (
               <>
