@@ -8,6 +8,7 @@ import { formulaDataLabel, matchRating, productAudience, productVerdict, persona
 import { loadProductExperience, saveProductExperience, type ProductReaction } from "../lib/productFeedback";
 import { consumerAliases } from "../lib/productNames";
 import BilingualIngredientList from "./BilingualIngredientList";
+import FormulaStoryPanel from "./FormulaStoryPanel";
 import { SketchPageAccent, SketchUnderline } from "./HandDrawnVisuals";
 
 const INK = "#211F1B";
@@ -74,6 +75,8 @@ export default function V3ProductDetail({ product, products, profile, concern, o
     {englishName!==localName&&<div style={{fontSize:12,color:MUTE,lineHeight:1.5,marginTop:8}}>{englishName}</div>}
     {aliases.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"9px 0 4px"}}>{aliases.map(alias=><Badge key={alias} tone="sage">常用昵称 · {alias}</Badge>)}</div>}
     <p style={{ fontFamily: "'Newsreader', serif", fontSize: 19, lineHeight: 1.45, margin: "14px 0 2px", color: "#49443D" }}>{productVerdict(current, dna)}</p><SketchPageAccent kind="formula"/>
+
+    <FormulaStoryPanel product={current} dna={dna}/>
 
     {(audience.bestFor.length>0||audience.notIdealFor.length>0||audience.caveats.length>0)&&<section style={{width:"100%",boxSizing:"border-box",border:`1px solid ${LINE}`,borderRadius:17,padding:17,background:"rgba(255,255,255,.68)",marginBottom:12}}><div style={{fontSize:10,color:SAGE,letterSpacing:".08em",marginBottom:11}}>这款产品本身适合谁</div>{audience.bestFor.length>0&&<div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:650,marginBottom:6}}>更适合</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{audience.bestFor.slice(0,6).map(item=><Badge key={`best-${item}`} tone="sage">✓ {item}</Badge>)}</div></div>}{audience.notIdealFor.length>0&&<div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:650,marginBottom:6}}>不太适合</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{audience.notIdealFor.slice(0,6).map(item=><Badge key={`not-${item}`} tone="rose">× {item}</Badge>)}</div></div>}{audience.caveats.length>0&&<div><div style={{fontSize:11,fontWeight:650,marginBottom:5}}>使用提醒</div>{audience.caveats.slice(0,4).map(item=><div key={`caveat-${item}`} style={{fontSize:10.5,color:MUTE,lineHeight:1.55,marginTop:3}}>· {item}</div>)}</div>}</section>}
 
