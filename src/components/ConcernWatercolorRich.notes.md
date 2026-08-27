@@ -1,0 +1,1 @@
+Richer concern micro-illustrations for My Skin: blackheads use a nose/comedone vignette; pores use skin texture; redness uses cheek flush; dryness uses flaking marks; oil uses T-zone sheen; pigmentation and aging use localized watercolor marks. Kept as SVG to avoid image asset bloat.
