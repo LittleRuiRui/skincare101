@@ -30,7 +30,7 @@ test("sensitive beginners receive active-use guardrails", () => {
 test("routine steps resolve to usable catalog categories", () => {
   assert.equal(categoryForRoutineStep("Broad-spectrum SPF"), "防晒");
   assert.equal(categoryForRoutineStep("Gentle cleanser"), "洁面");
-  assert.equal(categoryForRoutineStep("Ceramide moisturizer"), "乳霜");
+  assert.equal(categoryForRoutineStep("Ceramide moisturizer"), "乳液 / 面霜");
   assert.equal(categoryForRoutineStep("BHA 2–3× weekly"), "祛痘");
 });
 
