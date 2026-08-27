@@ -1,0 +1,31 @@
+{
+  "scope": "current skincare products; exclude makeup, fragrance, haircare, gift sets, duplicate sizes and packaging-only editions",
+  "languagePolicy": {
+    "zh-CN": "store Chinese and official English names",
+    "ja-JP": "store Japanese and official English names",
+    "ko-KR": "store Korean and official English names",
+    "other": "store official local-market and English names"
+  },
+  "priorityBrands": [
+    {"brandEnglish": "SK-II", "brandLocal": "SK-II", "locale": "ja-JP", "marketSite": "https://www.sk-ii.com.sg/our-products/all", "wave": 1},
+    {"brandEnglish": "Shiseido", "brandLocal": "資生堂", "locale": "ja-JP", "marketSite": "https://www.shiseido.com.sg/", "wave": 1},
+    {"brandEnglish": "Sulwhasoo", "brandLocal": "설화수", "locale": "ko-KR", "marketSite": "https://www.sulwhasoo.com/sg/en/", "wave": 1},
+    {"brandEnglish": "L'Oréal Paris", "brandLocal": "L'Oréal Paris", "locale": "fr-FR", "marketSite": "https://www.loreal-paris.com.sg/skin-care-products", "wave": 1},
+    {"brandEnglish": "Estée Lauder", "brandLocal": "Estée Lauder", "locale": "en-US", "marketSite": "https://www.esteelauder.com.sg/products/688/product-catalog/skincare", "wave": 1},
+    {"brandEnglish": "PROYA", "brandLocal": "珀莱雅", "locale": "zh-CN", "marketSite": "https://www.proya.com/", "wave": 1},
+    {"brandEnglish": "WINONA", "brandLocal": "薇诺娜", "locale": "zh-CN", "marketSite": "https://www.winona.cn/", "wave": 1},
+    {"brandEnglish": "Dr. Yu", "brandLocal": "玉泽", "locale": "zh-CN", "marketSite": "https://www.dryu.com.cn/", "wave": 1},
+    {"brandEnglish": "Clé de Peau Beauté", "brandLocal": "クレ・ド・ポー ボーテ", "locale": "ja-JP", "marketSite": "https://www.cledepeau-beaute.com.sg/", "wave": 2},
+    {"brandEnglish": "DECORTÉ", "brandLocal": "コスメデコルテ", "locale": "ja-JP", "marketSite": "https://www.decorte-cosmetics.com/", "wave": 2},
+    {"brandEnglish": "POLA", "brandLocal": "ポーラ", "locale": "ja-JP", "marketSite": "https://www.pola.co.jp/", "wave": 2},
+    {"brandEnglish": "HERA", "brandLocal": "헤라", "locale": "ko-KR", "marketSite": "https://www.hera.com/sg/en/", "wave": 2},
+    {"brandEnglish": "LANEIGE", "brandLocal": "라네즈", "locale": "ko-KR", "marketSite": "https://www.laneige.com/sg/en/", "wave": 2},
+    {"brandEnglish": "The History of Whoo", "brandLocal": "더후", "locale": "ko-KR", "marketSite": "https://thehistoryofwhoo.com/", "wave": 2},
+    {"brandEnglish": "KANS", "brandLocal": "韩束", "locale": "zh-CN", "marketSite": "https://www.kans.cn/", "wave": 2},
+    {"brandEnglish": "CHANDO", "brandLocal": "自然堂", "locale": "zh-CN", "marketSite": "https://www.chcedo.com/", "wave": 2},
+    {"brandEnglish": "Pechoin", "brandLocal": "百雀羚", "locale": "zh-CN", "marketSite": "https://www.pechoin.com/", "wave": 2},
+    {"brandEnglish": "Guyu", "brandLocal": "谷雨", "locale": "zh-CN", "marketSite": "https://www.guyu.com.cn/", "wave": 2},
+    {"brandEnglish": "Dr. Alva", "brandLocal": "瑷尔博士", "locale": "zh-CN", "marketSite": "https://www.dralva.com/", "wave": 2},
+    {"brandEnglish": "Comfy", "brandLocal": "可复美", "locale": "zh-CN", "marketSite": "https://www.comfy.com.cn/", "wave": 2}
+  ]
+}

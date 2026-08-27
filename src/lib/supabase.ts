@@ -18,6 +18,11 @@ export interface SharedProductRecord {
   id: string;
   brand: string;
   name: string;
+  brandLocalName?: string;
+  brandEnglishName?: string;
+  productLocalName?: string;
+  productEnglishName?: string;
+  sourceLocale?: string;
   category: string;
   ingredients: string[];
   ingredientListType: "full" | "partial";
@@ -114,7 +119,7 @@ export async function savePublicProductExperience(input: PublicProductExperience
 export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]> {
   const { data, error } = await supabase
     .from("approved_product_catalog_summary")
-    .select("id,brand,name,category,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status")
+    .select("id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,source_locale,category,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status")
     // V3 is a decision tool, so its public catalog only surfaces products whose
     // complete ingredient list is stored. Partial candidates remain in the
     // database for review and are still available to the legacy fallback.
@@ -127,6 +132,11 @@ export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]>
     id: `shared-${row.id}`,
     brand: row.brand || "未知品牌",
     name: row.name || "未命名产品",
+    brandLocalName: row.brand_local_name || undefined,
+    brandEnglishName: row.brand_english_name || undefined,
+    productLocalName: row.product_local_name || undefined,
+    productEnglishName: row.product_english_name || undefined,
+    sourceLocale: row.source_locale || undefined,
     category: row.category || "其他",
     ingredients: row.ingredient_names || [],
     ingredientListType: row.ingredient_list_type === "full" ? "full" : "partial",
@@ -145,7 +155,7 @@ export async function loadProductDetail(productId: string): Promise<ProductDetai
   const id = productId.replace(/^shared-/, "");
   const { data, error } = await supabase
     .from("approved_product_catalog")
-    .select("id,brand,name,category,market,source_url,formula_id,ingredient_names,ingredient_list_type,data_completeness,verified_at")
+    .select("id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,source_locale,category,market,source_url,formula_id,ingredient_names,ingredient_list_type,data_completeness,verified_at")
     .eq("id", id)
     .limit(1)
     .single();
@@ -155,6 +165,11 @@ export async function loadProductDetail(productId: string): Promise<ProductDetai
     id: `shared-${data.id}`,
     brand: data.brand || "未知品牌",
     name: data.name || "未命名产品",
+    brandLocalName: data.brand_local_name || undefined,
+    brandEnglishName: data.brand_english_name || undefined,
+    productLocalName: data.product_local_name || undefined,
+    productEnglishName: data.product_english_name || undefined,
+    sourceLocale: data.source_locale || undefined,
     category: data.category || "其他",
     market: data.market || "global",
     formulaId: data.formula_id || "",
