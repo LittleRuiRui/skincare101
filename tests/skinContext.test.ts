@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { getSpecialSkinStates, summarizeSkinProfile, type SkinProfileRecord } from "../src/lib/skinProfile";
-import { suitabilityFor } from "../src/lib/productPresentation";
+import test from "node:test";
+import assert from "node:assert/strict";
+import { getSpecialSkinStates, summarizeSkinProfile, type SkinProfileRecord } from "../src/lib/skinProfile.ts";
+import { suitabilityFor } from "../src/lib/productPresentation.ts";
 
 function profile(overrides: Partial<SkinProfileRecord> = {}): SkinProfileRecord {
   return {
@@ -17,27 +18,26 @@ function profile(overrides: Partial<SkinProfileRecord> = {}): SkinProfileRecord 
   };
 }
 
-describe("temporary skin context", () => {
-  it("keeps base skin type separate from temporary sensitive flare", () => {
-    const p = profile({ profileAnswers: { special_states: "sensitive_flare,acid", acid_frequency: "high" } });
-    const summary = summarizeSkinProfile(p);
-    expect(summary.skinType).toBe("偏油");
-    expect(summary.specialStates).toContain("sensitive_flare");
-    expect(summary.activeLoad).toBe("high");
-  });
+test("temporary sensitive flare does not overwrite base skin type", () => {
+  const p = profile({ profileAnswers: { special_states: "sensitive_flare,acid", acid_frequency: "high" } });
+  const summary = summarizeSkinProfile(p);
+  assert.equal(summary.skinType, "偏油");
+  assert.ok(summary.specialStates.includes("sensitive_flare"));
+  assert.equal(summary.activeLoad, "high");
+});
 
-  it("adds active-load cautions without changing the stored base profile", () => {
-    const p = profile({ profileAnswers: { special_states: "acid", acid_frequency: "regular" } });
-    expect(getSpecialSkinStates(p)).toEqual(["acid"]);
-    const suitability = suitabilityFor(p, "pores");
-    expect(suitability.risky.map(item => item.name)).toContain("Retinol");
-    expect(suitability.targetSystems).toContain("barrier");
-  });
+test("active-load context adds cautions without changing stored base profile", () => {
+  const p = profile({ profileAnswers: { special_states: "acid", acid_frequency: "regular" } });
+  assert.deepEqual(getSpecialSkinStates(p), ["acid"]);
+  const suitability = suitabilityFor(p, "pores");
+  assert.ok(suitability.risky.map(item => item.name).includes("Retinol"));
+  assert.ok(suitability.targetSystems?.includes("barrier"));
+});
 
-  it("uses conservative retinoid filtering in pregnancy context", () => {
-    const p = profile({ profileAnswers: { special_states: "pregnancy_breastfeeding" } });
-    const suitability = suitabilityFor(p, "aging");
-    expect(suitability.risky.map(item => item.name)).toContain("Retinol");
-    expect(suitability.risky.map(item => item.name)).toContain("Retinal");
-  });
+test("pregnancy context uses conservative retinoid filtering", () => {
+  const p = profile({ profileAnswers: { special_states: "pregnancy_breastfeeding" } });
+  const suitability = suitabilityFor(p, "aging");
+  const risky = suitability.risky.map(item => item.name);
+  assert.ok(risky.includes("Retinol"));
+  assert.ok(risky.includes("Retinal"));
 });
