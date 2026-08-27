@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { loadProductPurchaseLinks, type ProductPurchaseLink } from "../lib/purchaseLinks";
-import { useLanguage } from "../lib/language";
+import { useLanguage } from "../lib/i18n";
 
 const INK = "#211F1B";
 const LINE = "#DDD6CA";
