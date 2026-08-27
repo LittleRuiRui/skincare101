@@ -30,6 +30,7 @@ create or replace view public.approved_product_catalog
 with (security_invoker = true)
 as
 select p.id, p.brand, p.name, p.category, p.market,
+  p.brand_local_name, p.brand_english_name, p.product_local_name, p.product_english_name, p.source_locale,
   p.marketing_positioning, p.intended_skin_types, p.intended_concerns, p.intended_use_context,
   coalesce(f.source_url, p.source_url) as source_url,
   f.id as formula_id, f.ingredient_names, f.ingredient_list_type,
@@ -42,4 +43,23 @@ from public.products p
 join public.product_formulas f on f.product_id = p.id and f.is_current
 where p.archived_at is null;
 
+drop view if exists public.approved_product_catalog_summary;
+create view public.approved_product_catalog_summary
+with (security_invoker = true)
+as
+select p.id, p.brand, p.name, p.category,
+  p.brand_local_name, p.brand_english_name, p.product_local_name, p.product_english_name, p.source_locale,
+  p.marketing_positioning, p.intended_skin_types, p.intended_concerns, p.intended_use_context,
+  coalesce(f.source_url, p.source_url) as source_url,
+  f.ingredient_names[1:15] as ingredient_names,
+  f.ingredient_list_type, f.data_completeness,
+  f.formula_function_summary, f.formula_best_for, f.formula_also_works_for,
+  f.formula_less_ideal_for, f.formula_caveats, f.formula_verdict,
+  p.popularity_sources, p.popularity_tier,
+  p.asia_availability_status
+from public.products p
+join public.product_formulas f on f.product_id = p.id and f.is_current
+where p.archived_at is null;
+
 grant select on public.approved_product_catalog to anon, authenticated;
+grant select on public.approved_product_catalog_summary to anon, authenticated;
