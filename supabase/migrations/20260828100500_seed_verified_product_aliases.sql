@@ -1,0 +1,10 @@
+insert into public.product_aliases(product_id,alias,locale,alias_type,verified,source)
+select id,'神仙水','zh-CN','consumer_nickname',true,'seeded-known-alias' from public.products where lower(coalesce(brand_english_name,brand,'')) like '%sk-ii%' and lower(coalesce(product_english_name,name,'')) like '%facial treatment essence%' on conflict do nothing;
+insert into public.product_aliases(product_id,alias,locale,alias_type,verified,source)
+select id,'红腰子','zh-CN','consumer_nickname',true,'seeded-known-alias' from public.products where (lower(coalesce(brand_english_name,brand,'')) like '%shiseido%' or coalesce(brand_local_name,'') like '%资生堂%') and lower(coalesce(product_english_name,name,'')) like '%ultimune%' on conflict do nothing;
+insert into public.product_aliases(product_id,alias,locale,alias_type,verified,source)
+select id,'小棕瓶','zh-CN','consumer_nickname',true,'seeded-known-alias' from public.products where lower(coalesce(brand_english_name,brand,'')) like '%estée lauder%' and lower(coalesce(product_english_name,name,'')) like '%advanced night repair%' on conflict do nothing;
+insert into public.product_aliases(product_id,alias,locale,alias_type,verified,source)
+select id,'黑金眼霜','zh-CN','consumer_nickname',true,'seeded-known-alias' from public.products where lower(coalesce(brand_english_name,brand,'')) like '%chanel%' and lower(coalesce(product_english_name,name,'')) like '%sublimage%' and (lower(coalesce(product_english_name,name,'')) like '%eye%' or lower(coalesce(product_english_name,name,'')) like '%yeux%') on conflict do nothing;
+insert into public.product_aliases(product_id,alias,locale,alias_type,verified,source)
+select id,'花蜜水','zh-CN','consumer_nickname',true,'seeded-known-alias' from public.products where lower(coalesce(brand_english_name,brand,'')) like '%dior%' and lower(coalesce(product_english_name,name,'')) like '%prestige%' and (lower(coalesce(product_english_name,name,'')) like '%lotion%' or lower(coalesce(product_english_name,name,'')) like '%essence%') on conflict do nothing;
