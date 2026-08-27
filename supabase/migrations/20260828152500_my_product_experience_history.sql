@@ -40,6 +40,7 @@ as $$
   order by pe.updated_at desc;
 $$;
 
+revoke all on function public.load_my_product_experiences() from anon;
 revoke all on function public.load_my_product_experiences() from public;
 grant execute on function public.load_my_product_experiences() to authenticated;
 
