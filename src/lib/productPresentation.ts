@@ -43,8 +43,8 @@ export function matchRating(match:ProductScore|null|undefined){
 export function confidenceLabel(confidence:ProductScore["confidence"]|undefined){return confidence==="high"?"高":confidence==="medium"?"中":"低";}
 export function formulaDataLabel(product:SharedProductRecord){if(product.ingredientListType==="full"&&product.dataCompleteness>=85)return {label:"完整配方已核验",detail:"完整 INCI 已保存，可进行完整配方结构分析。",tone:"good" as const};if(product.ingredientListType==="full")return {label:"完整配方 · 待复核",detail:"已保存完整列表，但来源或版本仍需进一步复核。",tone:"warn" as const};if(product.ingredients.length>0)return {label:"部分配方",detail:"目前只有部分成分证据，结论会相应保守。",tone:"warn" as const};return {label:"配方待补充",detail:"尚无足够 INCI 数据，不进入优先推荐。",tone:"muted" as const};}
 const SYSTEM_PRIORITY:FormulaSystemKey[]=["barrier","hydration","soothing","antiAging","oilControl","lipid"];
-const SYSTEM_ZH:Record<FormulaSystemKey,string>={barrier:"屏障",hydration:"保湿",soothing:"舒缓",antiAging:"抗老",oilControl:"控油",lipid:"脂质"};
-const SYSTEM_EN:Record<FormulaSystemKey,string>={barrier:"barrier support",hydration:"hydration",soothing:"soothing",antiAging:"anti-aging",oilControl:"oil control",lipid:"lipid support"};
+const SYSTEM_ZH:Record<FormulaSystemKey,string>={barrier:"屏障",hydration:"保湿",soothing:"舒缓",antiAging:"抗老",oilControl:"控油",lipid:"脂质",preservation:"防腐"};
+const SYSTEM_EN:Record<FormulaSystemKey,string>={barrier:"barrier support",hydration:"hydration",soothing:"soothing",antiAging:"anti-aging",oilControl:"oil control",lipid:"lipid support",preservation:"preservation"};
 export function oneLineVerdict(product:SharedProductRecord,dna:FormulaDna=analyzeFormulaDna(product)){
  if(!product.ingredients.length)return "目前配方资料还不够完整，暂时不建议只凭产品定位判断功效。";
  const systems=SYSTEM_PRIORITY.map(k=>dna.systems[k]).filter(s=>s.score>=2).sort((a,b)=>b.score-a.score);
