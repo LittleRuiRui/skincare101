@@ -6,6 +6,22 @@ const distinct = (a?: string | null, b?: string | null) => {
   const left = clean(a), right = clean(b);
   return left && right && left.toLocaleLowerCase() !== right.toLocaleLowerCase();
 };
+const normalizedIdentity = (product: SharedProductRecord) => `${product.brand} ${product.name} ${product.productEnglishName || ""} ${product.productLocalName || ""}`.toLocaleLowerCase();
+
+const VERIFIED_ALIAS_RULES: Array<{ test: (identity: string) => boolean; aliases: string[] }> = [
+  { test: x => /sk[- ]?ii/.test(x) && /facial treatment essence/.test(x), aliases: ["神仙水"] },
+  { test: x => /shiseido|资生堂/.test(x) && /ultimune/.test(x), aliases: ["红腰子"] },
+  { test: x => /est[eé]e lauder|雅诗兰黛/.test(x) && /advanced night repair/.test(x), aliases: ["小棕瓶"] },
+  { test: x => /chanel|香奈儿/.test(x) && /sublimage/.test(x) && /(eye|yeux|眼)/.test(x), aliases: ["黑金眼霜"] },
+  { test: x => /dior|迪奥/.test(x) && /prestige/.test(x) && /(lotion|essence|water|化妆水|精华水)/.test(x), aliases: ["花蜜水"] },
+];
+
+export function consumerAliases(product: SharedProductRecord): string[] {
+  const explicit = product.searchAliases || [];
+  const identity = normalizedIdentity(product);
+  const inferred = VERIFIED_ALIAS_RULES.flatMap(rule => rule.test(identity) ? rule.aliases : []);
+  return Array.from(new Set([...explicit, ...inferred].map(clean).filter(Boolean)));
+}
 
 export function brandNames(product: SharedProductRecord, language: AppLanguage) {
   const english = clean(product.brandEnglishName) || clean(product.brand);
@@ -40,5 +56,6 @@ export function productSearchText(product: SharedProductRecord) {
     product.brandEnglishName,
     product.productLocalName,
     product.productEnglishName,
+    ...consumerAliases(product),
   ].filter(Boolean).join(" ").toLocaleLowerCase();
 }
