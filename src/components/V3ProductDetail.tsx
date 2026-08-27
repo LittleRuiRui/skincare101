@@ -4,7 +4,7 @@ import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "../intelligence/formula
 import { approximatePriceGuide, getBrandProfile, priceTierForBrand } from "../data/brandProfiles";
 import { loadProductDetail, loadPublicProductExperiences, savePublicProductExperience, type ProductDetailRecord, type PublicProductExperience, type SharedProductRecord } from "../lib/supabase";
 import { summarizeSkinProfile, type SkinProfileRecord } from "../lib/skinProfile";
-import { formulaDataLabel, oneLineVerdict, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
+import { formulaDataLabel, matchRating, oneLineVerdict, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
 import { loadProductExperience, saveProductExperience, type ProductReaction } from "../lib/productFeedback";
 
 const INK = "#211F1B";
@@ -59,6 +59,7 @@ export default function V3ProductDetail({ product, products, profile, concern, o
   const current = detail || product;
   const dna = useMemo(() => analyzeFormulaDna(current), [current]);
   const match = personalizedScore(product, profile, concern);
+  const rating = matchRating(match);
   const formula = formulaDataLabel(current);
   const brand = getBrandProfile(product.brand);
   const fullIngredients = detail?.fullIngredients || product.ingredients;
@@ -101,10 +102,17 @@ export default function V3ProductDetail({ product, products, profile, concern, o
     <p style={{ fontFamily: "'Newsreader', serif", fontSize: 19, lineHeight: 1.45, margin: "0 0 18px", color: "#49443D" }}>{oneLineVerdict(current, dna)}</p>
 
     <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-      <div style={{ border: `1px solid ${match?.recommendationAvailable ? SAGE : LINE}`, borderRadius: 16, padding: 15, background: match?.recommendationAvailable ? "#EDF1EA" : "rgba(255,255,255,.65)" }}>
-        <div style={{ fontSize: 9.5, color: SAGE, letterSpacing: ".08em", marginBottom: 7 }}>MATCH FOR YOU</div>
-        <div style={{ fontFamily: "'Newsreader', serif", fontSize: 25, marginBottom: 5 }}>{match?.score ? `${match.score}%` : profile ? "Evidence limited" : "Build Profile"}</div>
-        <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5 }}>这是针对你的 Skin Profile 的适配度，不是产品绝对质量分。</div>
+      <div style={{ border: `1px solid ${rating.suitable ? SAGE : rating.stars > 0 ? ROSE : LINE}`, borderRadius: 16, padding: 15, background: rating.suitable ? "#EDF1EA" : rating.stars > 0 ? "#F6ECE8" : "rgba(255,255,255,.65)" }}>
+        <div style={{ fontSize: 9.5, color: rating.suitable ? SAGE : rating.stars > 0 ? ROSE : MUTE, letterSpacing: ".08em", marginBottom: 7 }}>MATCH FOR YOU</div>
+        {profile && rating.stars > 0 ? <>
+          <div style={{ fontFamily: "'Newsreader', serif", fontSize: 25, letterSpacing: ".04em", marginBottom: 3 }}>{rating.starsText}</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: rating.suitable ? "#4E6254" : "#8E665F", marginBottom: 5 }}>{rating.label}{rating.bonus ? " · Bonus" : ""}</div>
+          <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 5 }}>{rating.detail}</div>
+          <div style={{ fontSize: 9.5, color: MUTE, lineHeight: 1.45 }}>★★★☆☆ 及以上 = 可以使用。星级表示与你当前肤质和需求的匹配程度，不代表产品绝对质量。</div>
+        </> : <>
+          <div style={{ fontFamily: "'Newsreader', serif", fontSize: 20, marginBottom: 5 }}>{profile ? "Evidence limited" : "Build Profile"}</div>
+          <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5 }}>{profile ? "现有配方证据不足，暂不强行给星级。" : "建立 Skin Profile 后可查看个人适配星级。"}</div>
+        </>}
       </div>
       <div style={{ border: `1px solid ${formula.tone === "good" ? SAGE : ROSE}`, borderRadius: 16, padding: 15, background: formula.tone === "good" ? "#F2F4EF" : "#F6ECE8" }}>
         <div style={{ fontSize: 9.5, color: formula.tone === "good" ? SAGE : ROSE, letterSpacing: ".08em", marginBottom: 7 }}>FORMULA DATA</div>
@@ -114,7 +122,7 @@ export default function V3ProductDetail({ product, products, profile, concern, o
     </section>
 
     {match?.recommendationAvailable && <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}>
-      <div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 10 }}>WHY IT MATCHES YOU</div>
+      <div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 10 }}>WHY THIS RATING</div>
       {match.positiveEvidence.slice(0, 4).map((evidence) => <div key={evidence.name} style={{ fontSize: 12, color: "#40594A", lineHeight: 1.55, marginBottom: 5 }}>✓ {evidence.name} · 配料第 {evidence.ingredientPosition} 位</div>)}
       {match.systemEvidence.slice(0, 3).map((evidence) => <div key={evidence.key} style={{ fontSize: 12, color: "#40594A", lineHeight: 1.55, marginBottom: 5 }}>✓ {evidence.label} {evidence.score}/5 与你的目标一致</div>)}
       {match.negativeEvidence.slice(0, 3).map((evidence) => <div key={evidence.name} style={{ fontSize: 12, color: "#8A5F58", lineHeight: 1.55, marginTop: 5 }}>△ {evidence.name} · 可能降低适配度</div>)}
