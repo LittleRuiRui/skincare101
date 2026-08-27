@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { analyzeFormulaDna } from "../src/intelligence/formulaDna.ts";
 import { approximatePriceGuide, getBrandProfile } from "../src/data/brandProfiles.ts";
-import { formulaDataLabel, personalizedScore } from "../src/lib/productPresentation.ts";
+import { formulaDataLabel, personalizedScore, productAudience, productVerdict } from "../src/lib/productPresentation.ts";
 
 const baseProduct = {
   id: "shared-1",
@@ -47,4 +47,15 @@ test("partial formulas are never described as verified full formulas", () => {
 test("price guides are clearly approximate Singapore ranges", () => {
   assert.match(approximatePriceGuide(getBrandProfile("Chanel"), "精华"), /^S\$\d+–\d+/);
   assert.match(approximatePriceGuide(getBrandProfile("CeraVe"), "洁面"), /新加坡常见品牌级预算区间/);
+});
+
+test("uses reviewed editorial verdict before generated formula copy", () => {
+  const product = { ...baseProduct, editorial: { summary: "适合想要温和保湿、但不追求强功效的人。", bestFor: ["干燥缺水"], notIdealFor: ["追求强功效"], caveats: ["部分配方"] }, formulaVerdict: "配方层的一句话" };
+  assert.equal(productVerdict(product), "适合想要温和保湿、但不追求强功效的人。");
+  assert.deepEqual(productAudience(product), { bestFor: ["干燥缺水"], notIdealFor: ["追求强功效"], caveats: ["部分配方"] });
+});
+
+test("ignores editorial placeholders and falls back to formula verdict", () => {
+  const product = { ...baseProduct, editorial: { summary: "待完整 INCI 核验后升级。", bestFor: [], notIdealFor: [], caveats: [] }, formulaVerdict: "保湿为主，敏感状态注意香精。" };
+  assert.equal(productVerdict(product), "保湿为主，敏感状态注意香精。");
 });
