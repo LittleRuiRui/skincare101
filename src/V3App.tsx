@@ -13,18 +13,15 @@ import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 import type { BrowseConcern } from "./lib/productPresentation";
 import { clearPendingProfileDraft, loadPendingProfileDraftRecord } from "./lib/profileDraft";
+import { LanguageProvider, LanguageSwitch, useLanguage } from "./lib/i18n";
 
 const LegacyApp = React.lazy(() => import("./App"));
-
-const FONT_IMPORT = `
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-`;
-
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');`;
 type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "ingredientCheck" | "matchHub" | "legacy" | "account";
-
 type ProductReturnRoute = "explore" | "matchHub";
 
-export default function V3App() {
+function V3AppContent() {
+  const { t } = useLanguage();
   const [route, setRoute] = useState<Route>("home");
   const [profile, setProfile] = useState<SkinProfileRecord | null>(null);
   const [profiles, setProfiles] = useState<SkinProfileRecord[]>([]);
@@ -38,174 +35,58 @@ export default function V3App() {
   const pendingProfileSaveRef = useRef(false);
 
   async function refreshProfiles() {
-    try {
-      const result = await loadMySkinProfiles();
-      setProfiles(result);
-      setProfile(result.find((item) => item.isActive) || result[0] || null);
-    } catch {
-      setProfiles([]);
-      setProfile(null);
-    } finally {
-      setProfileChecked(true);
-    }
+    try { const result = await loadMySkinProfiles(); setProfiles(result); setProfile(result.find((item) => item.isActive) || result[0] || null); }
+    catch { setProfiles([]); setProfile(null); }
+    finally { setProfileChecked(true); }
   }
 
   useEffect(() => {
     let active = true;
-    loadMySkinProfiles()
-      .then((result) => { if (active) { setProfiles(result); setProfile(result.find((item) => item.isActive) || result[0] || null); } })
-      .catch(() => { if (active) { setProfiles([]); setProfile(null); } })
-      .finally(() => { if (active) setProfileChecked(true); });
-
-    loadSharedProductCatalog()
-      .then((result) => { if (active) setProducts(result); })
-      .catch(() => {});
-
+    loadMySkinProfiles().then((result) => { if (active) { setProfiles(result); setProfile(result.find((item) => item.isActive) || result[0] || null); } }).catch(() => { if (active) { setProfiles([]); setProfile(null); } }).finally(() => { if (active) setProfileChecked(true); });
+    loadSharedProductCatalog().then((result) => { if (active) setProducts(result); }).catch(() => {});
     return () => { active = false; };
   }, []);
 
   useEffect(() => {
     async function savePendingProfileAfterAuth() {
       if (pendingProfileSaveRef.current) return;
-      const pending = loadPendingProfileDraftRecord();
-      if (!pending) return;
-
-      const { data } = await supabase.auth.getSession();
-      if (!data.session?.user) return;
-
+      const pending = loadPendingProfileDraftRecord(); if (!pending) return;
+      const { data } = await supabase.auth.getSession(); if (!data.session?.user) return;
       pendingProfileSaveRef.current = true;
-      try {
-        await saveMySkinProfile(pending.profile, pending.name || "我的肤质档案");
-        clearPendingProfileDraft();
-        await refreshProfiles();
-        setRoute("mySkin");
-      } catch (error) {
-        console.error("Could not autosave pending skin profile after authentication", error);
-      } finally {
-        pendingProfileSaveRef.current = false;
-      }
+      try { await saveMySkinProfile(pending.profile, pending.name || "我的肤质档案"); clearPendingProfileDraft(); await refreshProfiles(); setRoute("mySkin"); }
+      catch (error) { console.error("Could not autosave pending skin profile after authentication", error); }
+      finally { pendingProfileSaveRef.current = false; }
     }
-
     void savePendingProfileAfterAuth();
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "INITIAL_SESSION") {
-        setTimeout(() => { void savePendingProfileAfterAuth(); }, 0);
-      }
-      if (event === "SIGNED_IN") {
-        setTimeout(() => {
-          void savePendingProfileAfterAuth()
-            .then(refreshProfiles)
-            .then(() => setRoute("mySkin"));
-        }, 0);
-      }
+      if (event === "INITIAL_SESSION") setTimeout(() => { void savePendingProfileAfterAuth(); }, 0);
+      if (event === "SIGNED_IN") setTimeout(() => { void savePendingProfileAfterAuth().then(refreshProfiles).then(() => setRoute("mySkin")); }, 0);
     });
     return () => data.subscription.unsubscribe();
   }, []);
 
-  async function chooseProfile(profileId: string) {
-    const selected = profiles.find((item) => item.id === profileId);
-    if (!selected) return;
-    setProfile(selected);
-    setProfiles((items) => items.map((item) => ({ ...item, isActive: item.id === profileId })));
-    await setActiveSkinProfile(profileId);
-  }
-
-  function openProduct(product: SharedProductRecord, concern: BrowseConcern = "all", returnRoute: ProductReturnRoute = "explore") {
-    setSelectedProduct(product);
-    setSelectedConcern(concern);
-    setProductReturnRoute(returnRoute);
-    setRoute("product");
-  }
-
-  function openRecommendations() {
-    setExploreEntry("forYou");
-    setRoute("explore");
-  }
-
+  async function chooseProfile(profileId: string) { const selected = profiles.find((item) => item.id === profileId); if (!selected) return; setProfile(selected); setProfiles((items) => items.map((item) => ({ ...item, isActive: item.id === profileId }))); await setActiveSkinProfile(profileId); }
+  function openProduct(product: SharedProductRecord, concern: BrowseConcern = "all", returnRoute: ProductReturnRoute = "explore") { setSelectedProduct(product); setSelectedConcern(concern); setProductReturnRoute(returnRoute); setRoute("product"); }
+  function openRecommendations() { setExploreEntry("forYou"); setRoute("explore"); }
   function goTo(target: string) {
-    if (target === "report" || target === "mySkin") return setRoute("mySkin");
-    if (target === "account") return setRoute("account");
+    if (target === "report" || target === "mySkin") return setRoute("mySkin"); if (target === "account") return setRoute("account");
     const exploreTargets: Record<string, ExploreEntry> = { recommend: "forYou", quickRecommend: "explore", explore: "explore", search: "search", brands: "brands", concerns: "concerns", luxury: "luxury", niche: "niche" };
     if (exploreTargets[target]) { setExploreEntry(exploreTargets[target]); return setRoute("explore"); }
-    if (target === "routine") return setRoute("routine");
-    if (target === "skin") return createProfile();
-    if (target === "upload") return setRoute("matchHub");
-    if (target === "quickIngredient") return setRoute("ingredientCheck");
-    setLegacyStart(undefined);
-    setRoute("legacy");
+    if (target === "routine") return setRoute("routine"); if (target === "skin") return createProfile(); if (target === "upload") return setRoute("matchHub"); if (target === "quickIngredient") return setRoute("ingredientCheck"); setLegacyStart(undefined); setRoute("legacy");
   }
+  function createProfile() { clearPendingProfileDraft(); setLegacyStart("skin"); setRoute("legacy"); }
+  function handleLegacyNavigation(event: React.MouseEvent<HTMLDivElement>) { const target = event.target as HTMLElement | null; const button = target?.closest("button"); const text = button?.textContent?.replace(/\s+/g, " ").trim() || ""; if (text.includes("查看成分匹配分析") || text.includes("分析一瓶具体产品") || text.includes("Ingredient Match")) { event.preventDefault(); event.stopPropagation(); setRoute("matchHub"); return; } if (text.includes("从产品数据库为我匹配") || text.includes("Match from product database")) { event.preventDefault(); event.stopPropagation(); openRecommendations(); } }
 
-  function createProfile() {
-    clearPendingProfileDraft();
-    setLegacyStart("skin");
-    setRoute("legacy");
-  }
-
-  function handleLegacyNavigation(event: React.MouseEvent<HTMLDivElement>) {
-    const target = event.target as HTMLElement | null;
-    const button = target?.closest("button");
-    const text = button?.textContent?.replace(/\s+/g, " ").trim() || "";
-    if (text.includes("查看成分匹配分析") || text.includes("分析一瓶具体产品")) {
-      event.preventDefault();
-      event.stopPropagation();
-      setRoute("matchHub");
-      return;
-    }
-    if (text.includes("从产品数据库为我匹配")) {
-      event.preventDefault();
-      event.stopPropagation();
-      openRecommendations();
-    }
-  }
-
-  if (route === "legacy") {
-    return (
-      <>
-        <style>{FONT_IMPORT}</style>
-        <div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}>
-          <button onClick={() => { void refreshProfiles().finally(() => { setLegacyStart(undefined); setRoute("home"); }); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
-        </div>
-        <div onClickCapture={handleLegacyNavigation}>
-          <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>正在读取你的肌肤档案…</div>}><LegacyApp initialScreen={legacyStart} profileData={profile || undefined} /></React.Suspense>
-        </div>
-      </>
-    );
-  }
-
-  if (route === "account") {
-    return <><style>{FONT_IMPORT}</style><EmailAccountPanel profile={profile} onBack={() => setRoute("home")} /></>;
-  }
-
-  if (route === "mySkin") {
-    return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => goTo("recommend")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
-  }
-
-  if (route === "matchHub") {
-    return <><style>{FONT_IMPORT}</style><V3MatchHub profile={profile} products={products} onBack={() => setRoute("home")} onScan={() => setRoute("ingredientCheck")} onViewRecommendations={openRecommendations} onProduct={(product) => openProduct(product, "all", "matchHub")} /></>;
-  }
-
-  if (route === "ingredientCheck") {
-    return <><style>{FONT_IMPORT}</style><V3IngredientCheck profile={profile} onBack={() => setRoute("matchHub")} /></>;
-  }
-
-  if (route === "explore") {
-    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} entry={exploreEntry} onBack={() => setRoute("home")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
-  }
-
-  if (route === "routine") {
-    return <><style>{FONT_IMPORT}</style><V3RoutineBuilder profile={profile} products={products} onBack={() => setRoute("home")} onExplore={() => setRoute("explore")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
-  }
-
-  if (route === "product" && selectedProduct) {
-    return <><style>{FONT_IMPORT}</style><V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={() => setRoute(productReturnRoute)} onProduct={(product, concern) => openProduct(product, concern, productReturnRoute)} /></>;
-  }
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#F7F3EC", color: "#211F1B", fontFamily: "'IBM Plex Sans', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}>
-      <style>{FONT_IMPORT}</style>
-      <div style={{ width: "100%", maxWidth: 520 }}>
-        {!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777065", fontSize: 12 }}>Loading your skin context…</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={createProfile} />}
-      </div>
-    </div>
-  );
+  const switcher = <div style={{ position: "fixed", right: 14, top: "calc(env(safe-area-inset-top, 0px) + 12px)", zIndex: 100 }}><LanguageSwitch /></div>;
+  if (route === "legacy") return <><style>{FONT_IMPORT}</style>{switcher}<div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}><button onClick={() => { void refreshProfiles().finally(() => { setLegacyStart(undefined); setRoute("home"); }); }} style={{ border: "1px solid #E4E0D8", borderRadius: 999, padding: "7px 11px", background: "rgba(252,251,248,.95)", color: "#252724", fontSize: 11, cursor: "pointer" }}>← {t("返回档案首页", "Back to home")}</button></div><div onClickCapture={handleLegacyNavigation}><React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F6F4EF", color: "#777870", fontSize: 12 }}>{t("正在读取你的肌肤档案…", "Loading your skin profile…")}</div>}><LegacyApp initialScreen={legacyStart} profileData={profile || undefined} /></React.Suspense></div></>;
+  if (route === "account") return <><style>{FONT_IMPORT}</style>{switcher}<EmailAccountPanel profile={profile} onBack={() => setRoute("home")} /></>;
+  if (route === "mySkin") return <><style>{FONT_IMPORT}</style>{switcher}<V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => goTo("recommend")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
+  if (route === "matchHub") return <><style>{FONT_IMPORT}</style>{switcher}<V3MatchHub profile={profile} products={products} onBack={() => setRoute("home")} onScan={() => setRoute("ingredientCheck")} onViewRecommendations={openRecommendations} onProduct={(product) => openProduct(product, "all", "matchHub")} /></>;
+  if (route === "ingredientCheck") return <><style>{FONT_IMPORT}</style>{switcher}<V3IngredientCheck profile={profile} onBack={() => setRoute("matchHub")} /></>;
+  if (route === "explore") return <><style>{FONT_IMPORT}</style>{switcher}<V3Explore products={products} profile={profile} entry={exploreEntry} onBack={() => setRoute("home")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
+  if (route === "routine") return <><style>{FONT_IMPORT}</style>{switcher}<V3RoutineBuilder profile={profile} products={products} onBack={() => setRoute("home")} onExplore={() => setRoute("explore")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
+  if (route === "product" && selectedProduct) return <><style>{FONT_IMPORT}</style>{switcher}<V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={() => setRoute(productReturnRoute)} onProduct={(product, concern) => openProduct(product, concern, productReturnRoute)} /></>;
+  return <div style={{ minHeight: "100vh", background: "#F7F5F0", color: "#252724", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif", display: "flex", justifyContent: "center", padding: "26px 16px" }}><style>{FONT_IMPORT}</style>{switcher}<div style={{ width: "100%", maxWidth: 520 }}>{!profileChecked ? <div style={{ paddingTop: 80, textAlign: "center", color: "#777870", fontSize: 12 }}>{t("正在读取你的肤质档案…", "Loading your skin profile…")}</div> : <V3Home goTo={goTo} profile={profile} profiles={profiles} onChooseProfile={chooseProfile} onCreateProfile={createProfile} />}</div></div>;
 }
+
+export default function V3App() { return <LanguageProvider><V3AppContent /></LanguageProvider>; }
