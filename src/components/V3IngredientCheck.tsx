@@ -1,0 +1,142 @@
+import React, { useMemo, useRef, useState } from "react";
+import { ArrowLeft, Camera, Image, Search, ScanText } from "lucide-react";
+import type { SkinProfileRecord } from "../lib/skinProfile";
+import { summarizeSkinProfile } from "../lib/skinProfile";
+
+const INK = "#211F1B";
+const PAPER = "#F7F3EC";
+const LINE = "#DDD6CA";
+const SAGE = "#718276";
+const ROSE = "#C9958F";
+const MUTE = "#777065";
+
+type IngredientRule = {
+  name: string;
+  aliases: string[];
+  function: string;
+  goodFor?: string[];
+  cautionFor?: string[];
+  strongCautionFor?: string[];
+};
+
+const RULES: IngredientRule[] = [
+  { name: "Niacinamide / 烟酰胺", aliases: ["niacinamide", "烟酰胺"], function: "帮助屏障、控油，并可辅助改善色沉。", goodFor: ["barrier", "oily", "acne", "pigmentation", "pores"] },
+  { name: "Glycerin / 甘油", aliases: ["glycerin", "甘油"], function: "经典吸湿保湿剂，通常耐受性较好。", goodFor: ["barrier", "dry", "sensitive", "dehydrated"] },
+  { name: "Panthenol / 泛醇", aliases: ["panthenol", "泛醇"], function: "保湿并支持屏障修护，常用于舒缓配方。", goodFor: ["barrier", "sensitive", "redness", "dry"] },
+  { name: "Ceramide / 神经酰胺", aliases: ["ceramide", "ceramide np", "ceramide ap", "ceramide eop", "神经酰胺"], function: "补充皮肤屏障脂质，适合干燥和屏障脆弱状态。", goodFor: ["barrier", "dry", "sensitive"] },
+  { name: "Squalane / 角鲨烷", aliases: ["squalane", "角鲨烷"], function: "轻度封闭与润肤，帮助减少水分流失。", goodFor: ["barrier", "dry", "sensitive"] },
+  { name: "Hyaluronic Acid / 透明质酸", aliases: ["hyaluronic acid", "sodium hyaluronate", "透明质酸", "玻尿酸"], function: "吸湿保湿，主要帮助补水和改善紧绷感。", goodFor: ["dry", "dehydrated", "barrier"] },
+  { name: "Centella / 积雪草", aliases: ["centella asiatica", "madecassoside", "积雪草", "羟基积雪草甙"], function: "常用于舒缓和屏障支持。", goodFor: ["sensitive", "redness", "barrier"] },
+  { name: "Azelaic Acid / 壬二酸", aliases: ["azelaic acid", "壬二酸"], function: "兼具抗炎、角质调节和色沉改善潜力。", goodFor: ["acne", "redness", "pigmentation"], cautionFor: ["verySensitive"] },
+  { name: "Salicylic Acid / 水杨酸", aliases: ["salicylic acid", "bha", "水杨酸"], function: "亲脂性角质调节成分，更适合黑头、油脂和粉刺问题。", goodFor: ["acne", "oily", "pores"], cautionFor: ["sensitive", "barrier", "dry"], strongCautionFor: ["verySensitive"] },
+  { name: "Glycolic Acid / 甘醇酸", aliases: ["glycolic acid", "甘醇酸", "乙醇酸"], function: "AHA 焕肤成分，可改善粗糙和暗沉，但刺激潜力较高。", goodFor: ["dullness", "pigmentation"], cautionFor: ["sensitive", "barrier", "dry"], strongCautionFor: ["verySensitive", "redness"] },
+  { name: "Lactic Acid / 乳酸", aliases: ["lactic acid", "乳酸"], function: "相对温和的 AHA，兼具一定保湿属性。", goodFor: ["dullness", "dry"], cautionFor: ["sensitive", "barrier"] },
+  { name: "Retinol / 视黄醇", aliases: ["retinol", "retinal", "retinaldehyde", "视黄醇", "视黄醛"], function: "抗老和痤疮相关的高效活性，但建立耐受很重要。", goodFor: ["aging", "acne"], cautionFor: ["sensitive", "barrier", "redness", "dry"], strongCautionFor: ["verySensitive", "pregnancy"] },
+  { name: "Vitamin C / 维生素C", aliases: ["ascorbic acid", "3-o-ethyl ascorbic acid", "ascorbyl glucoside", "维生素c", "抗坏血酸"], function: "抗氧化并帮助提亮、改善色沉。", goodFor: ["pigmentation", "dullness", "aging"], cautionFor: ["verySensitive"] },
+  { name: "Tranexamic Acid / 传明酸", aliases: ["tranexamic acid", "传明酸"], function: "主要用于色沉和肤色不均方向。", goodFor: ["pigmentation", "dullness"] },
+  { name: "Alpha-Arbutin / α-熊果苷", aliases: ["alpha-arbutin", "arbutin", "熊果苷"], function: "常用于淡斑和色沉管理。", goodFor: ["pigmentation", "dullness"] },
+  { name: "Peptides / 胜肽", aliases: ["peptide", "palmitoyl tripeptide", "palmitoyl tetrapeptide", "acetyl hexapeptide", "胜肽", "多肽"], function: "偏抗老和修护方向，通常刺激性较低。", goodFor: ["aging", "barrier"] },
+  { name: "Alcohol Denat. / 变性酒精", aliases: ["alcohol denat", "sd alcohol", "ethanol", "变性酒精"], function: "可改善清爽感和渗透感；高位出现时对部分敏感或屏障脆弱肤质可能偏刺激。", cautionFor: ["sensitive", "barrier", "redness", "dry"], strongCautionFor: ["verySensitive"] },
+  { name: "Fragrance / 香精", aliases: ["fragrance", "parfum", "香精"], function: "主要提供气味体验，不是功效成分；敏感人群可减少不必要暴露。", cautionFor: ["sensitive", "redness", "barrier"], strongCautionFor: ["verySensitive"] },
+  { name: "Essential Oils / 精油", aliases: ["lavender oil", "peppermint oil", "citrus peel oil", "tea tree oil", "精油"], function: "部分精油有感官或辅助作用，但也可能增加刺激负担。", cautionFor: ["sensitive", "redness", "barrier"], strongCautionFor: ["verySensitive"] },
+  { name: "Petrolatum / 凡士林", aliases: ["petrolatum", "凡士林"], function: "强封闭型润肤剂，帮助减少经皮水分流失。", goodFor: ["dry", "barrier"], cautionFor: ["oily"] },
+  { name: "Benzoyl Peroxide / 过氧化苯甲酰", aliases: ["benzoyl peroxide", "过氧化苯甲酰"], function: "痤疮常用抗菌活性，效果明确但也容易干燥刺激。", goodFor: ["acne"], cautionFor: ["dry", "sensitive", "barrier"], strongCautionFor: ["verySensitive"] },
+];
+
+function profileSignals(profile: SkinProfileRecord | null) {
+  const signals = new Set<string>();
+  const answers = profile?.skinAnswers || {};
+  const symptoms = profile?.selectedSymptoms || [];
+  if (answers.wash === "dry" || answers.oil === "dry") signals.add("dry");
+  if (answers.wash === "oily" || answers.oil === "oily") signals.add("oily");
+  if (answers.sensitive === "yes") { signals.add("sensitive"); signals.add("verySensitive"); }
+  if (symptoms.includes("redness") || symptoms.includes("sensitivity")) signals.add("redness");
+  if (symptoms.includes("acne")) signals.add("acne");
+  if (symptoms.includes("pores")) signals.add("pores");
+  if (symptoms.includes("pigmentation")) signals.add("pigmentation");
+  if (symptoms.includes("aging")) signals.add("aging");
+  if (symptoms.includes("dryness")) signals.add("dehydrated");
+  if (answers.sensitive === "yes" || symptoms.includes("redness")) signals.add("barrier");
+  if (profile?.profileAnswers?.pregnancy === "yes") signals.add("pregnancy");
+  return signals;
+}
+
+function rateIngredient(rule: IngredientRule, profile: SkinProfileRecord | null) {
+  const signals = profileSignals(profile);
+  const good = (rule.goodFor || []).filter((item) => signals.has(item));
+  const caution = (rule.cautionFor || []).filter((item) => signals.has(item));
+  const strong = (rule.strongCautionFor || []).filter((item) => signals.has(item));
+  if (strong.length) return { stars: 1, label: "不建议优先使用", detail: "与你当前档案存在较明显冲突或刺激风险。", tone: "risk" as const };
+  if (caution.length && !good.length) return { stars: 2, label: "谨慎尝试", detail: "存在一定不匹配或潜在刺激风险，建议先局部试用。", tone: "risk" as const };
+  if (good.length >= 2 && !caution.length) return { stars: 5, label: "非常适合", detail: "这个成分同时匹配你当前多个主要需求。", tone: "good" as const };
+  if (good.length && !caution.length) return { stars: 4, label: "适合", detail: "与当前至少一个主要肤质或需求方向一致。", tone: "good" as const };
+  if (good.length && caution.length) return { stars: 3, label: "可以用", detail: "既有潜在帮助，也有需要结合浓度和耐受权衡的地方。", tone: "neutral" as const };
+  return { stars: 3, label: "可以用", detail: "目前没有发现与你档案的明显冲突，但它也不是当前最核心的需求。", tone: "neutral" as const };
+}
+
+function findRule(text: string) {
+  const q = text.trim().toLowerCase();
+  if (!q) return null;
+  return RULES.find((rule) => rule.name.toLowerCase().includes(q) || rule.aliases.some((alias) => alias.toLowerCase().includes(q) || q.includes(alias.toLowerCase()))) || null;
+}
+
+function starsText(stars: number) { return `${"★".repeat(stars)}${"☆".repeat(5 - stars)}`; }
+
+export default function V3IngredientCheck({ profile, onBack }: { profile: SkinProfileRecord | null; onBack: () => void }) {
+  const [query, setQuery] = useState("");
+  const [ocrText, setOcrText] = useState("");
+  const [ocrStatus, setOcrStatus] = useState<"idle" | "reading" | "done" | "error">("idle");
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [preview, setPreview] = useState("");
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const albumRef = useRef<HTMLInputElement>(null);
+  const summary = summarizeSkinProfile(profile);
+  const selected = useMemo(() => findRule(query), [query]);
+  const rating = selected ? rateIngredient(selected, profile) : null;
+  const ocrRules = useMemo(() => {
+    const text = ocrText.toLowerCase();
+    return RULES.filter((rule) => rule.aliases.some((alias) => text.includes(alias.toLowerCase()))).slice(0, 20);
+  }, [ocrText]);
+
+  async function readImage(file?: File) {
+    if (!file) return;
+    setOcrStatus("reading");
+    setOcrProgress(0);
+    const reader = new FileReader();
+    reader.onload = () => setPreview(String(reader.result || ""));
+    reader.readAsDataURL(file);
+    try {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await createWorker("eng", 1, { logger: (message) => { if (message.status === "recognizing text") setOcrProgress(Math.round((message.progress || 0) * 100)); } });
+      const result = await worker.recognize(file);
+      await worker.terminate();
+      setOcrText(result.data.text.trim());
+      setOcrStatus("done");
+    } catch {
+      setOcrStatus("error");
+    }
+  }
+
+  return <div style={{ minHeight: "100vh", background: PAPER, color: INK, padding: "22px 16px 54px" }}><div style={{ maxWidth: 620, margin: "0 auto" }}>
+    <button onClick={onBack} style={{ border: 0, background: "transparent", padding: 0, color: MUTE, fontSize: 12, cursor: "pointer", marginBottom: 22, display: "flex", gap: 6, alignItems: "center" }}><ArrowLeft size={14}/> 返回</button>
+    <div style={{ color: SAGE, fontSize: 10, letterSpacing: ".08em", marginBottom: 7 }}>INGREDIENT MATCH</div>
+    <h1 style={{ fontFamily: "'Newsreader', serif", fontSize: 34, fontWeight: 500, lineHeight: 1.08, margin: "0 0 8px" }}>查一个成分，<br/><i>看它适不适合你。</i></h1>
+    <p style={{ fontSize: 12.5, color: MUTE, lineHeight: 1.6, marginBottom: 14 }}>基于当前 Skin Profile 判断。★★★☆☆ 及以上 = 可以使用；星级表示与你当前需求的匹配程度，不代表成分绝对好坏。</p>
+    {profile && <div style={{ border: `1px solid ${SAGE}`, background: "#EDF1EA", borderRadius: 12, padding: "10px 12px", fontSize: 11.5, color: "#4E6254", marginBottom: 18 }}>当前档案：{summary.skinType} · {summary.sensitivity}{summary.concerns.length ? ` · ${summary.concerns.join(" / ")}` : ""}</div>}
+
+    <div style={{ position: "relative", marginBottom: 10 }}><Search size={15} color={MUTE} style={{ position: "absolute", left: 12, top: 13 }}/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索成分，例如 Niacinamide / 烟酰胺" style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 12, padding: "11px 12px 11px 36px", background: "white", fontSize: 12.5 }}/></div>
+    {query && !selected && <div style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 13, background: "white", color: MUTE, fontSize: 11.5, marginBottom: 18 }}>当前规则库还没有找到这个成分。可以继续用下方 OCR 扫描整张配料表；未识别成分不会被系统硬判为安全或危险。</div>}
+    {selected && rating && <section style={{ border: `1px solid ${rating.tone === "risk" ? ROSE : SAGE}`, borderRadius: 16, padding: 16, background: rating.tone === "risk" ? "#F6ECE8" : "#F2F4EF", marginBottom: 22 }}><div style={{ fontSize: 10, color: MUTE, marginBottom: 5 }}>{selected.name}</div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 26, color: rating.tone === "risk" ? "#8E665F" : SAGE, letterSpacing: ".04em" }}>{starsText(rating.stars)}</div><div style={{ fontWeight: 600, fontSize: 13, marginTop: 4 }}>{rating.label}</div><div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.55, marginTop: 5 }}>{rating.detail}</div><div style={{ fontSize: 11.5, lineHeight: 1.55, marginTop: 8 }}>{selected.function}</div></section>}
+
+    <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 20 }}><div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 5 }}>SCAN THE FULL INCI</div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 22, marginBottom: 6 }}>或者直接扫描整瓶配料表</div><div style={{ fontSize: 11.5, color: MUTE, lineHeight: 1.6, marginBottom: 12 }}>图片只在你的设备浏览器内用于 OCR，不上传 Supabase。OCR 结果可以手动修改后再分析。</div>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={(e) => void readImage(e.target.files?.[0])} style={{ display: "none" }}/>
+      <input ref={albumRef} type="file" accept="image/*" onChange={(e) => void readImage(e.target.files?.[0])} style={{ display: "none" }}/>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}><button onClick={() => cameraRef.current?.click()} style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 12, background: "white", fontSize: 11.5, display: "flex", gap: 7, alignItems: "center", justifyContent: "center" }}><Camera size={15}/> 拍照</button><button onClick={() => albumRef.current?.click()} style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 12, background: "white", fontSize: 11.5, display: "flex", gap: 7, alignItems: "center", justifyContent: "center" }}><Image size={15}/> 从相册选择</button></div>
+      {preview && <img src={preview} alt="配料表预览" style={{ width: "100%", maxHeight: 260, objectFit: "contain", borderRadius: 12, border: `1px solid ${LINE}`, marginBottom: 10 }}/>} 
+      {ocrStatus === "reading" && <div style={{ fontSize: 11.5, color: MUTE, marginBottom: 10 }}><ScanText size={13} style={{ verticalAlign: -2, marginRight: 5 }}/>正在本地识别… {ocrProgress}%</div>}
+      {ocrStatus === "error" && <div style={{ fontSize: 11.5, color: "#8E665F", marginBottom: 10 }}>OCR 本次识别失败。可以换更清晰的图片，或直接在下方粘贴/输入 INCI。</div>}
+      {(ocrText || ocrStatus === "done" || ocrStatus === "error") && <><label style={{ display: "block", fontSize: 11.5, fontWeight: 600, marginBottom: 6 }}>识别结果（可编辑）</label><textarea value={ocrText} onChange={(e) => setOcrText(e.target.value)} rows={7} placeholder="Aqua, Glycerin, Niacinamide..." style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 12, padding: 11, resize: "vertical", fontSize: 11.5, lineHeight: 1.55, background: "white" }}/></>}
+      {ocrRules.length > 0 && <div style={{ marginTop: 12 }}>{ocrRules.map((rule) => { const r = rateIngredient(rule, profile); return <div key={rule.name} style={{ borderTop: `1px solid ${LINE}`, padding: "10px 0", display: "flex", justifyContent: "space-between", gap: 10 }}><div><div style={{ fontSize: 11.5, fontWeight: 600 }}>{rule.name}</div><div style={{ fontSize: 10.5, color: MUTE, marginTop: 2 }}>{r.label}</div></div><div style={{ color: r.tone === "risk" ? "#8E665F" : SAGE, fontSize: 14, whiteSpace: "nowrap" }}>{starsText(r.stars)}</div></div>})}</div>}
+    </section>
+  </div></div>;
+}
