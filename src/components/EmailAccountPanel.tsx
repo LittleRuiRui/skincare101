@@ -101,7 +101,7 @@ export default function EmailAccountPanel({ profile, onBack }: { profile?: (Skin
     setBusy(true);
     setError("");
     try {
-      const { error: deleteError } = await supabase.rpc("delete_my_account");
+      const { error: deleteError } = await supabase.functions.invoke("delete-account", { body: {} });
       if (deleteError) throw deleteError;
       await supabase.auth.signOut();
       window.location.reload();
