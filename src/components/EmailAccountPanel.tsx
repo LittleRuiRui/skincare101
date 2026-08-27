@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, LogOut, Mail, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LogOut, Mail, RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { signInWithPassword, signUpWithPassword, supabase, type SkinProfileInput } from "../lib/supabase";
 import { savePendingProfileDraft } from "../lib/profileDraft";
@@ -12,7 +12,7 @@ const SAGE = "#718276";
 const MUTE = "#777065";
 const RUST = "#A8503A";
 
-export default function EmailAccountPanel({ profile, onBack }: { profile?: (SkinProfileInput & { name?: string }) | null; onBack: () => void }) {
+export default function EmailAccountPanel({ profile, onBack, onReplayOnboarding }: { profile?: (SkinProfileInput & { name?: string }) | null; onBack: () => void; onReplayOnboarding?: () => void }) {
   const { t } = useLanguage();
   const [session, setSession] = useState<Session | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -50,7 +50,6 @@ export default function EmailAccountPanel({ profile, onBack }: { profile?: (Skin
     setError("");
     setSent(false);
     try {
-      // Never copy one signed-in user's profile into another account during account switching.
       if (profile && !switchingAccount) savePendingProfileDraft(profile, profile.name || t("我的肤质档案", "My skin profile"));
       if (mode === "register") await signUpWithPassword(email.trim(), password);
       else await signInWithPassword(email.trim(), password);
@@ -68,7 +67,6 @@ export default function EmailAccountPanel({ profile, onBack }: { profile?: (Skin
     try {
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) throw signOutError;
-      // Reload clears any in-memory skin profile from the previous account.
       window.location.reload();
     } catch (err: any) {
       setError(err?.message || t("退出失败，请稍后再试。", "Could not log out. Please try again."));
@@ -113,7 +111,6 @@ export default function EmailAccountPanel({ profile, onBack }: { profile?: (Skin
 
   function handleBack() {
     if (switchingAccount) {
-      // Do not expose the previous account's in-memory profile after signing out.
       window.location.reload();
       return;
     }
@@ -140,6 +137,7 @@ export default function EmailAccountPanel({ profile, onBack }: { profile?: (Skin
             </div>
           </div>
           <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 13, display: "grid", gap: 8 }}>
+            {onReplayOnboarding && <button disabled={busy} onClick={onReplayOnboarding} style={{ border: `1px solid #C8D4C6`, borderRadius: 999, padding: "10px 13px", background: "#F4F7F1", color: "#31563C", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: busy ? "default" : "pointer", fontWeight: 600 }}><RotateCcw size={14} /> {t("重新体验新手引导", "Run onboarding again")}</button>}
             <button disabled={busy} onClick={switchAccount} style={{ border: `1px solid ${LINE}`, borderRadius: 999, padding: "10px 13px", background: "white", color: INK, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: busy ? "default" : "pointer" }}><RefreshCw size={14} /> {t("切换账号", "Switch account")}</button>
             <button disabled={busy} onClick={logout} style={{ border: `1px solid ${LINE}`, borderRadius: 999, padding: "10px 13px", background: "white", color: INK, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: busy ? "default" : "pointer" }}><LogOut size={14} /> {t("退出登录", "Log out")}</button>
           </div>
