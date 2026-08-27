@@ -4,9 +4,10 @@ import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "../intelligence/formula
 import { approximatePriceGuide, getBrandProfile, priceTierForBrand } from "../data/brandProfiles";
 import { loadProductDetail, loadPublicProductExperiences, savePublicProductExperience, type ProductDetailRecord, type PublicProductExperience, type SharedProductRecord } from "../lib/supabase";
 import { summarizeSkinProfile, type SkinProfileRecord } from "../lib/skinProfile";
-import { formulaDataLabel, matchRating, productAudience, productVerdict, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
+import { formulaDataLabel, matchRating, marketingReality, productAudience, productVerdictLocalized, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
 import { loadProductExperience, saveProductExperience, type ProductReaction } from "../lib/productFeedback";
 import { consumerAliases } from "../lib/productNames";
+import { useLanguage } from "../lib/i18n";
 import BilingualIngredientList from "./BilingualIngredientList";
 import { SketchPageAccent, SketchUnderline } from "./HandDrawnVisuals";
 import FormulaRadar from "./FormulaRadar";
@@ -26,6 +27,7 @@ const confidenceFromCompleteness=(n:number)=>n>=85?"高":n>=65?"中":"较低";
 const systemStrength=(n:number)=>n>=4?"重点体系":n>=2?"辅助体系":"轻度支持";
 
 export default function V3ProductDetail({ product, products, profile, concern, onBack, onProduct }: { product: SharedProductRecord; products: SharedProductRecord[]; profile: SkinProfileRecord | null; concern?: BrowseConcern; onBack: () => void; onProduct: (product: SharedProductRecord, concern: BrowseConcern) => void }) {
+  const { language, t } = useLanguage();
   const [detail, setDetail] = useState<ProductDetailRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -47,6 +49,7 @@ export default function V3ProductDetail({ product, products, profile, concern, o
   const match = personalizedScore(product, profile, concern);
   const rating = matchRating(match);
   const formula = formulaDataLabel(current);
+  const reality = marketingReality(current, language, dna);
   const brand = getBrandProfile(product.brand);
   const fullIngredients = detail?.fullIngredients || product.ingredients;
   const visibleSystems = FORMULA_SYSTEM_ORDER.map((key) => dna.systems[key]).filter((system) => system.score > 0).sort((a, b) => b.score - a.score);
@@ -73,8 +76,8 @@ export default function V3ProductDetail({ product, products, profile, concern, o
     <div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 7, overflowWrap:"anywhere" }}>{product.brandLocalName||product.brand} · {product.brandEnglishName&&product.brandEnglishName!==product.brandLocalName?product.brandEnglishName:""} · {product.category}</div>
     <h1 style={{ fontFamily: "'Newsreader', serif", fontSize: 34, fontWeight: 500, lineHeight: 1.08, margin: 0, overflowWrap:"anywhere" }}>{localName}</h1><SketchUnderline width={135}/>
     {englishName!==localName&&<div style={{fontSize:12,color:MUTE,lineHeight:1.5,marginTop:8,overflowWrap:"anywhere"}}>{englishName}</div>}
-    {aliases.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"9px 0 4px"}}>{aliases.map(alias=><Badge key={alias} tone="sage">常用昵称 · {alias}</Badge>)}</div>}
-    <p style={{ fontFamily: "'Newsreader', serif", fontSize: 19, lineHeight: 1.45, margin: "14px 0 2px", color: "#49443D", overflowWrap:"anywhere" }}>{productVerdict(current, dna)}</p><SketchPageAccent kind="formula"/>
+    {aliases.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"9px 0 4px"}}>{aliases.map(alias=><Badge key={alias} tone="sage">{t("常用昵称","Nickname")} · {alias}</Badge>)}</div>}
+    <p style={{ fontFamily: "'Newsreader', serif", fontSize: 19, lineHeight: 1.45, margin: "14px 0 2px", color: "#49443D", overflowWrap:"anywhere" }}>{productVerdictLocalized(current, language, dna)}</p><SketchPageAccent kind="formula"/>
 
     <section style={{width:"100%",minWidth:0,boxSizing:"border-box",border:`1px solid ${LINE}`,borderRadius:17,padding:17,background:"rgba(255,255,255,.68)",marginBottom:12,overflow:"hidden"}}><div style={{fontSize:10,color:SAGE,letterSpacing:".08em",marginBottom:11}}>这款产品本身适合谁</div>{audience.bestFor.length>0&&<div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:650,marginBottom:6}}>更适合</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{audience.bestFor.slice(0,6).map(item=><Badge key={`best-${item}`} tone="sage">✓ {item}</Badge>)}</div></div>}{audience.notIdealFor.length>0&&<div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:650,marginBottom:6}}>不太适合</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{audience.notIdealFor.slice(0,6).map(item=><Badge key={`not-${item}`} tone="rose">× {item}</Badge>)}</div></div>}{audience.caveats.length>0&&<div><div style={{fontSize:11,fontWeight:650,marginBottom:5}}>使用提醒</div>{audience.caveats.slice(0,4).map(item=><div key={`caveat-${item}`} style={{fontSize:10.5,color:MUTE,lineHeight:1.55,marginTop:3,overflowWrap:"anywhere"}}>· {item}</div>)}</div>}</section>
 
@@ -85,7 +88,15 @@ export default function V3ProductDetail({ product, products, profile, concern, o
 
     {match?.recommendationAvailable && <section style={{ width:"100%", minWidth:0, boxSizing:"border-box", border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 10 }}>为什么这样判断</div>{match.positiveEvidence.slice(0, 3).map((evidence) => <div key={evidence.name} style={{ fontSize: 12, color: "#40594A", lineHeight: 1.55, marginBottom: 5 }}>✓ {evidence.name} · 配料位置靠前</div>)}{match.systemEvidence.slice(0, 2).map((evidence) => <div key={evidence.key} style={{ fontSize: 12, color: "#40594A", lineHeight: 1.55, marginBottom: 5 }}>✓ {evidence.label} 与你的目标一致</div>)}{match.negativeEvidence.slice(0, 3).map((evidence) => <div key={evidence.name} style={{ fontSize: 12, color: "#8A5F58", lineHeight: 1.55, marginTop: 5 }}>△ {evidence.name} · 需要考虑耐受</div>)}{match.formulaPenalty < 0 && <div style={{ fontSize: 12, color: "#8A5F58", lineHeight: 1.55, marginTop: 5 }}>△ 高位挥发性酒精对当前敏感/屏障目标不够友好</div>}</section>}
 
-    <section style={{ width:"100%", minWidth:0, boxSizing:"border-box", border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12, overflow:"hidden" }}><div style={{ fontSize: 10, color: MUTE, letterSpacing: ".08em", marginBottom: 8 }}>配方重点</div><FormulaRadar dna={dna}/><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{visibleSystems.slice(0,6).map(system=><Badge key={system.key} tone={system.score>=3?"sage":"neutral"}>{system.label} · {systemStrength(system.score)}</Badge>)}</div><div style={{ marginTop: 13, paddingTop: 11, borderTop: `1px solid ${LINE}`, display: "flex", gap: 6, flexWrap: "wrap" }}><Badge>{dna.baseType}</Badge>{dna.sensory.labels.map((label) => <Badge key={label}>{label}</Badge>)}<Badge tone={dna.alcohol.level === "high" ? "rose" : "sage"}>酒精 {dna.alcohol.level}</Badge></div></section>
+    <section style={{ width:"100%", minWidth:0, boxSizing:"border-box", border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12, overflow:"hidden" }}><div style={{ fontSize: 10, color: MUTE, letterSpacing: ".08em", marginBottom: 8 }}>{t("配方重点","Formula profile")}</div><FormulaRadar dna={dna}/><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{visibleSystems.slice(0,6).map(system=><Badge key={system.key} tone={system.score>=3?"sage":"neutral"}>{system.label} · {systemStrength(system.score)}</Badge>)}</div><div style={{ marginTop: 13, paddingTop: 11, borderTop: `1px solid ${LINE}`, display: "flex", gap: 6, flexWrap: "wrap" }}><Badge>{dna.baseType}</Badge>{dna.sensory.labels.map((label) => <Badge key={label}>{label}</Badge>)}<Badge tone={dna.alcohol.level === "high" ? "rose" : "sage"}>酒精 {dna.alcohol.level}</Badge></div></section>
+
+    <section style={{width:"100%",minWidth:0,boxSizing:"border-box",border:`1px solid ${LINE}`,borderRadius:17,padding:17,background:"#F1F3EE",marginBottom:12,overflow:"hidden"}}>
+      <div style={{fontSize:10,color:SAGE,letterSpacing:".08em",marginBottom:5}}>{t("品牌怎么说 vs 配方怎么看","MARKETING CLAIMS vs FORMULA EVIDENCE")}</div>
+      <div style={{fontFamily:"'Newsreader', serif",fontSize:21,lineHeight:1.3,marginBottom:10}}>{t("Marketing Reality Check","Marketing Reality Check")}</div>
+      <div style={{fontSize:10.5,color:MUTE,lineHeight:1.55,marginBottom:12}}>{reality.sourceNote}</div>
+      <div style={{display:"grid",gap:8,marginBottom:12}}>{reality.items.map(item=><div key={item.label} style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) auto",gap:10,alignItems:"center",borderTop:`1px solid ${LINE}`,paddingTop:8}}><div style={{fontSize:12,fontWeight:600}}>{item.label}</div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:item.support==="weak"?ROSE:SAGE}}>{"★".repeat(Math.max(1,item.score))}{"☆".repeat(Math.max(0,5-Math.max(1,item.score)))}</span><span style={{fontSize:9.5,color:MUTE,minWidth:58,textAlign:"right"}}>{item.support==="strong"?t("强支持","Strong"):item.support==="moderate"?t("有支持","Supported"):t("偏弱","Weak")}</span></div></div>)}</div>
+      <div style={{borderTop:`1px solid ${LINE}`,paddingTop:11,fontSize:12.5,lineHeight:1.65,color:"#44483F"}}><b>{t("一句话：","Bottom line: ")}</b>{reality.summary}</div>
+    </section>
 
     <section style={{ width:"100%", minWidth:0, boxSizing:"border-box", border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", marginBottom: 9 }}><div style={{ fontSize: 10, color: MUTE, letterSpacing: ".08em" }}>完整成分 · 中英对应</div><div style={{ fontSize: 10, color: MUTE }}>{fullIngredients.length} ingredients</div></div>{loading ? <div style={{ fontSize: 11.5, color: MUTE }}>Loading the full stored formula…</div> : error ? <div style={{ fontSize: 11.5, color: ROSE }}>无法加载详情，暂时显示分析用前 15 位。</div> : null}<BilingualIngredientList ingredients={fullIngredients}/><div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.55, marginTop: 10 }}>标准 INCI 是主键；中文名、常用名和作用来自 Ingredient Dictionary。尚未映射的成分仍显示原始 INCI，不会临时让 LLM 猜翻译。</div></section>
 
