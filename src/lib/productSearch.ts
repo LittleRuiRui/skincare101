@@ -1,5 +1,5 @@
 import type { SharedProductRecord } from "./supabase";
-import { consumerAliases } from "./productNames";
+import { consumerAliases } from "./productNames.ts";
 
 export function normalizeSearchText(value: string): string {
   return value
