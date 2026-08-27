@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import V3App from "./V3App";
+import V4App from "./V4App";
 
 declare const __BUILD_VERSION__: string;
 
@@ -23,6 +23,6 @@ try {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <V3App />
+    <V4App />
   </React.StrictMode>
 );
