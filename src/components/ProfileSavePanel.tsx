@@ -137,9 +137,10 @@ export default function ProfileSavePanel({ profile }: Props) {
       />
 
       {!session ? (
-        <details style={{ borderTop: `1px solid ${LINE}`, paddingTop: 10, marginTop: 4 }}>
-          <summary style={{ cursor: "pointer", color: TEAL, fontSize: 11.5 }}>需要跨设备使用？用邮箱＋密码同步（可选）</summary>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10, marginBottom: 9 }}><button type="button" onClick={() => setAuthMode("register")} style={{ border: `1px solid ${authMode === "register" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "register" ? TEAL_SOFT : "white", color: TEAL }}>创建账号</button><button type="button" onClick={() => setAuthMode("login")} style={{ border: `1px solid ${authMode === "login" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "login" ? TEAL_SOFT : "white", color: TEAL }}>登录已有账号</button></div>
+        <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 12, marginTop: 4 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: INK, marginBottom: 5 }}>保存到账号，换设备也能找回</div>
+        <div style={{ fontSize: 11, color: MUTE, lineHeight: 1.5, marginBottom: 10 }}>选择创建账号或登录已有账号，档案会自动同步到私人数据库。</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 9 }}><button type="button" onClick={() => setAuthMode("register")} style={{ border: `1px solid ${authMode === "register" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "register" ? TEAL_SOFT : "white", color: TEAL }}>创建账号</button><button type="button" onClick={() => setAuthMode("login")} style={{ border: `1px solid ${authMode === "login" ? TEAL : LINE}`, borderRadius: 999, padding: 7, background: authMode === "login" ? TEAL_SOFT : "white", color: TEAL }}>登录已有账号</button></div>
         <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
           <input
             type="email"
@@ -159,7 +160,7 @@ export default function ProfileSavePanel({ profile }: Props) {
             {busy ? "处理中" : authMode === "register" ? "创建账号并同步" : "登录并同步"}
           </button>
         </div>
-        </details>
+        </div>
       ) : (
         <>
           <div style={{ fontSize: 11.5, color: MUTE, marginBottom: 10 }}>当前账号：{session.user.email}</div>

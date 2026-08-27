@@ -2467,6 +2467,19 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
               <div style={{ borderTop: `1px solid #BFD6D0`, paddingTop: 9, marginTop: 11, marginBottom: 8, fontSize: 11.5, color: MUTE }}>建议观察2–4周；若持续加重、疼痛或出现异常皮损，请及时就医</div>
             </div>
 
+            <div data-html2canvas-ignore="true" style={{ marginBottom: 20 }}>
+              <ProfileSavePanel
+                profile={{
+                  skinAnswers,
+                  profileAnswers,
+                  selectedSymptoms,
+                  symptomAnswers: answersMap,
+                  multiSelectAnswers: multiSelMap,
+                  redFlag,
+                }}
+              />
+            </div>
+
             {suitability && (
               <div style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: "16px", background: "#fff", marginBottom: 20 }}>
                 <SectionLabel>你的成分方向</SectionLabel>
@@ -2486,19 +2499,6 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
             <details style={{ marginBottom: 22 }}>
               <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: TEAL, padding: "10px 0" }}>展开查看判断依据与完整建议</summary>
               <div style={{ paddingTop: 8 }}>
-
-            <div data-html2canvas-ignore="true" style={{ marginBottom: 24 }}>
-              <ProfileSavePanel
-                profile={{
-                  skinAnswers,
-                  profileAnswers,
-                  selectedSymptoms,
-                  symptomAnswers: answersMap,
-                  multiSelectAnswers: multiSelMap,
-                  redFlag,
-                }}
-              />
-            </div>
 
             {familyGroups.map((group) => {
               const isShared = group.items.length > 1;
