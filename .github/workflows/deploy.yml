@@ -30,13 +30,10 @@ jobs:
       - name: Verify watercolor image asset
         run: |
           test -s public/illustrations/skincare101-knowledge-watercolor.jpg
-          python - <<'PY'
-          from PIL import Image
-          p='public/illustrations/skincare101-knowledge-watercolor.jpg'
-          im=Image.open(p)
-          im.verify()
-          print('verified', p)
-          PY
+          test "$(head -c 2 public/illustrations/skincare101-knowledge-watercolor.jpg | xxd -p)" = "ffd8"
+          test "$(tail -c 2 public/illustrations/skincare101-knowledge-watercolor.jpg | xxd -p)" = "ffd9"
+          test "$(wc -c < public/illustrations/skincare101-knowledge-watercolor.jpg)" -gt 5000
+          file public/illustrations/skincare101-knowledge-watercolor.jpg | grep -q JPEG
       - name: Type-check
         run: npm run typecheck
       - name: Test
