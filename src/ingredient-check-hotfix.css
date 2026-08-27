@@ -1,0 +1,34 @@
+.page-ingredientCheck section:first-of-type{
+  background:#FBF6EA!important;
+  color:#283027!important;
+  border:1px solid #D7CDB8!important;
+  border-left:4px solid #D5A92E!important;
+  box-shadow:0 8px 24px rgba(40,55,42,.05)!important;
+  border-radius:20px!important;
+}
+.page-ingredientCheck section:first-of-type *{
+  color:inherit;
+}
+.page-ingredientCheck section:first-of-type button{
+  background:#FFFDF7!important;
+  color:#283027!important;
+  border:1px solid #D6CBB5!important;
+  box-shadow:none!important;
+  font-weight:600!important;
+}
+.page-ingredientCheck section:first-of-type button svg{
+  color:#2F5A40!important;
+}
+.page-ingredientCheck section:first-of-type select,
+.page-ingredientCheck section:first-of-type textarea,
+.page-ingredientCheck section:first-of-type input{
+  background:#FFFDF7!important;
+  color:#283027!important;
+  border-color:#D6CBB5!important;
+}
+.page-ingredientCheck section:first-of-type > div:first-child{
+  color:#2F5A40!important;
+}
+@media(max-width:899px){
+  .page-ingredientCheck section:first-of-type{border-radius:18px!important;}
+}
