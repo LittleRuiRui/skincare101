@@ -22,12 +22,24 @@ export async function loadPublicProductExperiences(productKey:string):Promise<Pu
 export async function savePublicProductExperience(input:PublicProductExperienceInput):Promise<void>{ const{data:userData,error:userError}=await supabase.auth.getUser(); if(userError)throw userError;if(!userData.user)throw new Error("请先登录，再公开提交使用体验。"); const{error}=await supabase.rpc("save_product_experience",{p_product_key:input.productKey,p_skin_type:input.skinType,p_sensitivity:input.sensitivity,p_concerns:input.concerns.slice(0,8),p_reaction:input.reaction,p_texture:input.texture,p_repurchase:input.repurchase,p_note:input.note.trim().slice(0,500)});if(error)throw error; }
 
 export async function loadSharedProductCatalog():Promise<SharedProductRecord[]>{
- const[{data,error},{data:notes,error:notesError}]=await Promise.all([
-  supabase.from("approved_product_catalog_summary").select("id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,search_aliases,source_locale,category,main_category,product_subtype,product_functions,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status,formula_function_summary,formula_best_for,formula_also_works_for,formula_less_ideal_for,formula_caveats,formula_verdict").order("brand",{ascending:true}),
-  supabase.from("product_editorial_notes").select("product_id,recommendation_summary,best_for,not_ideal_for,caveats,evidence_level").eq("locale","zh-CN")
+ const pageSize=500;
+ const fetchAll=async(table:string,select:string,configure?:(query:any)=>any)=>{
+  const rows:any[]=[];
+  for(let from=0;;from+=pageSize){
+   let query=supabase.from(table).select(select).range(from,from+pageSize-1);
+   if(configure)query=configure(query);
+   const{data,error}=await query;
+   if(error)throw error;
+   const page=data||[];
+   rows.push(...page);
+   if(page.length<pageSize)break;
+  }
+  return rows;
+ };
+ const[data,notes]=await Promise.all([
+  fetchAll("approved_product_catalog_summary","id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,search_aliases,source_locale,category,main_category,product_subtype,product_functions,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status,formula_function_summary,formula_best_for,formula_also_works_for,formula_less_ideal_for,formula_caveats,formula_verdict",query=>query.order("brand",{ascending:true}).order("name",{ascending:true})),
+  fetchAll("product_editorial_notes","product_id,recommendation_summary,best_for,not_ideal_for,caveats,evidence_level",query=>query.eq("locale","zh-CN").order("product_id",{ascending:true}))
  ]);
- if(error)throw error;
- if(notesError)console.warn("Product editorial notes could not be loaded",notesError);
  const notesByProduct=new Map((notes||[]).map(note=>[note.product_id,note]));
  return(data||[]).map(row=>{const note=notesByProduct.get(row.id);return{id:`shared-${row.id}`,brand:row.brand||"未知品牌",name:row.name||"未命名产品",brandLocalName:row.brand_local_name||undefined,brandEnglishName:row.brand_english_name||undefined,productLocalName:row.product_local_name||undefined,productEnglishName:row.product_english_name||undefined,searchAliases:row.search_aliases||[],sourceLocale:row.source_locale||undefined,category:row.category||"其他",mainCategory:row.main_category||undefined,productSubtype:row.product_subtype||undefined,productFunctions:row.product_functions||[],ingredients:row.ingredient_names||[],ingredientListType:row.ingredient_list_type==="full"?"full":"partial",dataCompleteness:row.data_completeness||0,sourceUrl:row.source_url||"",verifiedAt:"",formulaSummary:row.formula_function_summary||undefined,formulaVerdict:row.formula_verdict||undefined,formulaBestFor:row.formula_best_for||[],formulaAlsoWorksFor:row.formula_also_works_for||[],formulaLessIdealFor:row.formula_less_ideal_for||[],formulaCaveats:row.formula_caveats||[],editorial:note?{summary:note.recommendation_summary||undefined,bestFor:note.best_for||[],notIdealFor:note.not_ideal_for||[],caveats:note.caveats||[],evidenceLevel:note.evidence_level||undefined}:undefined,popularitySources:row.popularity_sources||[],popularityTier:row.popularity_tier||undefined,asiaAvailabilityStatus:row.asia_availability_status||"unverified",qualityFlags:[] as string[],source:"shared"}});
 }
