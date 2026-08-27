@@ -5,7 +5,7 @@ import type { SkinProfileRecord } from "./skinProfile.ts";
 import { getSpecialSkinStates } from "./skinProfile.ts";
 import { productExperienceAdjustment } from "./productFeedback.ts";
 
-export type BrowseSkinType = "all" | "normal" | "dry" | "oily" | "combination" | "sensitive" | "acne";
+export type BrowseSkinType = "all" | "dry" | "oily" | "combination" | "sensitive" | "acne";
 export type BrowseConcern = "all" | "hydration" | "barrier" | "redness" | "pores" | "acne" | "pigmentation" | "aging";
 
 const rule = (name: string) => ({ name });
@@ -43,4 +43,15 @@ export function confidenceLabel(confidence:ProductScore["confidence"]|undefined)
 export function formulaDataLabel(product:SharedProductRecord){if(product.ingredientListType==="full"&&product.dataCompleteness>=85)return {label:"完整配方已核验",detail:"完整 INCI 已保存；分析重点读取前 10–15 位。",tone:"good" as const};if(product.ingredientListType==="full")return {label:"完整配方 · 待复核",detail:"已保存完整列表，但来源或版本仍需进一步复核。",tone:"warn" as const};if(product.ingredients.length>0)return {label:"部分配方",detail:"目前只保存了部分成分，不能据此断言产品不含未显示成分。",tone:"warn" as const};return {label:"配方待补充",detail:"尚无足够 INCI 数据，不进入优先推荐。",tone:"muted" as const};}
 const SYSTEM_PRIORITY:FormulaSystemKey[]=["barrier","hydration","soothing","antiAging","oilControl","lipid"];
 export function oneLineVerdict(product:SharedProductRecord,dna:FormulaDna=analyzeFormulaDna(product)){if(!product.ingredients.length)return "已有产品条目，但配方证据不足，暂不做功效判断。";const systems=SYSTEM_PRIORITY.map(k=>dna.systems[k]).filter(s=>s.score>=2).sort((a,b)=>b.score-a.score);const lead=systems.slice(0,2).map(s=>s.label.replace("体系","")).join("＋")||"基础保湿";const texture=dna.sensory.labels.slice(0,2).join("、");const caution=dna.alcohol.level==="high"?"，但高位酒精让敏感肌需要谨慎":product.ingredientListType==="partial"?"，但目前只有部分配方":"";return `以${lead}为主的${product.category}，预计${texture||"常规肤感"}${caution}。`;}
-export function matchesSkinType(product:SharedProductRecord,skinType:BrowseSkinType){if(skinType==="all")return true;const dna=analyzeFormulaDna(product);if(skinType==="sensitive")return dna.alcohol.level!=="high"&&dna.systems.soothing.score>=2;if(skinType==="acne")return dna.systems.oilControl.score>=2||product.category==="祛痘";if(skinType==="oily")return dna.systems.oilControl.score>=1||!/厚润|油感/.test(dna.sensory.labels.join(" "));if(skinType==="dry")return dna.systems.hydration.score>=3||dna.systems.lipid.score>=2;if(skinType==="normal")return dna.alcohol.level!=="high"&&dna.systems.hydration.score>=1;return dna.systems.hydration.score>=2&&dna.alcohol.level!=="high";}
+const PLACEHOLDER_EDITORIAL=/^待完整\s*INCI|^配方证据不足|^待核验/i;
+export function productVerdict(product:SharedProductRecord,dna:FormulaDna=analyzeFormulaDna(product)){
+ const editorial=product.editorial?.summary?.trim();
+ if(editorial&&!PLACEHOLDER_EDITORIAL.test(editorial))return editorial;
+ if(product.formulaVerdict?.trim())return product.formulaVerdict.trim();
+ return oneLineVerdict(product,dna);
+}
+export function productAudience(product:SharedProductRecord){
+ const merge=(...groups:(string[]|undefined)[])=>Array.from(new Set(groups.flatMap(group=>group||[]).map(item=>item.trim()).filter(Boolean)));
+ return{bestFor:merge(product.editorial?.bestFor,product.formulaBestFor,product.formulaAlsoWorksFor),notIdealFor:merge(product.editorial?.notIdealFor,product.formulaLessIdealFor),caveats:merge(product.editorial?.caveats,product.formulaCaveats)};
+}
+export function matchesSkinType(product:SharedProductRecord,skinType:BrowseSkinType){if(skinType==="all")return true;const dna=analyzeFormulaDna(product);if(skinType==="sensitive")return dna.alcohol.level!=="high"&&dna.systems.soothing.score>=2;if(skinType==="acne")return dna.systems.oilControl.score>=2||product.category==="祛痘";if(skinType==="oily")return dna.systems.oilControl.score>=1||!/厚润|油感/.test(dna.sensory.labels.join(" "));if(skinType==="dry")return dna.systems.hydration.score>=3||dna.systems.lipid.score>=2;return dna.systems.hydration.score>=2&&dna.alcohol.level!=="high";}
