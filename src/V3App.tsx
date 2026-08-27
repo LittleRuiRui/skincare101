@@ -5,7 +5,7 @@ import V3Explore from "./components/V3Explore";
 import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
-import V3IngredientCheck from "./components/V3IngredientCheck";
+import V3ProductScanner from "./components/V3ProductScanner";
 import V3MatchHub from "./components/V3MatchHub";
 import V3SkinGuidance from "./components/V3SkinGuidance";
 import EmailAccountPanel from "./components/EmailAccountPanel";
@@ -52,7 +52,7 @@ function V3AppContent() {
   if(route==="mySkin")return <><style>{FONT_IMPORT}</style>{switcher}<V3MySkin profile={profile} onBack={()=>setRoute("home")} onRetake={createProfile} onFindProducts={()=>goTo("recommend")} onBuildRoutine={()=>setRoute("routine")} onOpenLegacyReport={()=>setRoute("skinGuidance")}/></>;
   if(route==="skinGuidance")return <><style>{FONT_IMPORT}</style>{switcher}<V3SkinGuidance profile={profile} onBack={()=>setRoute("mySkin")} onProducts={openRecommendations} onIngredientCheck={()=>setRoute("ingredientCheck")}/></>;
   if(route==="matchHub")return <><style>{FONT_IMPORT}</style>{switcher}<V3MatchHub profile={profile} products={products} onBack={()=>setRoute("home")} onScan={()=>setRoute("ingredientCheck")} onViewRecommendations={openRecommendations} onProduct={product=>openProduct(product,"all","matchHub")}/></>;
-  if(route==="ingredientCheck")return <><style>{FONT_IMPORT}</style>{switcher}<V3IngredientCheck profile={profile} onBack={()=>setRoute("matchHub")}/></>;
+  if(route==="ingredientCheck")return <><style>{FONT_IMPORT}</style>{switcher}<V3ProductScanner profile={profile} products={products} onBack={()=>setRoute("matchHub")} onProduct={product=>openProduct(product,"all","matchHub")}/></>;
   if(route==="explore")return <><style>{FONT_IMPORT}</style>{switcher}<V3Explore products={products} profile={profile} entry={exploreEntry} onBack={()=>setRoute("home")} onProduct={(product,concern)=>openProduct(product,concern,"explore")}/></>;
   if(route==="routine")return <><style>{FONT_IMPORT}</style>{switcher}<V3RoutineBuilder profile={profile} products={products} onBack={()=>setRoute("home")} onExplore={()=>setRoute("explore")} onProduct={(product,concern)=>openProduct(product,concern,"explore")}/></>;
   if(route==="product"&&selectedProduct)return <><style>{FONT_IMPORT}</style>{switcher}<V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={()=>setRoute(productReturnRoute)} onProduct={(product,concern)=>openProduct(product,concern,productReturnRoute)}/></>;
