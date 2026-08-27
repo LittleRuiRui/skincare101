@@ -1,0 +1,1 @@
+Skincare101 watercolor illustration assets used by the skincare knowledge cards.
