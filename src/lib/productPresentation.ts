@@ -22,7 +22,18 @@ export function profileConcern(profile?:SkinProfileRecord|null):Exclude<BrowseCo
 export function suitabilityFor(profile?:SkinProfileRecord|null,concern?:BrowseConcern):Suitability { const selected:Exclude<BrowseConcern,"all">=concern&&concern!=="all"?concern:profileConcern(profile); const parts=[CONCERN_RULES[selected]]; if(profile?.skinAnswers?.sensitive==="yes"&&selected!=="redness"&&selected!=="barrier")parts.push(CONCERN_RULES.redness); if(profile?.skinAnswers?.wash==="dry"||profile?.skinAnswers?.oil==="dry")parts.push(CONCERN_RULES.hydration); return mergeSuitability(parts); }
 export function personalizedScore(product:SharedProductRecord,profile?:SkinProfileRecord|null,concern?:BrowseConcern):ProductScore|null { if(!profile&&(!concern||concern==="all"))return null; return scoreProduct(product,suitabilityFor(profile,concern)); }
 export function rankForProfile(products:SharedProductRecord[],profile?:SkinProfileRecord|null,concern?:BrowseConcern){return rankProducts(products,suitabilityFor(profile,concern)).sort((a,b)=>{const f=productExperienceAdjustment(b.id)-productExperienceAdjustment(a.id);return f||(b.score||0)-(a.score||0);});}
-export function matchRating(match:ProductScore|null|undefined){ if(!match?.recommendationAvailable||match.score==null)return {label:"数据不足",detail:"现有配方证据不足，暂不强行判断。"}; if(match.score>=80)return {label:"非常适合",detail:"与当前肤质档案的主要需求高度匹配。"}; if(match.score>=65)return {label:"比较适合",detail:"整体匹配良好，但仍需结合具体耐受。"}; if(match.score>=50)return {label:"有条件适合",detail:"存在帮助点，也有需要权衡的配方因素。"}; return {label:"不太适合",detail:"与当前主要需求存在较明显冲突。"}; }
+export function matchRating(match:ProductScore|null|undefined){
+ if(!match?.recommendationAvailable||match.score==null)return {stars:0,starsText:"☆☆☆☆☆",label:"数据不足",detail:"现有配方证据不足，暂不强行判断。",suitable:false,bonus:false};
+ const score=match.score;
+ const stars=score>=85?5:score>=70?4:score>=55?3:score>=35?2:1;
+ const starsText=`${"★".repeat(stars)}${"☆".repeat(5-stars)}`;
+ const bonus=stars>=3&&(match.positiveEvidence.length+match.systemEvidence.filter(e=>e.score>=3).length)>=4&&match.negativeEvidence.length===0&&match.formulaPenalty>=0;
+ if(stars===5)return {stars,starsText,label:"非常适合",detail:"与你当前的肤质和主要需求高度匹配。",suitable:true,bonus};
+ if(stars===4)return {stars,starsText,label:"适合",detail:"整体匹配良好，能够较好满足你当前的主要需求。",suitable:true,bonus};
+ if(stars===3)return {stars,starsText,label:"可以用",detail:"没有明显不适配；只是未必是当前最优选择，或核心功效并非你最需要的。",suitable:true,bonus};
+ if(stars===2)return {stars,starsText,label:"谨慎尝试",detail:"存在一定不匹配或潜在刺激风险，建议先试用或局部测试。",suitable:false,bonus:false};
+ return {stars,starsText,label:"不推荐",detail:"与当前肤质或主要需求存在明显冲突，潜在风险高于适配收益。",suitable:false,bonus:false};
+}
 export function confidenceLabel(confidence:ProductScore["confidence"]|undefined){return confidence==="high"?"高":confidence==="medium"?"中":"低";}
 export function formulaDataLabel(product:SharedProductRecord){if(product.ingredientListType==="full"&&product.dataCompleteness>=85)return {label:"完整配方已核验",detail:"完整 INCI 已保存；分析重点读取前 10–15 位。",tone:"good" as const};if(product.ingredientListType==="full")return {label:"完整配方 · 待复核",detail:"已保存完整列表，但来源或版本仍需进一步复核。",tone:"warn" as const};if(product.ingredients.length>0)return {label:"部分配方",detail:"目前只保存了部分成分，不能据此断言产品不含未显示成分。",tone:"warn" as const};return {label:"配方待补充",detail:"尚无足够 INCI 数据，不进入优先推荐。",tone:"muted" as const};}
 const SYSTEM_PRIORITY:FormulaSystemKey[]=["barrier","hydration","soothing","antiAging","oilControl","lipid"];
