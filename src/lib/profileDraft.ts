@@ -9,11 +9,20 @@ export interface StoredProfileDraft {
   name?: string;
 }
 
-export function savePendingProfileDraft(profile: SkinProfileInput, name = "我的肤质档案"): void {
+function defaultDraftName(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `肤质档案 · ${year}-${month}-${day} ${hour}:${minute}`;
+}
+
+export function savePendingProfileDraft(profile: SkinProfileInput, name = ""): void {
   localStorage.setItem(PENDING_PROFILE_KEY, JSON.stringify({
     savedAt: Date.now(),
     profile,
-    name: name.trim() || "我的肤质档案",
+    name: name.trim() || defaultDraftName(),
   }));
 }
 
