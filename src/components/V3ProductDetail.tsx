@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "../intelligence/formulaDna";
 import { approximatePriceGuide, getBrandProfile, priceTierForBrand } from "../data/brandProfiles";
-import { loadProductDetail, type ProductDetailRecord, type SharedProductRecord } from "../lib/supabase";
-import type { SkinProfileRecord } from "../lib/skinProfile";
+import { loadProductDetail, loadPublicProductExperiences, savePublicProductExperience, type ProductDetailRecord, type PublicProductExperience, type SharedProductRecord } from "../lib/supabase";
+import { summarizeSkinProfile, type SkinProfileRecord } from "../lib/skinProfile";
 import { formulaDataLabel, oneLineVerdict, personalizedScore, rankForProfile, type BrowseConcern } from "../lib/productPresentation";
 import { loadProductExperience, saveProductExperience, type ProductReaction } from "../lib/productFeedback";
 
@@ -27,7 +27,9 @@ export default function V3ProductDetail({ product, products, profile, concern, o
   const [texture, setTexture] = useState<"love" | "okay" | "dislike">("okay");
   const [repurchase, setRepurchase] = useState<"yes" | "maybe" | "no">("maybe");
   const [note, setNote] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [experiences, setExperiences] = useState<PublicProductExperience[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -45,7 +47,13 @@ export default function V3ProductDetail({ product, products, profile, concern, o
     setTexture(experience?.texture || "okay");
     setRepurchase(experience?.repurchase || "maybe");
     setNote(experience?.note || "");
-    setSaved(Boolean(experience));
+    setFeedbackStatus("idle");
+  }, [product.id]);
+
+  useEffect(() => {
+    let active = true;
+    loadPublicProductExperiences(product.id).then((rows) => { if (active) setExperiences(rows); }).catch(() => { if (active) setExperiences([]); });
+    return () => { active = false; };
   }, [product.id]);
 
   const current = detail || product;
@@ -59,6 +67,31 @@ export default function V3ProductDetail({ product, products, profile, concern, o
   const similar = alternatives[0];
   const budgetAlternative = alternatives.find((candidate) => priceTierForBrand(candidate.brand) === "budget");
   const premiumAlternative = alternatives.find((candidate) => priceTierForBrand(candidate.brand) === "premium");
+  const profileSummary = summarizeSkinProfile(profile);
+  const improvedCount = experiences.filter((item) => item.reaction === "better").length;
+  const reactionLabel = { better: "皮肤有改善", neutral: "没有明显变化", irritated: "出现刺激/不适" } as const;
+  const textureLabel = { love: "喜欢肤感", okay: "肤感一般", dislike: "不喜欢肤感" } as const;
+  const repurchaseLabel = { yes: "会回购", maybe: "可能回购", no: "不会回购" } as const;
+
+  async function submitExperience() {
+    if (!profileSummary.isComplete) {
+      setFeedbackStatus("error");
+      setFeedbackMessage("请先建立肤质档案，这样别人才能理解这条体验来自什么肤质。");
+      return;
+    }
+    setFeedbackStatus("saving");
+    setFeedbackMessage("");
+    try {
+      await savePublicProductExperience({ productKey: product.id, skinType: profileSummary.skinType, sensitivity: profileSummary.sensitivity, concerns: profileSummary.concerns, reaction, texture, repurchase, note });
+      saveProductExperience({ productId: product.id, reaction, texture, repurchase, note: note.trim() });
+      setExperiences(await loadPublicProductExperiences(product.id));
+      setFeedbackStatus("saved");
+      setFeedbackMessage("已匿名公开。别人只会看到肤质标签和使用感。");
+    } catch (submissionError) {
+      setFeedbackStatus("error");
+      setFeedbackMessage(submissionError instanceof Error ? submissionError.message : "暂时无法提交，请稍后重试。");
+    }
+  }
 
   return <div style={{ minHeight: "100vh", background: PAPER, color: INK, padding: "22px 16px 54px" }}><div style={{ maxWidth: 620, margin: "0 auto" }}>
     <button onClick={onBack} style={{ border: 0, background: "transparent", padding: 0, color: MUTE, fontSize: 12, cursor: "pointer", marginBottom: 24, display: "flex", gap: 6, alignItems: "center" }}><ArrowLeft size={14}/> Explore</button>
@@ -113,7 +146,26 @@ export default function V3ProductDetail({ product, products, profile, concern, o
 
     {(similar || budgetAlternative || premiumAlternative) && <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ fontSize: 10, color: MUTE, letterSpacing: ".08em", marginBottom: 10 }}>ALTERNATIVES</div>{[{ label: "Similar formula match", candidate: similar }, { label: "Budget alternative", candidate: budgetAlternative }, { label: "Premium alternative", candidate: premiumAlternative }].map(({ label, candidate }) => candidate && <button key={`${label}-${candidate.id}`} onClick={() => onProduct(candidate, concern || "all")} style={{ width: "100%", border: 0, borderTop: `1px solid ${LINE}`, background: "transparent", padding: "10px 0", textAlign: "left", cursor: "pointer" }}><div style={{ fontSize: 9.5, color: SAGE, marginBottom: 3 }}>{label}</div><div style={{ fontSize: 11.5 }}>{candidate.brand} · {candidate.name}</div></button>)}</section>}
 
-    <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}><div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 5 }}>HOW DID IT WORK FOR YOU?</div><div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 11 }}>记录真实使用反馈，后续推荐可以据此理解你的耐受和肤感偏好。</div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginBottom: 8 }}><select aria-label="Skin reaction" value={reaction} onChange={(event) => setReaction(event.target.value as ProductReaction)}><option value="better">Skin improved</option><option value="neutral">No clear change</option><option value="irritated">Irritated</option></select><select aria-label="Texture" value={texture} onChange={(event) => setTexture(event.target.value as typeof texture)}><option value="love">Love texture</option><option value="okay">Texture okay</option><option value="dislike">Dislike texture</option></select><select aria-label="Repurchase" value={repurchase} onChange={(event) => setRepurchase(event.target.value as typeof repurchase)}><option value="yes">Repurchase</option><option value="maybe">Maybe</option><option value="no">No repurchase</option></select></div><textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="例如：第二天闷痘、脸颊刺痛、湿热天气太黏…" style={{ width: "100%", boxSizing: "border-box", minHeight: 68, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 10, padding: 9, fontSize: 11, marginBottom: 8 }}/><button onClick={() => { saveProductExperience({ productId: product.id, reaction, texture, repurchase, note: note.trim() }); setSaved(true); }} style={{ width: "100%", border: 0, borderRadius: 999, padding: 9, background: SAGE, color: "white", fontSize: 11, cursor: "pointer" }}>{saved ? "Feedback saved" : "Save my experience"}</button><div style={{ fontSize: 9.5, color: MUTE, marginTop: 7 }}>当前先保存在此设备；登录后的跨设备同步将在账户数据迁移后开启。</div></section>
+    <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}>
+      <div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 5 }}>真实使用体验</div>
+      <div style={{ fontFamily: "'Newsreader', serif", fontSize: 21, marginBottom: 5 }}>{experiences.length ? `${experiences.length} 位用户分享` : "还没有人分享"}</div>
+      <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 13 }}>{experiences.length ? `${improvedCount} 人认为皮肤有改善；按肤质查看个体体验，不把它当作医疗证据。` : "成为第一个分享真实使用感的人。"}</div>
+      {experiences.map((item) => <article key={item.id} style={{ borderTop: `1px solid ${LINE}`, padding: "12px 0" }}>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}><Badge tone="sage">{item.skinType}</Badge><Badge>{item.sensitivity}</Badge>{item.concerns.slice(0, 3).map((entry) => <Badge key={entry}>{entry}</Badge>)}</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", fontSize: 10.5, marginBottom: item.note ? 7 : 0 }}><span>✓ {reactionLabel[item.reaction]}</span><span>· {textureLabel[item.texture]}</span><span>· {repurchaseLabel[item.repurchase]}</span></div>
+        {item.note && <div style={{ fontSize: 11.5, color: "#514D45", lineHeight: 1.55 }}>{item.note}</div>}
+      </article>)}
+    </section>
+
+    <section style={{ border: `1px solid ${LINE}`, borderRadius: 17, padding: 17, background: "rgba(255,255,255,.68)", marginBottom: 12 }}>
+      <div style={{ fontSize: 10, color: SAGE, letterSpacing: ".08em", marginBottom: 5 }}>分享你的使用体验</div>
+      <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.5, marginBottom: 11 }}>匿名显示为：{profileSummary.skinType} · {profileSummary.sensitivity}{profileSummary.concerns.length ? ` · ${profileSummary.concerns.slice(0, 3).join(" / ")}` : ""}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 7, marginBottom: 8 }}><select aria-label="使用后的皮肤变化" value={reaction} onChange={(event) => setReaction(event.target.value as ProductReaction)}><option value="better">皮肤有改善</option><option value="neutral">没有明显变化</option><option value="irritated">出现刺激或不适</option></select><select aria-label="产品肤感" value={texture} onChange={(event) => setTexture(event.target.value as typeof texture)}><option value="love">喜欢肤感</option><option value="okay">肤感一般</option><option value="dislike">不喜欢肤感</option></select><select aria-label="是否回购" value={repurchase} onChange={(event) => setRepurchase(event.target.value as typeof repurchase)}><option value="yes">会回购</option><option value="maybe">可能回购</option><option value="no">不会回购</option></select></div>
+      <textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} placeholder="例如：用了多久、什么天气、是否闷痘或刺痛……" style={{ width: "100%", boxSizing: "border-box", minHeight: 78, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 10, padding: 9, fontSize: 11, marginBottom: 8 }}/>
+      <button disabled={feedbackStatus === "saving"} onClick={submitExperience} style={{ width: "100%", border: 0, borderRadius: 999, padding: 10, background: SAGE, color: "white", fontSize: 11, cursor: feedbackStatus === "saving" ? "wait" : "pointer", opacity: feedbackStatus === "saving" ? .65 : 1 }}>{feedbackStatus === "saving" ? "正在提交…" : feedbackStatus === "saved" ? "已公开，可继续修改" : "匿名公开我的体验"}</button>
+      {feedbackMessage && <div style={{ fontSize: 9.5, color: feedbackStatus === "error" ? ROSE : SAGE, marginTop: 7 }}>{feedbackMessage}</div>}
+      <div style={{ fontSize: 9.5, color: MUTE, marginTop: 7 }}>需要登录才能提交；不会公开姓名、邮箱或账号信息。</div>
+    </section>
 
     <a href={current.sourceUrl} target="_blank" rel="noreferrer" style={{ width: "100%", boxSizing: "border-box", borderRadius: 999, padding: "11px 14px", background: INK, color: "white", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 12 }}>View formula source / purchase page <ExternalLink size={13}/></a>
   </div></div>;

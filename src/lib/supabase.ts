@@ -46,6 +46,71 @@ export interface ParsedSubmission {
   coverage: number;
 }
 
+export interface PublicProductExperience {
+  id: string;
+  productKey: string;
+  skinType: string;
+  sensitivity: string;
+  concerns: string[];
+  reaction: "better" | "neutral" | "irritated";
+  texture: "love" | "okay" | "dislike";
+  repurchase: "yes" | "maybe" | "no";
+  note: string;
+  updatedAt: string;
+}
+
+export interface PublicProductExperienceInput {
+  productKey: string;
+  skinType: string;
+  sensitivity: string;
+  concerns: string[];
+  reaction: PublicProductExperience["reaction"];
+  texture: PublicProductExperience["texture"];
+  repurchase: PublicProductExperience["repurchase"];
+  note: string;
+}
+
+export async function loadPublicProductExperiences(productKey: string): Promise<PublicProductExperience[]> {
+  const { data, error } = await supabase
+    .from("product_experiences")
+    .select("id,product_key,skin_type,sensitivity,concerns,reaction,texture,repurchase,note,updated_at")
+    .eq("product_key", productKey)
+    .order("updated_at", { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  return (data || []).map((row) => ({
+    id: row.id,
+    productKey: row.product_key,
+    skinType: row.skin_type,
+    sensitivity: row.sensitivity,
+    concerns: row.concerns || [],
+    reaction: row.reaction,
+    texture: row.texture,
+    repurchase: row.repurchase,
+    note: row.note || "",
+    updatedAt: row.updated_at,
+  }));
+}
+
+export async function savePublicProductExperience(input: PublicProductExperienceInput): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userData.user) throw new Error("请先登录，再公开提交使用体验。");
+  const { error } = await supabase.from("product_experiences").upsert({
+    user_id: userData.user.id,
+    product_key: input.productKey,
+    skin_type: input.skinType,
+    sensitivity: input.sensitivity,
+    concerns: input.concerns.slice(0, 8),
+    reaction: input.reaction,
+    texture: input.texture,
+    repurchase: input.repurchase,
+    note: input.note.trim().slice(0, 500),
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "user_id,product_key" });
+  if (error) throw error;
+}
+
 export async function loadSharedProductCatalog(): Promise<SharedProductRecord[]> {
   const { data, error } = await supabase
     .from("approved_product_catalog_summary")

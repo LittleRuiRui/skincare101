@@ -76,9 +76,8 @@ export default function V3Home({ goTo, profile = null, profiles = [], onChoosePr
       {hasProfile && <section style={{ borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}`, padding: "18px 0", marginBottom: 16 }}><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, letterSpacing: ".1em", color: SAGE, marginBottom: 7 }}>FOR {profile?.name.toUpperCase()}</div><div style={{ fontFamily: "'Newsreader', serif", fontSize: 23, marginBottom: 7 }}>Products ranked in your skin context.</div><div style={{ fontSize: 12, lineHeight: 1.55, color: MUTE, marginBottom: 13 }}>推荐会结合当前档案的肤质、敏感度和主要问题，并把配方证据与个人匹配分开显示。</div><button onClick={() => goTo("recommend")} style={{ border: `1px solid ${INK}`, borderRadius: 999, padding: "9px 14px", background: INK, color: "white", fontSize: 11.5, cursor: "pointer" }}>查看全部个人推荐 →</button></section>}
 
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, letterSpacing: ".1em", color: MUTE, marginBottom: 9 }}>或者直接开始</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+      <div style={{ marginBottom: 24 }}>
         <FeatureCard eyebrow="Formula" title="查一瓶产品" body="拍配料表或搜索产品，看看它是否匹配你。" onClick={() => goTo(hasProfile ? "upload" : "quickIngredient")} accent="#9B805A" />
-        <FeatureCard eyebrow="Explore" title="我知道肤质" body="按肤质和问题浏览有完整证据的产品。" onClick={() => goTo("explore")} accent={ROSE} />
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 22, paddingTop: 15, borderTop: `1px solid ${LINE}`, color: MUTE, fontSize: 10.5, lineHeight: 1.45 }}><FlaskConical size={13} /> Product data supports decisions; your Skin Profile provides the context.</div>
     </div>
