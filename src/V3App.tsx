@@ -6,6 +6,7 @@ import type { ExploreEntry } from "./components/V3Explore";
 import V3RoutineBuilder from "./components/V3RoutineBuilder";
 import V3ProductDetail from "./components/V3ProductDetail";
 import V3IngredientCheck from "./components/V3IngredientCheck";
+import V3MatchHub from "./components/V3MatchHub";
 import EmailAccountPanel from "./components/EmailAccountPanel";
 import { loadSharedProductCatalog, saveMySkinProfile, supabase, type SharedProductRecord } from "./lib/supabase";
 import { loadMySkinProfiles, setActiveSkinProfile } from "./lib/mySkin";
@@ -19,7 +20,9 @@ const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 `;
 
-type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "ingredientCheck" | "legacy" | "account";
+type Route = "home" | "mySkin" | "explore" | "routine" | "product" | "ingredientCheck" | "matchHub" | "legacy" | "account";
+
+type ProductReturnRoute = "explore" | "matchHub";
 
 export default function V3App() {
   const [route, setRoute] = useState<Route>("home");
@@ -29,6 +32,7 @@ export default function V3App() {
   const [products, setProducts] = useState<SharedProductRecord[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<SharedProductRecord | null>(null);
   const [selectedConcern, setSelectedConcern] = useState<BrowseConcern>("all");
+  const [productReturnRoute, setProductReturnRoute] = useState<ProductReturnRoute>("explore");
   const [exploreEntry, setExploreEntry] = useState<ExploreEntry>("explore");
   const [legacyStart, setLegacyStart] = useState<string | undefined>();
   const pendingProfileSaveRef = useRef(false);
@@ -106,10 +110,16 @@ export default function V3App() {
     await setActiveSkinProfile(profileId);
   }
 
-  function openProduct(product: SharedProductRecord, concern: BrowseConcern = "all") {
+  function openProduct(product: SharedProductRecord, concern: BrowseConcern = "all", returnRoute: ProductReturnRoute = "explore") {
     setSelectedProduct(product);
     setSelectedConcern(concern);
+    setProductReturnRoute(returnRoute);
     setRoute("product");
+  }
+
+  function openRecommendations() {
+    setExploreEntry("forYou");
+    setRoute("explore");
   }
 
   function goTo(target: string) {
@@ -119,7 +129,8 @@ export default function V3App() {
     if (exploreTargets[target]) { setExploreEntry(exploreTargets[target]); return setRoute("explore"); }
     if (target === "routine") return setRoute("routine");
     if (target === "skin") return createProfile();
-    if (target === "upload" || target === "quickIngredient") return setRoute("ingredientCheck");
+    if (target === "upload") return setRoute("matchHub");
+    if (target === "quickIngredient") return setRoute("ingredientCheck");
     setLegacyStart(undefined);
     setRoute("legacy");
   }
@@ -130,6 +141,23 @@ export default function V3App() {
     setRoute("legacy");
   }
 
+  function handleLegacyNavigation(event: React.MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement | null;
+    const button = target?.closest("button");
+    const text = button?.textContent?.replace(/\s+/g, " ").trim() || "";
+    if (text.includes("查看成分匹配分析") || text.includes("分析一瓶具体产品")) {
+      event.preventDefault();
+      event.stopPropagation();
+      setRoute("matchHub");
+      return;
+    }
+    if (text.includes("从产品数据库为我匹配")) {
+      event.preventDefault();
+      event.stopPropagation();
+      openRecommendations();
+    }
+  }
+
   if (route === "legacy") {
     return (
       <>
@@ -137,7 +165,9 @@ export default function V3App() {
         <div style={{ position: "fixed", zIndex: 50, left: 12, top: 12 }}>
           <button onClick={() => { void refreshProfiles().finally(() => { setLegacyStart(undefined); setRoute("home"); }); }} style={{ border: "1px solid #DDD6CA", borderRadius: 999, padding: "7px 11px", background: "rgba(247,243,236,.94)", color: "#211F1B", fontSize: 11, cursor: "pointer", boxShadow: "0 3px 15px rgba(0,0,0,.06)" }}>← 返回档案首页</button>
         </div>
-        <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>正在读取你的肌肤档案…</div>}><LegacyApp initialScreen={legacyStart} profileData={profile || undefined} /></React.Suspense>
+        <div onClickCapture={handleLegacyNavigation}>
+          <React.Suspense fallback={<div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#F7F3EC", color: "#777065", fontSize: 12 }}>正在读取你的肌肤档案…</div>}><LegacyApp initialScreen={legacyStart} profileData={profile || undefined} /></React.Suspense>
+        </div>
       </>
     );
   }
@@ -150,20 +180,24 @@ export default function V3App() {
     return <><style>{FONT_IMPORT}</style><V3MySkin profile={profile} onBack={() => setRoute("home")} onRetake={createProfile} onFindProducts={() => goTo("recommend")} onBuildRoutine={() => setRoute("routine")} onOpenLegacyReport={() => { setLegacyStart("report"); setRoute("legacy"); }} /></>;
   }
 
+  if (route === "matchHub") {
+    return <><style>{FONT_IMPORT}</style><V3MatchHub profile={profile} products={products} onBack={() => setRoute("home")} onScan={() => setRoute("ingredientCheck")} onViewRecommendations={openRecommendations} onProduct={(product) => openProduct(product, "all", "matchHub")} /></>;
+  }
+
   if (route === "ingredientCheck") {
-    return <><style>{FONT_IMPORT}</style><V3IngredientCheck profile={profile} onBack={() => setRoute("home")} /></>;
+    return <><style>{FONT_IMPORT}</style><V3IngredientCheck profile={profile} onBack={() => setRoute("matchHub")} /></>;
   }
 
   if (route === "explore") {
-    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} entry={exploreEntry} onBack={() => setRoute("home")} onProduct={openProduct} /></>;
+    return <><style>{FONT_IMPORT}</style><V3Explore products={products} profile={profile} entry={exploreEntry} onBack={() => setRoute("home")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
   }
 
   if (route === "routine") {
-    return <><style>{FONT_IMPORT}</style><V3RoutineBuilder profile={profile} products={products} onBack={() => setRoute("home")} onExplore={() => setRoute("explore")} onProduct={openProduct} /></>;
+    return <><style>{FONT_IMPORT}</style><V3RoutineBuilder profile={profile} products={products} onBack={() => setRoute("home")} onExplore={() => setRoute("explore")} onProduct={(product, concern) => openProduct(product, concern, "explore")} /></>;
   }
 
   if (route === "product" && selectedProduct) {
-    return <><style>{FONT_IMPORT}</style><V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={() => setRoute("explore")} onProduct={openProduct} /></>;
+    return <><style>{FONT_IMPORT}</style><V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={() => setRoute(productReturnRoute)} onProduct={(product, concern) => openProduct(product, concern, productReturnRoute)} /></>;
   }
 
   return (
