@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap');
+
+/* Global UI audit safety layer. Keep this file presentation-only. */
+.site-content,
+.site-content *{
+  box-sizing:border-box;
+}
+
+.site-content img,
+.site-content svg{
+  max-width:100%;
+}
+
+.site-content input,
+.site-content select,
+.site-content textarea,
+.site-content button{
+  -webkit-tap-highlight-color:transparent;
+}
+
+.site-content input::placeholder,
+.site-content textarea::placeholder{
+  color:#8A847A;
+  opacity:1;
+}
+
+/* Avoid tiny metadata becoming illegible on cream backgrounds. */
+.page-product [style*="font-size: 9.5px"],
+.page-explore [style*="font-size: 9.5px"],
+.page-routine [style*="font-size: 9.5px"],
+.page-mySkin [style*="font-size: 9.5px"],
+.page-skinGuidance [style*="font-size: 9.5px"],
+.page-matchHub [style*="font-size: 9.5px"],
+.page-ingredientCheck [style*="font-size: 9.5px"]{
+  font-size:11px!important;
+}
+
+.page-product [style*="font-size: 10px"],
+.page-explore [style*="font-size: 10px"],
+.page-routine [style*="font-size: 10px"],
+.page-mySkin [style*="font-size: 10px"],
+.page-skinGuidance [style*="font-size: 10px"],
+.page-matchHub [style*="font-size: 10px"],
+.page-ingredientCheck [style*="font-size: 10px"]{
+  font-size:11px!important;
+}
+
+.page-product [style*="font-size: 10.5px"],
+.page-explore [style*="font-size: 10.5px"],
+.page-routine [style*="font-size: 10.5px"],
+.page-mySkin [style*="font-size: 10.5px"],
+.page-skinGuidance [style*="font-size: 10.5px"],
+.page-matchHub [style*="font-size: 10.5px"],
+.page-ingredientCheck [style*="font-size: 10.5px"]{
+  font-size:11.5px!important;
+}
+
+/* Prevent decorative side panels from intruding into content around tablet/desktop breakpoint. */
+@media (min-width:900px) and (max-width:1066px){
+  .botanical-panel{
+    min-width:0!important;
+    width:15%!important;
+  }
+  .botanical-panel svg{
+    width:150px!important;
+    opacity:.82;
+  }
+}
+
+/* Safer defaults for long bilingual names and ingredient strings. */
+.page-product,
+.page-explore,
+.page-routine,
+.page-matchHub,
+.page-ingredientCheck{
+  overflow-wrap:anywhere;
+}
+
+/* Do not let route-level decoration cover interactive content. */
+.page-product::after,
+.page-routine::after,
+.page-ingredientCheck::after{
+  z-index:-1!important;
+}
+
+@media(max-width:899px){
+  .site-content{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+  .site-content button,
+  .site-content input,
+  .site-content select{
+    min-height:44px;
+  }
+}

@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import V4App from "./V4App";
 import "./ingredient-check-hotfix.css";
+import "./ui-audit-safety.css";
 
 declare const __BUILD_VERSION__: string;
 
