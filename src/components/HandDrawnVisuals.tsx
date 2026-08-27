@@ -1,47 +1,9 @@
 import React from "react";
 
-const INK = "#474840";
-const SAGE = "#7E907B";
-const PEACH = "#DDAA7A";
-const BLUE = "#8EA2B7";
-
-export function HandDrawnHero() {
-  return <div aria-hidden="true" style={{ position: "relative", height: 168, margin: "8px 0 20px", overflow: "hidden" }}>
-    <style>{`
-      @keyframes sketchDraw { from { stroke-dashoffset: 1; opacity: .15 } to { stroke-dashoffset: 0; opacity: 1 } }
-      @keyframes sketchFade { from { opacity: 0; transform: translateY(4px) rotate(-2deg) } to { opacity: 1; transform: translateY(0) rotate(-2deg) } }
-      .sketch-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sketchDraw 1.6s cubic-bezier(.3,.7,.3,1) forwards; }
-      .sketch-line.d2 { animation-delay: .18s } .sketch-line.d3 { animation-delay: .34s }
-      .sketch-note { opacity: 0; animation: sketchFade .55s ease .75s forwards; }
-      @media (prefers-reduced-motion: reduce) { .sketch-line { animation: none; stroke-dashoffset: 0; } .sketch-note { animation: none; opacity: 1; } }
-    `}</style>
-    <svg viewBox="0 0 520 168" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
-      <path pathLength="1" d="M34 123 C99 103 155 109 210 79 C268 47 316 60 375 40 C421 25 461 35 493 20" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" className="sketch-line"/>
-      <path pathLength="1" d="M55 133 C107 112 155 120 206 93 C263 63 305 73 353 55" fill="none" stroke={SAGE} strokeWidth="1.2" strokeLinecap="round" className="sketch-line d2" opacity=".75"/>
-      <g className="sketch-note" fill="none" stroke={INK} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M334 119 C337 96 341 77 352 57"/><path d="M344 82 C333 76 327 69 328 61 C339 63 347 68 350 77"/><path d="M349 70 C359 63 368 61 375 64 C371 73 361 77 351 77"/>
-        <path d="M378 118 C379 98 383 86 391 74"/><path d="M386 87 C376 83 371 78 371 71 C381 72 388 77 390 84"/><path d="M391 78 C400 71 409 70 416 73 C412 81 403 85 393 85"/>
-        <circle cx="352" cy="53" r="5"/><circle cx="391" cy="70" r="4"/>
-      </g>
-      <path pathLength="1" d="M21 143 C118 150 254 146 489 145" fill="none" stroke={PEACH} strokeWidth="2" strokeLinecap="round" className="sketch-line d3" opacity=".85"/>
-      <g className="sketch-note">
-        <rect x="58" y="26" width="151" height="50" rx="5" fill="#F5E9D8" opacity=".86" transform="rotate(-2 58 26)"/>
-        <text x="74" y="48" fontSize="12" fill={INK} fontFamily="cursive">skin first, products second</text>
-        <text x="74" y="64" fontSize="10" fill="#77786F" fontFamily="cursive">less noise · better choices</text>
-      </g>
-      <path d="M206 29 l34 7" stroke={PEACH} strokeWidth="8" strokeLinecap="round" opacity=".28"/>
-    </svg>
-  </div>;
-}
-
-export function SketchUnderline({ width = 108 }: { width?: number }) {
-  return <svg aria-hidden="true" width={width} height="9" viewBox={`0 0 ${width} 9`} style={{ display: "block", marginTop: 4 }}><path pathLength="1" d={`M2 5 C ${Math.round(width*.25)} 2, ${Math.round(width*.68)} 7, ${width-2} 4`} fill="none" stroke={PEACH} strokeWidth="2.2" strokeLinecap="round" className="sketch-line"/></svg>;
-}
-
-export function SketchSprig({ size = 34 }: { size?: number }) {
-  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 40 40"><g fill="none" stroke={SAGE} strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"><path d="M11 34 C16 26 20 18 27 7"/><path d="M17 24 C11 23 8 19 8 15 C14 15 18 18 19 22"/><path d="M22 16 C27 11 32 11 35 13 C32 18 28 20 23 20"/><circle cx="29" cy="7" r="3.2"/></g></svg>;
-}
-
-export function PaperTape() {
-  return <span aria-hidden="true" style={{ position: "absolute", width: 44, height: 12, background: "rgba(221,170,122,.25)", transform: "rotate(-5deg)", borderRadius: 2, top: -5, right: 34 }} />;
-}
+const INK="#474840",SAGE="#7E907B",PEACH="#DDAA7A",BLUE="#8EA2B7";
+const motion=`@keyframes sketchDraw{from{stroke-dashoffset:1;opacity:.15}to{stroke-dashoffset:0;opacity:1}}@keyframes sketchFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.sketch-line{stroke-dasharray:1;stroke-dashoffset:1;animation:sketchDraw 1.6s cubic-bezier(.3,.7,.3,1) forwards}.sketch-line.d2{animation-delay:.18s}.sketch-line.d3{animation-delay:.34s}.sketch-note{opacity:0;animation:sketchFade .55s ease .75s forwards}@media(prefers-reduced-motion:reduce){.sketch-line{animation:none;stroke-dashoffset:0}.sketch-note{animation:none;opacity:1}}`;
+export function HandDrawnHero(){return <div aria-hidden="true" style={{position:"relative",height:168,margin:"8px 0 20px",overflow:"hidden"}}><style>{motion}</style><svg viewBox="0 0 520 168" width="100%" height="100%"><path pathLength="1" d="M34 123C99 103 155 109 210 79C268 47 316 60 375 40C421 25 461 35 493 20" fill="none" stroke={BLUE} strokeWidth="1.5" strokeLinecap="round" className="sketch-line"/><path pathLength="1" d="M55 133C107 112 155 120 206 93C263 63 305 73 353 55" fill="none" stroke={SAGE} strokeWidth="1.2" strokeLinecap="round" className="sketch-line d2" opacity=".75"/><g className="sketch-note" fill="none" stroke={INK} strokeWidth="1.2" strokeLinecap="round"><path d="M334 119C337 96 341 77 352 57M344 82C333 76 327 69 328 61C339 63 347 68 350 77M349 70C359 63 368 61 375 64C371 73 361 77 351 77"/><circle cx="352" cy="53" r="5"/></g><path pathLength="1" d="M21 143C118 150 254 146 489 145" fill="none" stroke={PEACH} strokeWidth="2" strokeLinecap="round" className="sketch-line d3" opacity=".85"/><g className="sketch-note"><rect x="58" y="26" width="151" height="50" rx="5" fill="#F5E9D8" opacity=".86" transform="rotate(-2 58 26)"/><text x="74" y="48" fontSize="12" fill={INK} fontFamily="cursive">skin first, products second</text><text x="74" y="64" fontSize="10" fill="#77786F" fontFamily="cursive">less noise · better choices</text></g></svg></div>}
+export function SketchUnderline({width=108}:{width?:number}){return <svg aria-hidden="true" width={width} height="9" viewBox={`0 0 ${width} 9`} style={{display:"block",marginTop:4}}><style>{motion}</style><path pathLength="1" d={`M2 5C${Math.round(width*.25)} 2 ${Math.round(width*.68)} 7 ${width-2} 4`} fill="none" stroke={PEACH} strokeWidth="2.2" strokeLinecap="round" className="sketch-line"/></svg>}
+export function SketchSprig({size=34}:{size?:number}){return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 40 40"><g fill="none" stroke={SAGE} strokeWidth="1.35" strokeLinecap="round"><path d="M11 34C16 26 20 18 27 7M17 24C11 23 8 19 8 15C14 15 18 18 19 22M22 16C27 11 32 11 35 13C32 18 28 20 23 20"/><circle cx="29" cy="7" r="3.2"/></g></svg>}
+export function PaperTape(){return <span aria-hidden="true" style={{position:"absolute",width:44,height:12,background:"rgba(221,170,122,.25)",transform:"rotate(-5deg)",borderRadius:2,top:-5,right:34}}/>}
+export function SketchPageAccent({kind="bottle"}:{kind?:"bottle"|"routine"|"formula"}){return <div aria-hidden="true" style={{height:92,margin:"2px 0 18px",opacity:.82}}><style>{motion}</style><svg viewBox="0 0 520 92" width="100%" height="100%"><path pathLength="1" d="M16 72C116 62 190 82 292 66C372 54 438 61 504 43" fill="none" stroke={BLUE} strokeWidth="1.2" className="sketch-line" strokeLinecap="round"/>{kind==="bottle"?<g fill="none" stroke={SAGE} strokeWidth="1.4" strokeLinecap="round" className="sketch-note"><path d="M372 22h28v8l7 7v39h-42V37l7-7zM378 22v-7h16v7M376 49h20"/><path d="M420 65c12-17 22-26 38-36M439 44c-11-1-16-7-17-14 9 0 16 4 20 10M445 38c7-8 15-10 22-8-3 8-10 13-20 14"/></g>:kind==="routine"?<g fill="none" stroke={SAGE} strokeWidth="1.4" className="sketch-note"><circle cx="380" cy="45" r="17"/><path d="M380 20v-9M380 79v-9M355 45h-9M414 45h-9M362 27l-7-7M405 70l-7-7"/><path d="M445 26c-9 4-15 13-15 23 0 13 10 24 23 25-18 8-38-5-38-25 0-16 13-29 30-29z"/></g>:<g fill="none" stroke={SAGE} strokeWidth="1.4" className="sketch-note"><path d="M370 19v17l-18 35h55l-18-35V19M366 19h27M362 55h36"/><circle cx="374" cy="62" r="3"/><circle cx="389" cy="68" r="2"/><path d="M430 62c10-18 18-27 31-38M444 42c-8-1-13-6-13-12 8 0 13 4 16 9"/></g>}<path pathLength="1" d="M52 32C110 20 162 23 220 35" fill="none" stroke={PEACH} strokeWidth="2" strokeLinecap="round" className="sketch-line d2" opacity=".55"/></svg></div>}
