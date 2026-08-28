@@ -29,12 +29,25 @@ export default function EmailAccountPanel({ profile, onBack, onReplayOnboarding 
 
   useEffect(() => {
     let active = true;
-    void supabase.auth.getSession().then(({ data, error: authError }) => {
-      if (!active) return;
-      if (authError) setError(authError.message);
-      setSession(data.session);
-      setSessionChecked(true);
-    });
+    const fallback = window.setTimeout(() => {
+      if (active) setSessionChecked(true);
+    }, 2500);
+    void supabase.auth.getSession()
+      .then(({ data, error: authError }) => {
+        if (!active) return;
+        if (authError) setError(authError.message);
+        setSession(data.session);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setSession(null);
+        setError(err instanceof Error ? err.message : t("无法读取账号状态，但你仍可以登录或注册。", "Could not read account status, but you can still sign in or register."));
+      })
+      .finally(() => {
+        if (!active) return;
+        window.clearTimeout(fallback);
+        setSessionChecked(true);
+      });
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return;
       setSession(nextSession);
@@ -42,9 +55,10 @@ export default function EmailAccountPanel({ profile, onBack, onReplayOnboarding 
     });
     return () => {
       active = false;
+      window.clearTimeout(fallback);
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [t]);
 
   const identifierCopy = useMemo(() => {
     if (identifierType === "phone") return {
