@@ -34,6 +34,7 @@ const SYMPTOM_LABELS: Record<string, string> = {
   acne: "痘痘",
   pores: "毛孔",
   pigmentation: "色沉",
+  dullness: "暗沉",
   dryness: "干燥",
   sensitivity: "敏感",
   aging: "细纹 / 抗老",
@@ -117,6 +118,7 @@ export function profileToRecommendationKey(profile?: SkinProfileRecord | null): 
   const states = getSpecialSkinStates(profile);
   if (states.includes("sensitive_flare") || states.includes("procedure_recovery")) return "redness";
   if (states.includes("breakout")) return "acne";
-  const priorities = ["redness", "acne", "pores", "pigmentation", "dryness", "aging"];
-  return priorities.find((key) => profile.selectedSymptoms?.includes(key)) || null;
+  const priorities = ["redness", "acne", "pores", "pigmentation", "dullness", "dryness", "aging"];
+  const selected = priorities.find((key) => profile.selectedSymptoms?.includes(key));
+  return selected === "dullness" ? "pigmentation" : selected || null;
 }
