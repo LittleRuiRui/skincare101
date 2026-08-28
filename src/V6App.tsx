@@ -1,5 +1,6 @@
 import React,{useEffect,useState}from"react";
 import AppShell from"./AppShell";
+import"./floating-actions.css";
 import LanguageConsistencyGuard from"./components/LanguageConsistencyGuard";
 import AdminDashboard from"./components/AdminDashboard";
 import AdminAnalyticsPanel from"./components/AdminAnalyticsPanel";
