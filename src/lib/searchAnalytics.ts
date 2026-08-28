@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { normalizeSearchText } from "./productSearch";
+import { trackEventLater } from "./analytics";
 
 const VISITOR_KEY="skincare101-analytics-visitor";
 
@@ -18,6 +19,7 @@ export async function logSearchEvent(query:string,resultCount:number,source="pro
   if(trimmed.length<2)return;
   const normalized=normalizeSearchText(trimmed).slice(0,200);
   if(!normalized)return;
+  trackEventLater("search",{pageName:source,searchQuery:trimmed,searchResultCount:resultCount,language:locale==="en"?"en":"zh",metadata:{normalizedQuery:normalized}});
   await supabase.from("search_events").insert({query:trimmed,normalized_query:normalized,result_count:Math.max(0,Math.min(resultCount,1000)),source,locale:locale||null,visitor_id:getVisitorId()});
 }
 
@@ -26,5 +28,6 @@ export async function logSearchSelection(query:string,productId:string,resultCou
   const normalized=normalizeSearchText(trimmed).slice(0,200);
   const selectedProductId=productId.replace(/^shared-/,"");
   if(!normalized)return;
+  trackEventLater("search_selection",{pageName:source,productId,searchQuery:trimmed,searchResultCount:resultCount,language:locale==="en"?"en":"zh"});
   await supabase.from("search_events").insert({query:trimmed,normalized_query:normalized,result_count:Math.max(0,Math.min(resultCount,1000)),selected_product_id:selectedProductId,source,locale:locale||null,visitor_id:getVisitorId()});
 }
