@@ -3,6 +3,7 @@ import V5App from "./V5App";
 import LanguageConsistencyGuard from "./components/LanguageConsistencyGuard";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminAnalyticsPanel from "./components/AdminAnalyticsPanel";
+import AnalyticsBootstrap from "./components/AnalyticsBootstrap";
 import PasswordRecoveryPanel from "./components/PasswordRecoveryPanel";
 import{supabase}from"./lib/supabase";
 
@@ -14,8 +15,9 @@ export default function V6App(){
  function setAdmin(mode:string|null){const url=new URL(window.location.href);if(mode)url.searchParams.set("admin",mode);else url.searchParams.delete("admin");window.history.pushState({},"",url);setAdminMode(mode)}
  function closeAdmin(){setAdmin(null)}
  function finishRecovery(){setRecovering(false);const url=new URL(window.location.href);url.hash="";window.history.replaceState({},"",url)}
- if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/><LanguageConsistencyGuard/></>;
- if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/><LanguageConsistencyGuard/></>;
- if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/><LanguageConsistencyGuard/></>;
- return <><V5App/><LanguageConsistencyGuard/></>;
+ const common=<><LanguageConsistencyGuard/><AnalyticsBootstrap/></>;
+ if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
+ if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
+ if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
+ return <><V5App/>{common}</>;
 }
