@@ -37,14 +37,9 @@ export function AppRuntimeProvider({children}:{children:React.ReactNode}){
  const pendingSaveRef=useRef(false);
 
  const refreshProfiles=useCallback(async()=>{
-  try{
-   const rows=await loadMySkinProfiles();
-   setProfiles(rows);
-   setProfile(rows.find(x=>x.isActive)||rows[0]||null);
-   return rows;
-  }catch{
-   setProfiles([]);setProfile(null);return[];
-  }finally{setProfileChecked(true)}
+  try{const rows=await loadMySkinProfiles();setProfiles(rows);setProfile(rows.find(x=>x.isActive)||rows[0]||null);return rows}
+  catch{setProfiles([]);setProfile(null);return[]}
+  finally{setProfileChecked(true)}
  },[]);
  const refreshShelf=useCallback(async()=>{
   try{const rows=await loadShelfSynced();setShelfEntries(rows);return rows}
@@ -52,39 +47,29 @@ export function AppRuntimeProvider({children}:{children:React.ReactNode}){
  },[]);
  const persistPendingProfile=useCallback(async()=>{
   if(pendingSaveRef.current)return false;
-  const pending=loadPendingProfileDraftRecord();
-  if(!pending)return false;
-  const session=await currentSession();
-  if(!session?.user)return false;
+  const pending=loadPendingProfileDraftRecord();if(!pending)return false;
+  const session=await currentSession();if(!session?.user)return false;
   pendingSaveRef.current=true;
-  try{
-   await saveMySkinProfile(pending.profile,pending.name||"");
-   clearPendingProfileDraft();
-   await refreshProfiles();
-   return true;
-  }finally{pendingSaveRef.current=false}
+  try{await saveMySkinProfile(pending.profile,pending.name||"");clearPendingProfileDraft();await refreshProfiles();return true}
+  finally{pendingSaveRef.current=false}
  },[refreshProfiles]);
  const setViewContext=useCallback((view:AppViewContext,product:SharedProductRecord|null=null)=>{
-  setView(view);setCurrentProduct(view==="product"?product:null);
+  const current=view==="product"?product:null;
+  setView(view);setCurrentProduct(current);
+  window.dispatchEvent(new CustomEvent("skincare101:navigation",{detail:{view,productId:current?.id||null,productName:current?.productLocalName||current?.productEnglishName||current?.name||null}}));
  },[]);
 
  useEffect(()=>{
   let active=true;
   void loadSharedProductCatalog().then(rows=>{if(active)setProducts(rows)}).catch(()=>{});
-  void refreshProfiles();
-  void refreshShelf();
-  void persistPendingProfile().catch(()=>{});
+  void refreshProfiles();void refreshShelf();void persistPendingProfile().catch(()=>{});
   const shelfChanged=()=>{void refreshShelf()};
   window.addEventListener("skincare101:shelf-changed",shelfChanged);
   const{data}=supabase.auth.onAuthStateChange(()=>{setTimeout(()=>{void persistPendingProfile().catch(()=>{});void refreshProfiles();void refreshShelf()},0)});
   return()=>{active=false;window.removeEventListener("skincare101:shelf-changed",shelfChanged);data.subscription.unsubscribe()};
  },[persistPendingProfile,refreshProfiles,refreshShelf]);
 
- const chooseProfile=useCallback(async(id:string)=>{
-  const selected=profiles.find(x=>x.id===id);if(!selected)return;
-  setProfile(selected);setProfiles(rows=>rows.map(x=>({...x,isActive:x.id===id})));
-  await setActiveSkinProfile(id);
- },[profiles]);
+ const chooseProfile=useCallback(async(id:string)=>{const selected=profiles.find(x=>x.id===id);if(!selected)return;setProfile(selected);setProfiles(rows=>rows.map(x=>({...x,isActive:x.id===id})));await setActiveSkinProfile(id)},[profiles]);
  const renameProfileAction=useCallback(async(id:string,name:string)=>{await renameSkinProfile(id,name);await refreshProfiles()},[refreshProfiles]);
  const removeProfile=useCallback(async(id:string)=>{await deleteSkinProfile(id);await refreshProfiles()},[refreshProfiles]);
  const value=useMemo<RuntimeValue>(()=>({products,profiles,profile,profileChecked,shelfEntries,viewContext,currentProduct,setViewContext,refreshProfiles,refreshShelf,persistPendingProfile,chooseProfile,renameProfile:renameProfileAction,removeProfile}),[products,profiles,profile,profileChecked,shelfEntries,viewContext,currentProduct,setViewContext,refreshProfiles,refreshShelf,persistPendingProfile,chooseProfile,renameProfileAction,removeProfile]);
