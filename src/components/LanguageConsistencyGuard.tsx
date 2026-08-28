@@ -1,0 +1,63 @@
+import React,{useEffect}from"react";
+
+const ZH_TO_EN:Record<string,string>={
+ "我的护肤柜 · My Shelf":"My Shelf",
+ "用我的护肤柜搭配 · Use My Shelf":"Use My Shelf",
+ "我需要买吗？ · Do I need this?":"Do I need this?",
+ "发现数据有误？ · Report":"Report data issue",
+ "发现成分表有问题？":"Found a formula or product-data issue?",
+ "告诉我哪里不对。产品信息会自动带上，你不需要重新填写。提交后会创建一个 GitHub 数据纠错记录，方便后续核查和修正。":"Tell us what looks wrong. Product details are attached automatically. Submitting opens a GitHub data-correction record for review.",
+ "问题类型 · Issue type":"Issue type",
+ "哪里不对？· What looks wrong?":"What looks wrong?",
+ "取消":"Cancel",
+ "提交纠错 · Send report":"Send report",
+ "建议附官方品牌页、零售商成分页或包装照片来源。请不要提交姓名、电话等个人敏感信息。":"Please attach an official brand page, retailer ingredient page, or packaging source when possible. Do not submit personal information.",
+ "查看我的护肤柜":"View My Shelf",
+ "知道了":"Got it",
+ "成分缺失 · Missing ingredient":"Missing ingredient",
+ "成分顺序错误 · Wrong order":"Wrong ingredient order",
+ "成分名称错误 · Wrong ingredient name":"Wrong ingredient name",
+ "配方已更新 · Formula changed":"Formula changed",
+ "版本/地区不对 · Wrong version / market":"Wrong version / market",
+ "来源有问题 · Source issue":"Source issue",
+ "其他 · Other":"Other",
+ "非常适合":"Very suitable","适合":"Suitable","可以用":"Usable","谨慎尝试":"Try cautiously","不推荐":"Not recommended",
+ "配方体系 · 辅助参考":"Formula systems · supporting reference",
+ "数据可信度 · 高":"Data confidence · High","数据可信度 · 中":"Data confidence · Medium","数据可信度 · 较低":"Data confidence · Low",
+ "洁面":"Cleanser","卸妆":"Makeup remover","化妆水":"Toner","精华水":"Essence","精华":"Serum","面霜":"Moisturizer","乳液":"Lotion","乳液 / 面霜":"Lotion / moisturizer","防晒":"Sunscreen","面膜":"Mask","眼霜":"Eye cream","眼部":"Eye care","焕肤":"Exfoliant","祛痘":"Acne treatment","精华油":"Face oil"
+};
+const EN_TO_ZH:Record<string,string>={
+ "Back":"返回","Cleanser":"洁面","Toner / Essence":"化妆水 / 精华水","Serum":"精华","Treatment":"特殊护理","Moisturizer Cream":"乳液 / 面霜","Sunscreen":"防晒","Mask / Special":"面膜 / 特殊护理",
+ "My Routine":"我的 Routine","Barrier":"屏障修护","Singapore · Humid":"新加坡 · 湿热",
+ "Makeup remover":"卸妆","Exfoliant":"焕肤","Eye care":"眼部护理","Eye cream":"眼霜","Acne treatment":"祛痘护理","Essence":"精华水","Face oil":"精华油","Mask":"面膜","Moisturizer":"面霜","Lotion / moisturizer":"乳液 / 面霜","Toner / essence":"化妆水 / 精华水"
+};
+const BILINGUAL_ZH:Record<string,string>={
+ "我的护肤柜 · My Shelf":"我的护肤柜","用我的护肤柜搭配 · Use My Shelf":"用我的护肤柜搭配","我需要买吗？ · Do I need this?":"我需要买吗？","发现数据有误？ · Report":"发现数据有误？",
+ "问题类型 · Issue type":"问题类型","哪里不对？· What looks wrong?":"哪里不对？","提交纠错 · Send report":"提交纠错",
+ "成分缺失 · Missing ingredient":"成分缺失","成分顺序错误 · Wrong order":"成分顺序错误","成分名称错误 · Wrong ingredient name":"成分名称错误","配方已更新 · Formula changed":"配方已更新","版本/地区不对 · Wrong version / market":"版本/地区不对","来源有问题 · Source issue":"来源有问题","其他 · Other":"其他"
+};
+
+function lang(){return document.documentElement.lang.toLowerCase().startsWith("en")?"en":"zh"}
+function translateExact(value:string,language:"zh"|"en"){
+ const trimmed=value.trim();
+ if(language==="en")return ZH_TO_EN[trimmed]||trimmed;
+ return BILINGUAL_ZH[trimmed]||EN_TO_ZH[trimmed]||trimmed;
+}
+function translateCompound(value:string,language:"zh"|"en"){
+ const exact=translateExact(value,language);if(exact!==value.trim())return exact;
+ const verdicts:[[string,string]]|Array<[string,string]>=[["暂不建议买","Not recommended"],["有明确补位价值","Good addition"],["大概率重复","Mostly duplicate"],["可有可无","Optional"],["有补位价值","Good addition"]];
+ for(const[zh,en]of verdicts){if(value.trim()===`${zh} · ${en}`)return language==="en"?en:zh}
+ return value;
+}
+function processElement(el:Element,language:"zh"|"en"){
+ if(el instanceof HTMLScriptElement||el instanceof HTMLStyleElement)return;
+ for(const node of Array.from(el.childNodes))if(node.nodeType===Node.TEXT_NODE&&node.textContent){const old=node.textContent;const lead=old.match(/^\s*/)?.[0]||"",trail=old.match(/\s*$/)?.[0]||"",core=old.trim();if(!core)continue;const next=translateCompound(core,language);if(next!==core)node.textContent=lead+next+trail}
+ if(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement){if(el.placeholder){const next=translateExact(el.placeholder,language);if(next!==el.placeholder)el.placeholder=next}if(el instanceof HTMLInputElement&&el.value){const next=translateExact(el.value,language);if(next!==el.value)el.value=next}}
+ if(el instanceof HTMLOptionElement){const next=translateExact(el.textContent||"",language);if(next!==(el.textContent||""))el.textContent=next}
+}
+function sweep(){const language=lang();processElement(document.body,language);for(const el of Array.from(document.body.querySelectorAll("*")))processElement(el,language)}
+
+export default function LanguageConsistencyGuard(){
+ useEffect(()=>{let queued=false;const run=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;sweep()})};run();const observer=new MutationObserver(run);observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["lang"]});window.addEventListener("storage",run);return()=>{observer.disconnect();window.removeEventListener("storage",run)}},[]);
+ return null;
+}
