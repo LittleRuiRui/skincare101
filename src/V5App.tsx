@@ -1,7 +1,6 @@
 import React,{useEffect,useMemo,useState}from"react";
 import V4App from"./V4App";
 import MyShelf from"./components/MyShelf";
-import type{SharedProductRecord}from"./lib/supabase";
 import{doINeedThis}from"./lib/myShelf";
 import{LanguageProvider}from"./lib/i18n";
 import{useAppRuntime}from"./lib/appRuntime";
@@ -27,7 +26,7 @@ export default function V5App(){
  const owned=useMemo(()=>{const ids=new Set(shelfEntries.map(e=>e.productId));return products.filter(p=>ids.has(p.id))},[products,shelfEntries]);
  const verdict=currentProduct?doINeedThis(currentProduct,owned,profile,products,shelfEntries):null;
  if(shelfOpen)return <LanguageProvider><MyShelf products={products} profile={profile} onBack={()=>setShelfOpen(false)}/></LanguageProvider>;
- const context:viewContext is typeof viewContext=viewContext;
+ const context=viewContext;
  const label=context==="product"?"我需要买吗？ · Do I need this?":context==="routine"?"用我的护肤柜搭配 · Use My Shelf":"我的护肤柜 · My Shelf";
  function action(){if(context==="product"&&currentProduct){setNeedOpen(true);return}setShelfOpen(true)}
  function submitReport(){
