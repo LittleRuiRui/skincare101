@@ -5,7 +5,6 @@ import V3Explore,{type ExploreEntry}from"./components/V3Explore";
 import V3RoutineHub from"./components/V3RoutineHub";
 import V3ProductDetail from"./components/V3ProductDetail";
 import V3ProductScanner from"./components/V3ProductScanner";
-import V3MatchHub from"./components/V3MatchHub";
 import V3SkinGuidance from"./components/V3SkinGuidance";
 import UserCenter from"./components/UserCenter";
 import BotanicalFrame from"./components/BotanicalFrame";
@@ -20,89 +19,24 @@ import{useAppRuntime,type AppViewContext}from"./lib/appRuntime";
 
 const GLOBAL_STYLE=`@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');html{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;background:#F6F0E3}body{margin:0;background:#F6F0E3;color:#283027;font-family:"IBM Plex Sans","PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:15px;line-height:1.62}button,input,select,textarea{font:inherit}.site-content{position:relative;z-index:1;min-height:100vh}.site-content>div{background-color:transparent!important}.site-content button{transition:transform .16s ease,box-shadow .16s ease}.site-content button:not(:disabled):active{transform:scale(.985)}.page-routine>div>div,.page-product>div>div,.page-ingredientCheck>div>div{max-width:680px!important}.page-routine section,.page-product section,.page-ingredientCheck section{border-color:#D7CDB8!important;background:rgba(251,246,234,.94)!important;box-shadow:0 7px 24px rgba(40,55,42,.045)}.page-product section:first-of-type{background:linear-gradient(145deg,rgba(237,242,232,.97),rgba(251,246,234,.96))!important}.page-ingredientCheck::before,.page-routine::before,.page-product::before{content:"";display:block;height:8px;background:linear-gradient(90deg,#2B523B 0 58%,#D5A92E 58% 71%,transparent 71%)}@media(min-width:900px){.site-content{width:70%;max-width:1040px;margin:0 auto;background:rgba(246,240,227,.97);box-shadow:0 0 42px rgba(28,55,39,.08)}}@media(max-width:899px){body{font-size:15px}.site-content{padding-top:10px}.site-content button,.site-content input,.site-content select{min-height:44px}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}`;
 
-type Route="home"|"mySkin"|"skinGuidance"|"explore"|"routine"|"product"|"ingredientCheck"|"matchHub"|"profileBuilder"|"account"|"onboardingComplete"|"onboardingReplay";
-type ProductReturnRoute="home"|"explore"|"matchHub";
-const ROUTES=new Set<Route>(["home","mySkin","skinGuidance","explore","routine","product","ingredientCheck","matchHub","profileBuilder","account","onboardingComplete","onboardingReplay"]);
+type Route="home"|"mySkin"|"skinGuidance"|"explore"|"routine"|"product"|"ingredientCheck"|"profileBuilder"|"account"|"onboardingComplete"|"onboardingReplay";
+type ProductReturnRoute="home"|"explore";
+const ROUTES=new Set<Route>(["home","mySkin","skinGuidance","explore","routine","product","ingredientCheck","profileBuilder","account","onboardingComplete","onboardingReplay"]);
 const EXPLORE_ENTRIES=new Set<ExploreEntry>(["explore","forYou","search","brands","concerns","luxury","niche"]);
 const CONCERNS=new Set<BrowseConcern>(["all","hydration","barrier","redness","pores","acne","pigmentation","aging"]);
-
-function readRoute():Route{const value=new URLSearchParams(window.location.search).get("view")as Route|null;return value&&ROUTES.has(value)?value:"home"}
+function readRoute():Route{const value=new URLSearchParams(window.location.search).get("view")as Route|null;if(value==="matchHub")return"ingredientCheck";return value&&ROUTES.has(value)?value:"home"}
 function readExploreEntry():ExploreEntry{const value=new URLSearchParams(window.location.search).get("tab")as ExploreEntry|null;return value&&EXPLORE_ENTRIES.has(value)?value:"explore"}
-function readReturnRoute():ProductReturnRoute{const value=new URLSearchParams(window.location.search).get("from")as ProductReturnRoute|null;return value==="home"||value==="matchHub"||value==="explore"?value:"explore"}
+function readReturnRoute():ProductReturnRoute{const value=new URLSearchParams(window.location.search).get("from");return value==="home"?"home":"explore"}
 function readConcern():BrowseConcern{const value=new URLSearchParams(window.location.search).get("concern")as BrowseConcern|null;return value&&CONCERNS.has(value)?value:"all"}
 function readProductId(){return new URLSearchParams(window.location.search).get("product")}
-function writeUrl(route:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern}={},replace=false){
- const url=new URL(window.location.href);
- if(route==="home")url.searchParams.delete("view");else url.searchParams.set("view",route);
- if(route==="product"&&options.product){url.searchParams.set("product",options.product.id);url.searchParams.set("from",options.from||"explore");if(options.concern&&options.concern!=="all")url.searchParams.set("concern",options.concern);else url.searchParams.delete("concern")}else{url.searchParams.delete("product");url.searchParams.delete("from");url.searchParams.delete("concern")}
- if(route==="explore"||route==="product"){const tab=options.tab||"explore";if(tab==="explore")url.searchParams.delete("tab");else url.searchParams.set("tab",tab)}else url.searchParams.delete("tab");
- (replace?window.history.replaceState:window.history.pushState).call(window.history,{},"",url);
-}
+function writeUrl(route:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern}={},replace=false){const url=new URL(window.location.href);if(route==="home")url.searchParams.delete("view");else url.searchParams.set("view",route);if(route==="product"&&options.product){url.searchParams.set("product",options.product.id);url.searchParams.set("from",options.from||"explore");if(options.concern&&options.concern!=="all")url.searchParams.set("concern",options.concern);else url.searchParams.delete("concern")}else{url.searchParams.delete("product");url.searchParams.delete("from");url.searchParams.delete("concern")}if(route==="explore"||route==="product"){const tab=options.tab||"explore";if(tab==="explore")url.searchParams.delete("tab");else url.searchParams.set("tab",tab)}else url.searchParams.delete("tab");(replace?window.history.replaceState:window.history.pushState).call(window.history,{},"",url)}
 
-export default function AppShell(){
- const{t}=useLanguage();
- const{products,profiles,profile,profileChecked,refreshProfiles,chooseProfile,renameProfile,removeProfile,setViewContext}=useAppRuntime();
- const[route,setRoute]=useState<Route>(()=>readRoute());
- const[exploreEntry,setExploreEntry]=useState<ExploreEntry>(()=>readExploreEntry());
- const[selectedProduct,setSelectedProduct]=useState<SharedProductRecord|null>(null);
- const[selectedConcern,setSelectedConcern]=useState<BrowseConcern>(()=>readConcern());
- const[productReturnRoute,setProductReturnRoute]=useState<ProductReturnRoute>(()=>readReturnRoute());
- const[onboardingActive,setOnboardingActive]=useState(false);
- const[onboardingSeen,setOnboardingSeen]=useState(()=>{try{return localStorage.getItem("skincare101-onboarding-seen")==="1"}catch{return false}});
-
+export default function AppShell(){const{t}=useLanguage();const{products,profiles,profile,profileChecked,refreshProfiles,chooseProfile,renameProfile,removeProfile,setViewContext}=useAppRuntime();const[route,setRoute]=useState<Route>(()=>readRoute());const[exploreEntry,setExploreEntry]=useState<ExploreEntry>(()=>readExploreEntry());const[selectedProduct,setSelectedProduct]=useState<SharedProductRecord|null>(null);const[selectedConcern,setSelectedConcern]=useState<BrowseConcern>(()=>readConcern());const[productReturnRoute,setProductReturnRoute]=useState<ProductReturnRoute>(()=>readReturnRoute());const[onboardingActive,setOnboardingActive]=useState(false);const[onboardingSeen,setOnboardingSeen]=useState(()=>{try{return localStorage.getItem("skincare101-onboarding-seen")==="1"}catch{return false}});
  function markOnboardingSeen(){try{localStorage.setItem("skincare101-onboarding-seen","1")}catch{}setOnboardingSeen(true)}
- function navigate(next:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern;replace?:boolean}={}){
-  setRoute(next);
-  if(next!=="product")setSelectedProduct(null);
-  if(next==="product"&&options.product)setSelectedProduct(options.product);
-  if((next==="explore"||next==="product")&&options.tab)setExploreEntry(options.tab);
-  if(options.from)setProductReturnRoute(options.from);
-  if(options.concern)setSelectedConcern(options.concern);
-  writeUrl(next,options,Boolean(options.replace));
- }
+ function navigate(next:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern;replace?:boolean}={}){setRoute(next);if(next!=="product")setSelectedProduct(null);if(next==="product"&&options.product)setSelectedProduct(options.product);if((next==="explore"||next==="product")&&options.tab)setExploreEntry(options.tab);if(options.from)setProductReturnRoute(options.from);if(options.concern)setSelectedConcern(options.concern);writeUrl(next,options,Boolean(options.replace))}
  function openProduct(product:SharedProductRecord,concern:BrowseConcern="all",from:ProductReturnRoute="explore"){setSelectedConcern(concern);setProductReturnRoute(from);navigate("product",{product,from,concern,tab:from==="explore"?exploreEntry:undefined})}
- function openRecommendations(){navigate("explore",{tab:"forYou"})}
- function createProfile(){clearPendingProfileDraft();navigate("profileBuilder")}
- function finishProfile(){void refreshProfiles().then(()=>navigate(onboardingActive?"onboardingComplete":"home",{replace:true}))}
- function goTo(target:string){
-  if(target==="report"||target==="mySkin")return navigate("mySkin");
-  if(target==="account")return navigate("account");
-  const tabs:Record<string,ExploreEntry>={recommend:"forYou",quickRecommend:"explore",explore:"explore",search:"search",brands:"brands",concerns:"concerns",luxury:"luxury",niche:"niche"};
-  if(tabs[target])return navigate("explore",{tab:tabs[target]});
-  if(target==="routine")return navigate("routine");
-  if(target==="skin")return createProfile();
-  if(target==="upload")return navigate("matchHub");
-  if(target==="quickIngredient")return navigate("ingredientCheck");
-  navigate("home");
- }
-
- useEffect(()=>{setViewContext(route as AppViewContext,route==="product"?selectedProduct:null)},[route,selectedProduct,setViewContext]);
- useEffect(()=>{
-  const onPop=()=>{const next=readRoute();setRoute(next);setExploreEntry(readExploreEntry());setProductReturnRoute(readReturnRoute());setSelectedConcern(readConcern());if(next!=="product")setSelectedProduct(null);else{const id=readProductId();setSelectedProduct(id?products.find(p=>p.id===id)||null:null)}};
-  window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop);
- },[products]);
- useEffect(()=>{
-  if(route!=="product"||selectedProduct||!products.length)return;
-  const id=readProductId();
-  if(!id){navigate("home",{replace:true});return}
-  const found=products.find(p=>p.id===id);
-  if(found)setSelectedProduct(found);else navigate("home",{replace:true});
- },[route,selectedProduct,products]);
-
- const sw=<div style={{position:"fixed",right:14,top:"calc(env(safe-area-inset-top, 0px) + 14px)",zIndex:100}}><LanguageSwitch/></div>;
- const shell=(node:React.ReactNode)=><><style>{GLOBAL_STYLE}</style><BotanicalFrame/>{sw}<div className={`site-content page-${route}`}>{node}</div></>;
-
- if(route==="profileBuilder")return shell(<SkinProfileBuilder onBack={()=>navigate(profile?"mySkin":"home")} onSaved={finishProfile} onNeedSignIn={()=>navigate("account")}/>);
- if(route==="onboardingComplete")return shell(<OnboardingComplete onContinue={()=>{markOnboardingSeen();setOnboardingActive(false);openRecommendations()}}/>);
- if(route==="onboardingReplay")return shell(<FirstRunOnboarding alreadySignedIn onBegin={()=>setOnboardingActive(true)} onStartProfile={createProfile} onOpenSignIn={()=>navigate("account")} onSignedIn={()=>navigate("home")}/>);
- if(route==="account")return shell(<UserCenter profile={profile} profiles={profiles} onBack={()=>navigate("home")} onChooseProfile={chooseProfile} onCreateProfile={createProfile} onRenameProfile={renameProfile} onDeleteProfile={removeProfile} onReplayOnboarding={()=>navigate("onboardingReplay")}/>);
- if(route==="mySkin")return shell(<V3MySkin profile={profile} onBack={()=>navigate("home")} onRetake={createProfile} onFindProducts={openRecommendations} onBuildRoutine={()=>navigate("routine")} onOpenLegacyReport={()=>navigate("skinGuidance")}/>);
- if(route==="skinGuidance")return shell(<V3SkinGuidance profile={profile} onBack={()=>navigate("mySkin")} onProducts={openRecommendations} onIngredientCheck={()=>navigate("ingredientCheck")}/>);
- if(route==="matchHub")return shell(<V3MatchHub profile={profile} products={products} onBack={()=>navigate("home")} onScan={()=>navigate("ingredientCheck")} onViewRecommendations={openRecommendations} onProduct={p=>openProduct(p,"all","matchHub")}/>);
- if(route==="ingredientCheck")return shell(<V3ProductScanner profile={profile} products={products} onBack={()=>navigate("matchHub")} onProduct={p=>openProduct(p,"all","matchHub")}/>);
- if(route==="explore")return shell(<V3Explore products={products} profile={profile} entry={exploreEntry} onBack={()=>navigate("home")} onProduct={(p,c)=>openProduct(p,c,"explore")}/>);
- if(route==="routine")return shell(<V3RoutineHub profile={profile} products={products} onBack={()=>navigate("home")} onExplore={()=>navigate("explore",{tab:"explore"})} onProduct={(p,c)=>openProduct(p,c,"explore")}/>);
- if(route==="product"&&selectedProduct)return shell(<V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={()=>navigate(productReturnRoute,{tab:productReturnRoute==="explore"?exploreEntry:undefined})} onProduct={(p,c)=>openProduct(p,c,productReturnRoute)}/>);
- if(profileChecked&&!profile&&!onboardingSeen)return shell(<FirstRunOnboarding onBegin={()=>setOnboardingActive(true)} onStartProfile={createProfile} onOpenSignIn={()=>navigate("account")} onSignedIn={()=>{markOnboardingSeen();void refreshProfiles().then(()=>navigate("home",{replace:true}))}}/>);
- return shell(<div style={{minHeight:"100vh",background:"transparent",color:"#292823",display:"flex",justifyContent:"center",padding:"28px 18px"}}><div style={{width:"100%",maxWidth:560}}>{!profileChecked?<div style={{paddingTop:80,textAlign:"center",color:"#777870",fontSize:13}}>{t("正在读取你的肤质档案…","Loading your skin profile…")}</div>:<V3Home goTo={goTo} profile={profile} products={products} onCreateProfile={createProfile} onProduct={p=>openProduct(p,"all","home")}/>}</div></div>);
-}
+ function openRecommendations(){navigate("explore",{tab:"forYou"})}function createProfile(){clearPendingProfileDraft();navigate("profileBuilder")}function finishProfile(){void refreshProfiles().then(()=>navigate(onboardingActive?"onboardingComplete":"home",{replace:true}))}
+ function goTo(target:string){if(target==="report"||target==="mySkin")return navigate("mySkin");if(target==="account")return navigate("account");const tabs:Record<string,ExploreEntry>={recommend:"forYou",quickRecommend:"explore",explore:"explore",search:"search",brands:"brands",concerns:"concerns",luxury:"luxury",niche:"niche"};if(tabs[target])return navigate("explore",{tab:tabs[target]});if(target==="routine")return navigate("routine");if(target==="skin")return createProfile();if(target==="upload"||target==="quickIngredient")return navigate("ingredientCheck");navigate("home")}
+ useEffect(()=>{setViewContext(route as AppViewContext,route==="product"?selectedProduct:null)},[route,selectedProduct,setViewContext]);useEffect(()=>{const onPop=()=>{const next=readRoute();setRoute(next);setExploreEntry(readExploreEntry());setProductReturnRoute(readReturnRoute());setSelectedConcern(readConcern());if(next!=="product")setSelectedProduct(null);else{const id=readProductId();setSelectedProduct(id?products.find(p=>p.id===id)||null:null)}};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[products]);useEffect(()=>{if(route!=="product"||selectedProduct||!products.length)return;const id=readProductId();if(!id){navigate("home",{replace:true});return}const found=products.find(p=>p.id===id);if(found)setSelectedProduct(found);else navigate("home",{replace:true})},[route,selectedProduct,products]);
+ const sw=<div style={{position:"fixed",right:14,top:"calc(env(safe-area-inset-top, 0px) + 14px)",zIndex:100}}><LanguageSwitch/></div>;const shell=(node:React.ReactNode)=><><style>{GLOBAL_STYLE}</style><BotanicalFrame/>{sw}<div className={`site-content page-${route}`}>{node}</div></>;
+ if(route==="profileBuilder")return shell(<SkinProfileBuilder onBack={()=>navigate(profile?"mySkin":"home")} onSaved={finishProfile} onNeedSignIn={()=>navigate("account")}/>);if(route==="onboardingComplete")return shell(<OnboardingComplete onContinue={()=>{markOnboardingSeen();setOnboardingActive(false);openRecommendations()}}/>);if(route==="onboardingReplay")return shell(<FirstRunOnboarding alreadySignedIn onBegin={()=>setOnboardingActive(true)} onStartProfile={createProfile} onOpenSignIn={()=>navigate("account")} onSignedIn={()=>navigate("home")}/>);if(route==="account")return shell(<UserCenter profile={profile} profiles={profiles} onBack={()=>navigate("home")} onChooseProfile={chooseProfile} onCreateProfile={createProfile} onRenameProfile={renameProfile} onDeleteProfile={removeProfile} onReplayOnboarding={()=>navigate("onboardingReplay")}/>);if(route==="mySkin")return shell(<V3MySkin profile={profile} onBack={()=>navigate("home")} onRetake={createProfile} onFindProducts={openRecommendations} onBuildRoutine={()=>navigate("routine")} onOpenLegacyReport={()=>navigate("skinGuidance")}/>);if(route==="skinGuidance")return shell(<V3SkinGuidance profile={profile} onBack={()=>navigate("mySkin")} onProducts={openRecommendations} onIngredientCheck={()=>navigate("ingredientCheck")}/>);if(route==="ingredientCheck")return shell(<V3ProductScanner profile={profile} products={products} onBack={()=>navigate("home")} onProduct={p=>openProduct(p,"all","explore")}/>);if(route==="explore")return shell(<V3Explore products={products} profile={profile} entry={exploreEntry} onBack={()=>navigate("home")} onProduct={(p,c)=>openProduct(p,c,"explore")}/>);if(route==="routine")return shell(<V3RoutineHub profile={profile} products={products} onBack={()=>navigate("home")} onExplore={()=>navigate("explore",{tab:"explore"})} onProduct={(p,c)=>openProduct(p,c,"explore")}/>);if(route==="product"&&selectedProduct)return shell(<V3ProductDetail product={selectedProduct} products={products} profile={profile} concern={selectedConcern} onBack={()=>navigate(productReturnRoute,{tab:productReturnRoute==="explore"?exploreEntry:undefined})} onProduct={(p,c)=>openProduct(p,c,productReturnRoute)}/>);if(profileChecked&&!profile&&!onboardingSeen)return shell(<FirstRunOnboarding onBegin={()=>setOnboardingActive(true)} onStartProfile={createProfile} onOpenSignIn={()=>navigate("account")} onSignedIn={()=>{markOnboardingSeen();void refreshProfiles().then(()=>navigate("home",{replace:true}))}}/>);return shell(<div style={{minHeight:"100vh",background:"transparent",color:"#292823",display:"flex",justifyContent:"center",padding:"28px 18px"}}><div style={{width:"100%",maxWidth:560}}>{!profileChecked?<div style={{paddingTop:80,textAlign:"center",color:"#777870",fontSize:13}}>{t("正在读取你的肤质档案…","Loading your skin profile…")}</div>:<V3Home goTo={goTo} profile={profile} products={products} onCreateProfile={createProfile} onProduct={p=>openProduct(p,"all","home")}/>}</div></div>)}
