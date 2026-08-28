@@ -45,7 +45,7 @@ function translateExact(value:string,language:"zh"|"en"){
 }
 function translateCompound(value:string,language:"zh"|"en"){
  const exact=translateExact(value,language);if(exact!==value.trim())return exact;
- const verdicts:[[string,string]]|Array<[string,string]>=[["暂不建议买","Not recommended"],["有明确补位价值","Good addition"],["大概率重复","Mostly duplicate"],["可有可无","Optional"],["有补位价值","Good addition"]];
+ const verdicts:Array<[string,string]>=[["暂不建议买","Not recommended"],["有明确补位价值","Good addition"],["大概率重复","Mostly duplicate"],["可有可无","Optional"],["有补位价值","Good addition"]];
  for(const[zh,en]of verdicts){if(value.trim()===`${zh} · ${en}`)return language==="en"?en:zh}
  return value;
 }
@@ -57,7 +57,7 @@ function processElement(el:Element,language:"zh"|"en"){
 }
 function sweep(){const language=lang();processElement(document.body,language);for(const el of Array.from(document.body.querySelectorAll("*")))processElement(el,language)}
 
-export default function LanguageConsistencyGuard(){
+export default function LanguageConsistencyGuard():React.ReactElement|null{
  useEffect(()=>{let queued=false;const run=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;sweep()})};run();const observer=new MutationObserver(run);observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["lang"]});window.addEventListener("storage",run);return()=>{observer.disconnect();window.removeEventListener("storage",run)}},[]);
  return null;
 }
