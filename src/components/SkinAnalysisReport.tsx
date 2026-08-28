@@ -12,11 +12,12 @@ import BilingualProductName from"./BilingualProductName";
 const INK="#252724",CARD="#FCFBF8",LINE="#DEDCD5",SAGE="#667A6C",MUTE="#777870",SOFT="#F1F2E9";
 const sans="-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
 const INGREDIENT_ZH:Record<string,string>={"Glycerin":"甘油","Hyaluronic Acid":"透明质酸","Sodium Hyaluronate":"透明质酸钠","Panthenol":"泛醇","Betaine":"甜菜碱","Urea":"尿素","Ceramide":"神经酰胺","Cholesterol":"胆固醇","Phytosphingosine":"植物鞘氨醇","Squalane":"角鲨烷","Niacinamide":"烟酰胺","Centella Asiatica":"积雪草","Madecassoside":"羟基积雪草苷","Allantoin":"尿囊素","Bisabolol":"红没药醇","Beta-Glucan":"β-葡聚糖","Salicylic Acid":"水杨酸","Azelaic Acid":"壬二酸","Zinc PCA":"PCA 锌","Sulfur":"硫磺","Tranexamic Acid":"传明酸","Ascorbic Acid":"维生素C","Alpha-Arbutin":"α-熊果苷","Licorice":"甘草提取物","Retinol":"视黄醇 / A醇","Retinal":"视黄醛","Peptide":"肽类","Adenosine":"腺苷","Alcohol Denat.":"变性乙醇","Fragrance":"香精","Parfum":"香精","Menthol":"薄荷醇","Coconut Oil":"椰子油","Isopropyl Myristate":"肉豆蔻酸异丙酯","Glycolic Acid":"乙醇酸 / 果酸","Lactic Acid":"乳酸"};
+const SYSTEM_EN:Record<string,string>={"屏障修护":"barrier support","补水保湿":"hydration","舒缓维稳":"soothing","抗老紧致":"anti-aging","控油净肤":"oil control","滋润锁水":"lipid support"};
 function ing(name:string,language:"zh"|"en"){return language==="zh"?(INGREDIENT_ZH[name]||name):name}
 function uniq(xs:string[]){return Array.from(new Set(xs)).filter(Boolean)}
 function whyText(item:any,language:"zh"|"en"){
  const positives=(item.positiveEvidence||[]).slice(0,2).map((x:any)=>ing(x.name,language));
- const systems=(item.systemEvidence||[]).slice(0,2).map((x:any)=>language==="zh"?x.label:({"屏障修护":"barrier support","补水保湿":"hydration","舒缓维稳":"soothing","抗老紧致":"anti-aging","控油净肤":"oil control","滋润锁水":"lipid support"}[x.label]||x.label));
+ const systems=(item.systemEvidence||[]).slice(0,2).map((x:any)=>language==="zh"?x.label:(SYSTEM_EN[x.label]||x.label));
  if(language==="zh")return positives.length?`命中 ${positives.join("、")}${systems.length?`，同时配方偏向${systems.join("、")}`:""}。`:`配方体系与当前需求的${systems.join("、")||"基础护理"}方向较一致。`;
  return positives.length?`Matches ${positives.join(", ")}${systems.length?` with ${systems.join(" and ")}`:""}.`:`Its formula structure aligns with your current ${systems.join(" and ")||"care"} priorities.`;
 }
