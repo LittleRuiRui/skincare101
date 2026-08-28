@@ -1,4 +1,5 @@
 import type { SkinProfileRecord } from "../lib/skinProfile.ts";
+import { clinicallyRelevantFindings, type DiagnosticFinding } from "./diagnosticDifferential.ts";
 
 export type DecisionConcern = "redness" | "acne" | "pores" | "pigmentation" | "aging" | "dryness";
 
@@ -12,6 +13,7 @@ export interface ProfileDecisionModel {
   skinType: "dry" | "oily" | "combination" | "balanced" | "unknown";
   sensitive: boolean;
   concernWeights: ConcernWeight[];
+  diagnosticFindings: DiagnosticFinding[];
   pregnancySafetyOverride: boolean;
   hardExcludedIngredientGroups: string[];
 }
@@ -46,6 +48,7 @@ export function buildProfileDecisionModel(profile: SkinProfileRecord): ProfileDe
     skinType: inferSkinType(profile),
     sensitive: profile.skinAnswers?.sensitive === "yes",
     concernWeights,
+    diagnosticFindings: clinicallyRelevantFindings(profile),
     pregnancySafetyOverride,
     hardExcludedIngredientGroups: pregnancySafetyOverride ? ["retinoids"] : [],
   };
