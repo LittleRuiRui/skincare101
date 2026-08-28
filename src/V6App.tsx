@@ -1,11 +1,12 @@
-import React,{useEffect,useState}from "react";
-import V5App from "./V5App";
-import LanguageConsistencyGuard from "./components/LanguageConsistencyGuard";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminAnalyticsPanel from "./components/AdminAnalyticsPanel";
-import AnalyticsBootstrap from "./components/AnalyticsBootstrap";
-import PasswordRecoveryPanel from "./components/PasswordRecoveryPanel";
-import ProductCollectionActions from "./components/ProductCollectionActions";
+import React,{useEffect,useState}from"react";
+import AppShell from"./AppShell";
+import LanguageConsistencyGuard from"./components/LanguageConsistencyGuard";
+import AdminDashboard from"./components/AdminDashboard";
+import AdminAnalyticsPanel from"./components/AdminAnalyticsPanel";
+import AnalyticsBootstrap from"./components/AnalyticsBootstrap";
+import PasswordRecoveryPanel from"./components/PasswordRecoveryPanel";
+import ProductCollectionActions from"./components/ProductCollectionActions";
+import FloatingContextActions from"./components/FloatingContextActions";
 import{supabase}from"./lib/supabase";
 import{LanguageProvider}from"./lib/i18n";
 import{AppRuntimeProvider}from"./lib/appRuntime";
@@ -22,5 +23,5 @@ export default function V6App(){
  if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
  if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
  if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
- return <AppRuntimeProvider><V5App/><LanguageProvider><ProductCollectionActions/></LanguageProvider>{common}</AppRuntimeProvider>;
+ return <LanguageProvider><AppRuntimeProvider><AppShell/><FloatingContextActions/><ProductCollectionActions/>{common}</AppRuntimeProvider></LanguageProvider>;
 }
