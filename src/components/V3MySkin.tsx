@@ -7,7 +7,7 @@ import { summarizeSkinProfile } from "../lib/skinProfile";
 import { buildProfileDecisionModel } from "../intelligence/profileDecisionModel";
 import { localizeSkinSummary, useLanguage } from "../lib/i18n";
 import{ConcernWatercolorRich}from"./WatercolorConcernPreview";
-import SkinAnalysisReport from"./SkinAnalysisReport";
+import SkinAnalysisReport from"./SkinAnalysisReportV2";
 const INK="#252724",BG="#F6F4EF",CARD="#FCFBF8",LINE="#DEDCD5",SAGE="#667A6C",MUTE="#777870",AMBER="#9B7440";
 const sans="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif";
 function Chip({children,label}:{children:React.ReactNode;label:string}){return <span style={{display:"inline-flex",alignItems:"center",gap:7,border:`1px solid ${LINE}`,borderRadius:16,padding:"5px 10px 5px 5px",background:"#FBF7ED",fontSize:12,color:INK,minHeight:46}}><ConcernWatercolorRich label={label} size={42}/>{children}</span>}
