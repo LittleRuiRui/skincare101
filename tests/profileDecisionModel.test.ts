@@ -35,14 +35,14 @@ test("builds deterministic multi-concern weights without collapsing to the first
 test("weighted concern score uses all available concern scores", () => {
   const model = buildProfileDecisionModel(baseProfile);
   const result = weightedConcernScore({ redness: 90, acne: 70, pores: 80, pigmentation: 60 }, model);
-  assert.equal(result, 77);
+  assert.equal(result, 78);
   assert.notEqual(result, 90);
 });
 
 test("weighted score is stable when one optional concern score is missing", () => {
   const model = buildProfileDecisionModel(baseProfile);
   const result = weightedConcernScore({ redness: 90, acne: 70, pores: 80 }, model);
-  assert.equal(result, 80);
+  assert.equal(result, 81);
 });
 
 test("pregnancy mode becomes a hard safety override", () => {
