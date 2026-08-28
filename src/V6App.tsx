@@ -2,16 +2,20 @@ import React,{useEffect,useState}from "react";
 import V5App from "./V5App";
 import LanguageConsistencyGuard from "./components/LanguageConsistencyGuard";
 import AdminDashboard from "./components/AdminDashboard";
+import AdminAnalyticsPanel from "./components/AdminAnalyticsPanel";
 import PasswordRecoveryPanel from "./components/PasswordRecoveryPanel";
 import{supabase}from"./lib/supabase";
 
 export default function V6App(){
- const[adminOpen,setAdminOpen]=useState(()=>new URLSearchParams(window.location.search).get("admin")==="1");
+ const readAdmin=()=>new URLSearchParams(window.location.search).get("admin");
+ const[adminMode,setAdminMode]=useState<string|null>(()=>readAdmin());
  const[recovering,setRecovering]=useState(false);
- useEffect(()=>{const onPop=()=>setAdminOpen(new URLSearchParams(window.location.search).get("admin")==="1");window.addEventListener("popstate",onPop);const{data}=supabase.auth.onAuthStateChange((event)=>{if(event==="PASSWORD_RECOVERY")setRecovering(true)});return()=>{window.removeEventListener("popstate",onPop);data.subscription.unsubscribe()}},[]);
- function closeAdmin(){const url=new URL(window.location.href);url.searchParams.delete("admin");window.history.pushState({},"",url);setAdminOpen(false)}
+ useEffect(()=>{const onPop=()=>setAdminMode(readAdmin());window.addEventListener("popstate",onPop);const{data}=supabase.auth.onAuthStateChange((event)=>{if(event==="PASSWORD_RECOVERY")setRecovering(true)});return()=>{window.removeEventListener("popstate",onPop);data.subscription.unsubscribe()}},[]);
+ function setAdmin(mode:string|null){const url=new URL(window.location.href);if(mode)url.searchParams.set("admin",mode);else url.searchParams.delete("admin");window.history.pushState({},"",url);setAdminMode(mode)}
+ function closeAdmin(){setAdmin(null)}
  function finishRecovery(){setRecovering(false);const url=new URL(window.location.href);url.hash="";window.history.replaceState({},"",url)}
  if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/><LanguageConsistencyGuard/></>;
- if(adminOpen)return <><AdminDashboard onBack={closeAdmin}/><LanguageConsistencyGuard/></>;
+ if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/><LanguageConsistencyGuard/></>;
+ if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/><LanguageConsistencyGuard/></>;
  return <><V5App/><LanguageConsistencyGuard/></>;
 }
