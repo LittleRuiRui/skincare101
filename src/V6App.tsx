@@ -5,6 +5,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import AdminAnalyticsPanel from "./components/AdminAnalyticsPanel";
 import AnalyticsBootstrap from "./components/AnalyticsBootstrap";
 import PasswordRecoveryPanel from "./components/PasswordRecoveryPanel";
+import ProductCollectionActions from "./components/ProductCollectionActions";
 import{supabase}from"./lib/supabase";
 
 export default function V6App(){
@@ -19,5 +20,5 @@ export default function V6App(){
  if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
  if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
  if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
- return <><V5App/>{common}</>;
+ return <><V5App/><ProductCollectionActions/>{common}</>;
 }
