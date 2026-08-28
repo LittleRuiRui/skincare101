@@ -36,6 +36,8 @@ jobs:
           file public/illustrations/skincare101-knowledge-watercolor.jpg | grep -q JPEG
       - name: i18n audit
         run: npm run audit:i18n
+      - name: Catalog governance audit
+        run: npm run audit:catalog
       - name: Type-check
         run: npm run typecheck
       - name: Test
