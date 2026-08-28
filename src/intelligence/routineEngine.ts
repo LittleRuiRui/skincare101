@@ -3,7 +3,7 @@ import type { BrowseConcern } from "../lib/productPresentation.ts";
 export type RoutineGoal="Acne"|"Blackheads"|"Pores"|"Redness"|"Barrier"|"Dehydration"|"Pigmentation"|"Dullness"|"Fine lines"|"Firmness"|"Oil control";
 export type RoutineComplexity="minimal"|"standard";export type ActiveTolerance="none"|"beginner"|"experienced";
 export interface RoutineTemplate{concern:BrowseConcern;am:string[];pm:string[];note:string}
-export const ROUTINE_GOALS:RoutineGoal[]=["Acne","Blackheads","Pores","Redness","Barrier","Dehydration","Pigmentation","Dullness","Fine lines","Firmness","Oil control"];
+export const ROUTINE_GOALS:RoutineGoal[]=["Acne","Blackheads","Pores","Oil control","Redness","Barrier","Dehydration","Pigmentation","Dullness","Fine lines","Firmness"];
 export const ROUTINE_TEMPLATES:Record<RoutineGoal,RoutineTemplate>={
 Acne:{concern:"acne",am:["Gentle cleanser","Hydrating toner / essence","Acne-support serum","Light moisturizer","Broad-spectrum SPF"],pm:["Cleanser","Hydrating toner / essence","BHA or acne treatment","Barrier-support moisturizer","Eye care · optional"],note:"先控制刺激总量，不把所有祛痘活性叠在同一晚。"},
 Blackheads:{concern:"pores",am:["Gentle cleanser","Hydrating toner / essence","Niacinamide serum","Light moisturizer","Broad-spectrum SPF"],pm:["Cleanser","Hydrating toner / essence","BHA 2–3× weekly","Light moisturizer","Eye care · optional"],note:"黑头需要持续管理角栓；频繁挤压只会增加刺激。"},
