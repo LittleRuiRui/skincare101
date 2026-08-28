@@ -20,7 +20,7 @@ export default function FloatingContextActions(){
  useEffect(()=>{const open=()=>setShelfOpen(true);window.addEventListener("skincare101:open-shelf",open as EventListener);return()=>window.removeEventListener("skincare101:open-shelf",open as EventListener)},[]);
  const owned=useMemo(()=>{const ids=new Set(shelfEntries.map(e=>e.productId));return products.filter(p=>ids.has(p.id))},[products,shelfEntries]);
  const verdict=currentProduct?doINeedThis(currentProduct,owned,profile,products,shelfEntries):null;
- if(shelfOpen)return <MyShelf products={products} profile={profile} onBack={()=>setShelfOpen(false)}/>;
+ if(shelfOpen)return <div role="dialog" aria-modal="true" style={{position:"fixed",inset:0,zIndex:210,overflowY:"auto",background:"#F6F0E3"}}><MyShelf products={products} profile={profile} onBack={()=>setShelfOpen(false)}/></div>;
  const label=viewContext==="product"?"我需要买吗？ · Do I need this?":viewContext==="routine"?"用我的护肤柜搭配 · Use My Shelf":"我的护肤柜 · My Shelf";
  function action(){if(viewContext==="product"&&currentProduct){setNeedOpen(true);return}setShelfOpen(true)}
  function submitReport(){
