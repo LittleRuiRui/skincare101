@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import V5App from "./V5App";
+import V6App from "./V6App";
 import "./ingredient-check-hotfix.css";
 import "./ui-audit-safety.css";
 
@@ -25,6 +25,6 @@ try {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <V5App />
+    <V6App />
   </React.StrictMode>
 );
