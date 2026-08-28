@@ -24,16 +24,18 @@ type Route="home"|"mySkin"|"skinGuidance"|"explore"|"routine"|"product"|"ingredi
 type ProductReturnRoute="home"|"explore"|"matchHub";
 const ROUTES=new Set<Route>(["home","mySkin","skinGuidance","explore","routine","product","ingredientCheck","matchHub","profileBuilder","account","onboardingComplete","onboardingReplay"]);
 const EXPLORE_ENTRIES=new Set<ExploreEntry>(["explore","forYou","search","brands","concerns","luxury","niche"]);
+const CONCERNS=new Set<BrowseConcern>(["all","hydration","barrier","redness","pores","acne","pigmentation","aging"]);
 
 function readRoute():Route{const value=new URLSearchParams(window.location.search).get("view")as Route|null;return value&&ROUTES.has(value)?value:"home"}
 function readExploreEntry():ExploreEntry{const value=new URLSearchParams(window.location.search).get("tab")as ExploreEntry|null;return value&&EXPLORE_ENTRIES.has(value)?value:"explore"}
 function readReturnRoute():ProductReturnRoute{const value=new URLSearchParams(window.location.search).get("from")as ProductReturnRoute|null;return value==="home"||value==="matchHub"||value==="explore"?value:"explore"}
+function readConcern():BrowseConcern{const value=new URLSearchParams(window.location.search).get("concern")as BrowseConcern|null;return value&&CONCERNS.has(value)?value:"all"}
 function readProductId(){return new URLSearchParams(window.location.search).get("product")}
-function writeUrl(route:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute}={},replace=false){
+function writeUrl(route:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern}={},replace=false){
  const url=new URL(window.location.href);
  if(route==="home")url.searchParams.delete("view");else url.searchParams.set("view",route);
- if(route==="product"&&options.product){url.searchParams.set("product",options.product.id);url.searchParams.set("from",options.from||"explore")}else{url.searchParams.delete("product");url.searchParams.delete("from")}
- if(route==="explore"){const tab=options.tab||"explore";if(tab==="explore")url.searchParams.delete("tab");else url.searchParams.set("tab",tab)}else url.searchParams.delete("tab");
+ if(route==="product"&&options.product){url.searchParams.set("product",options.product.id);url.searchParams.set("from",options.from||"explore");if(options.concern&&options.concern!=="all")url.searchParams.set("concern",options.concern);else url.searchParams.delete("concern")}else{url.searchParams.delete("product");url.searchParams.delete("from");url.searchParams.delete("concern")}
+ if(route==="explore"||route==="product"){const tab=options.tab||"explore";if(tab==="explore")url.searchParams.delete("tab");else url.searchParams.set("tab",tab)}else url.searchParams.delete("tab");
  (replace?window.history.replaceState:window.history.pushState).call(window.history,{},"",url);
 }
 
@@ -43,21 +45,22 @@ export default function AppShell(){
  const[route,setRoute]=useState<Route>(()=>readRoute());
  const[exploreEntry,setExploreEntry]=useState<ExploreEntry>(()=>readExploreEntry());
  const[selectedProduct,setSelectedProduct]=useState<SharedProductRecord|null>(null);
- const[selectedConcern,setSelectedConcern]=useState<BrowseConcern>("all");
+ const[selectedConcern,setSelectedConcern]=useState<BrowseConcern>(()=>readConcern());
  const[productReturnRoute,setProductReturnRoute]=useState<ProductReturnRoute>(()=>readReturnRoute());
  const[onboardingActive,setOnboardingActive]=useState(false);
  const[onboardingSeen,setOnboardingSeen]=useState(()=>{try{return localStorage.getItem("skincare101-onboarding-seen")==="1"}catch{return false}});
 
  function markOnboardingSeen(){try{localStorage.setItem("skincare101-onboarding-seen","1")}catch{}setOnboardingSeen(true)}
- function navigate(next:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;replace?:boolean}={}){
+ function navigate(next:Route,options:{product?:SharedProductRecord|null;tab?:ExploreEntry;from?:ProductReturnRoute;concern?:BrowseConcern;replace?:boolean}={}){
   setRoute(next);
   if(next!=="product")setSelectedProduct(null);
   if(next==="product"&&options.product)setSelectedProduct(options.product);
-  if(next==="explore"&&options.tab)setExploreEntry(options.tab);
+  if((next==="explore"||next==="product")&&options.tab)setExploreEntry(options.tab);
   if(options.from)setProductReturnRoute(options.from);
+  if(options.concern)setSelectedConcern(options.concern);
   writeUrl(next,options,Boolean(options.replace));
  }
- function openProduct(product:SharedProductRecord,concern:BrowseConcern="all",from:ProductReturnRoute="explore"){setSelectedConcern(concern);setProductReturnRoute(from);navigate("product",{product,from})}
+ function openProduct(product:SharedProductRecord,concern:BrowseConcern="all",from:ProductReturnRoute="explore"){setSelectedConcern(concern);setProductReturnRoute(from);navigate("product",{product,from,concern,tab:from==="explore"?exploreEntry:undefined})}
  function openRecommendations(){navigate("explore",{tab:"forYou"})}
  function createProfile(){clearPendingProfileDraft();navigate("profileBuilder")}
  function finishProfile(){void refreshProfiles().then(()=>navigate(onboardingActive?"onboardingComplete":"home",{replace:true}))}
@@ -75,7 +78,7 @@ export default function AppShell(){
 
  useEffect(()=>{setViewContext(route as AppViewContext,route==="product"?selectedProduct:null)},[route,selectedProduct,setViewContext]);
  useEffect(()=>{
-  const onPop=()=>{const next=readRoute();setRoute(next);setExploreEntry(readExploreEntry());setProductReturnRoute(readReturnRoute());if(next!=="product")setSelectedProduct(null);else{const id=readProductId();setSelectedProduct(id?products.find(p=>p.id===id)||null:null)}};
+  const onPop=()=>{const next=readRoute();setRoute(next);setExploreEntry(readExploreEntry());setProductReturnRoute(readReturnRoute());setSelectedConcern(readConcern());if(next!=="product")setSelectedProduct(null);else{const id=readProductId();setSelectedProduct(id?products.find(p=>p.id===id)||null:null)}};
   window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop);
  },[products]);
  useEffect(()=>{
