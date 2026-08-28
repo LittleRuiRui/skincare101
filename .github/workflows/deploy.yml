@@ -34,6 +34,8 @@ jobs:
           test "$(tail -c 2 public/illustrations/skincare101-knowledge-watercolor.jpg | xxd -p)" = "ffd9"
           test "$(wc -c < public/illustrations/skincare101-knowledge-watercolor.jpg)" -gt 5000
           file public/illustrations/skincare101-knowledge-watercolor.jpg | grep -q JPEG
+      - name: i18n audit
+        run: npm run audit:i18n
       - name: Type-check
         run: npm run typecheck
       - name: Test
