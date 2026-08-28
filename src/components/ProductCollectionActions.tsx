@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState}from"react";
 import{Bookmark,Heart,ThumbsDown}from"lucide-react";
 import{loadSharedProductCatalog,type SharedProductRecord}from"../lib/supabase";
+import{useLanguage}from"../lib/i18n";
 
 type TriedState="liked"|"disliked"|null;
 type Preference={watchlist:boolean;tried:TriedState};
@@ -16,6 +17,7 @@ function writePrefs(prefs:PreferenceMap){
 function norm(v:string){return v.toLowerCase().replace(/[^a-z0-9\u3400-\u9fff]+/g,"").trim()}
 
 export default function ProductCollectionActions(){
+ const{t}=useLanguage();
  const[products,setProducts]=useState<SharedProductRecord[]>([]);
  const[current,setCurrent]=useState<SharedProductRecord|null>(null);
  const[prefs,setPrefs]=useState<PreferenceMap>(()=>readPrefs());
@@ -29,8 +31,8 @@ export default function ProductCollectionActions(){
  function update(next:Preference){if(!current)return;const map={...prefs,[current.id]:next};setPrefs(map);writePrefs(map)}
  const btn=(active:boolean)=>({border:`1px solid ${active?"#2F5A40":"#D7CDB8"}`,borderRadius:999,padding:"9px 12px",background:active?"#EAF2E9":"rgba(255,255,255,.96)",color:active?"#244B35":"#6F6A5F",fontSize:12,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,whiteSpace:"nowrap" as const});
  return <div style={{position:"fixed",right:14,bottom:"calc(env(safe-area-inset-bottom, 0px) + 68px)",zIndex:125,display:"flex",gap:7,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"min(92vw,520px)"}}>
-  <button onClick={()=>update({...pref,watchlist:!pref.watchlist})} style={btn(pref.watchlist)} aria-pressed={pref.watchlist}><Bookmark size={15} fill={pref.watchlist?"currentColor":"none"}/>{pref.watchlist?"已收藏 · Watching":"观察单 · Watchlist"}</button>
-  <button onClick={()=>update({...pref,tried:pref.tried==="liked"?null:"liked"})} style={btn(pref.tried==="liked")} aria-pressed={pref.tried==="liked"}><Heart size={15} fill={pref.tried==="liked"?"currentColor":"none"}/>{pref.tried==="liked"?"喜欢 · Liked":"用过喜欢"}</button>
-  <button onClick={()=>update({...pref,tried:pref.tried==="disliked"?null:"disliked"})} style={btn(pref.tried==="disliked")} aria-pressed={pref.tried==="disliked"}><ThumbsDown size={15}/>{pref.tried==="disliked"?"不喜欢 · Disliked":"用过不喜欢"}</button>
+  <button onClick={()=>update({...pref,watchlist:!pref.watchlist})} style={btn(pref.watchlist)} aria-pressed={pref.watchlist}><Bookmark size={15} fill={pref.watchlist?"currentColor":"none"}/>{pref.watchlist?t("已收藏","Saved"):t("观察单","Watchlist")}</button>
+  <button onClick={()=>update({...pref,tried:pref.tried==="liked"?null:"liked"})} style={btn(pref.tried==="liked")} aria-pressed={pref.tried==="liked"}><Heart size={15} fill={pref.tried==="liked"?"currentColor":"none"}/>{pref.tried==="liked"?t("喜欢","Liked"):t("用过喜欢","Liked after trying")}</button>
+  <button onClick={()=>update({...pref,tried:pref.tried==="disliked"?null:"disliked"})} style={btn(pref.tried==="disliked")} aria-pressed={pref.tried==="disliked"}><ThumbsDown size={15}/>{pref.tried==="disliked"?t("不喜欢","Disliked"):t("用过不喜欢","Disliked after trying")}</button>
  </div>
 }
