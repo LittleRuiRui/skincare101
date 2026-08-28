@@ -36,10 +36,22 @@ export async function loadSharedProductCatalog():Promise<SharedProductRecord[]>{
   }
   return rows;
  };
- const[data,notes]=await Promise.all([
-  fetchAll("approved_product_catalog_summary","id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,search_aliases,source_locale,category,main_category,product_subtype,product_functions,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status,formula_function_summary,formula_best_for,formula_also_works_for,formula_less_ideal_for,formula_caveats,formula_verdict",query=>query.order("brand",{ascending:true}).order("name",{ascending:true})),
-  fetchAll("product_editorial_notes","product_id,recommendation_summary,best_for,not_ideal_for,caveats,evidence_level",query=>query.eq("locale","zh-CN").order("product_id",{ascending:true}))
- ]);
+ const summarySelect="id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,search_aliases,source_locale,category,main_category,product_subtype,product_functions,ingredient_names,ingredient_list_type,data_completeness,source_url,popularity_sources,popularity_tier,asia_availability_status,formula_function_summary,formula_best_for,formula_also_works_for,formula_less_ideal_for,formula_caveats,formula_verdict";
+ const fallbackSelect="id,brand,name,brand_local_name,brand_english_name,product_local_name,product_english_name,search_aliases,source_locale,category,main_category,product_subtype,product_functions,ingredient_names,ingredient_list_type,data_completeness,source_url,formula_function_summary,formula_best_for,formula_also_works_for,formula_less_ideal_for,formula_caveats,formula_verdict";
+ let data:any[];
+ try{
+  data=await fetchAll("approved_product_catalog_summary",summarySelect,query=>query.order("brand",{ascending:true}).order("name",{ascending:true}));
+ }catch(summaryError){
+  console.warn("Product summary view failed; falling back to approved_product_catalog",summaryError);
+  data=await fetchAll("approved_product_catalog",fallbackSelect,query=>query.order("brand",{ascending:true}).order("name",{ascending:true}));
+ }
+ let notes:any[]=[];
+ try{
+  notes=await fetchAll("product_editorial_notes","product_id,recommendation_summary,best_for,not_ideal_for,caveats,evidence_level",query=>query.eq("locale","zh-CN").order("product_id",{ascending:true}));
+ }catch(notesError){
+  console.warn("Editorial notes unavailable; continuing with product catalog",notesError);
+ }
+ if(!data.length)throw new Error("Product catalog returned zero rows");
  const notesByProduct=new Map((notes||[]).map(note=>[note.product_id,note]));
  return(data||[]).map(row=>{const note=notesByProduct.get(row.id);return{id:`shared-${row.id}`,brand:row.brand||"未知品牌",name:row.name||"未命名产品",brandLocalName:row.brand_local_name||undefined,brandEnglishName:row.brand_english_name||undefined,productLocalName:row.product_local_name||undefined,productEnglishName:row.product_english_name||undefined,searchAliases:row.search_aliases||[],sourceLocale:row.source_locale||undefined,category:row.category||"其他",mainCategory:row.main_category||undefined,productSubtype:row.product_subtype||undefined,productFunctions:row.product_functions||[],ingredients:row.ingredient_names||[],ingredientListType:row.ingredient_list_type==="full"?"full":"partial",dataCompleteness:row.data_completeness||0,sourceUrl:row.source_url||"",verifiedAt:"",formulaSummary:row.formula_function_summary||undefined,formulaVerdict:row.formula_verdict||undefined,formulaBestFor:row.formula_best_for||[],formulaAlsoWorksFor:row.formula_also_works_for||[],formulaLessIdealFor:row.formula_less_ideal_for||[],formulaCaveats:row.formula_caveats||[],editorial:note?{summary:note.recommendation_summary||undefined,bestFor:note.best_for||[],notIdealFor:note.not_ideal_for||[],caveats:note.caveats||[],evidenceLevel:note.evidence_level||undefined}:undefined,popularitySources:row.popularity_sources||[],popularityTier:row.popularity_tier||undefined,asiaAvailabilityStatus:row.asia_availability_status||"unverified",qualityFlags:[] as string[],source:"shared"}});
 }
