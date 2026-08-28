@@ -10,6 +10,7 @@ import V3MatchHub from "./components/V3MatchHub";
 import V3SkinGuidance from "./components/V3SkinGuidance";
 import EmailAccountPanel from "./components/EmailAccountPanel";
 import { loadSharedProductCatalog, saveMySkinProfile, supabase, type SharedProductRecord } from "./lib/supabase";
+import { dedupeProductCatalog } from "./lib/productNames";
 import { loadMySkinProfiles } from "./lib/mySkin";
 import type { SkinProfileRecord } from "./lib/skinProfile";
 import type { BrowseConcern } from "./lib/productPresentation";
@@ -36,7 +37,7 @@ function V3AppContent() {
   const pendingProfileSaveRef = useRef(false);
 
   async function refreshProfiles() { try { const result=await loadMySkinProfiles(); setProfiles(result); setProfile(result.find(i=>i.isActive)||result[0]||null); } catch { setProfiles([]); setProfile(null); } finally { setProfileChecked(true); } }
-  useEffect(()=>{let active=true;loadMySkinProfiles().then(result=>{if(active){setProfiles(result);setProfile(result.find(i=>i.isActive)||result[0]||null)}}).catch(():void=>{}).finally(()=>{if(active)setProfileChecked(true)});loadSharedProductCatalog().then(result=>{if(active)setProducts(result)}).catch(():void=>{});return()=>{active=false}},[]);
+  useEffect(()=>{let active=true;loadMySkinProfiles().then(result=>{if(active){setProfiles(result);setProfile(result.find(i=>i.isActive)||result[0]||null)}}).catch(():void=>{}).finally(()=>{if(active)setProfileChecked(true)});loadSharedProductCatalog().then(result=>{if(active)setProducts(dedupeProductCatalog(result))}).catch(():void=>{});return()=>{active=false}},[]);
   useEffect(()=>{async function savePending(){if(pendingProfileSaveRef.current)return;const pending=loadPendingProfileDraftRecord();if(!pending)return;const{data}=await supabase.auth.getSession();if(!data.session?.user)return;pendingProfileSaveRef.current=true;try{await saveMySkinProfile(pending.profile,pending.name||"");clearPendingProfileDraft();await refreshProfiles();setRoute("home")}catch(e){console.error(e)}finally{pendingProfileSaveRef.current=false}}void savePending();const{data}=supabase.auth.onAuthStateChange(event=>{if(event==="INITIAL_SESSION")setTimeout(():void=>{void savePending()},0);if(event==="SIGNED_IN")setTimeout(():void=>{void savePending().then(refreshProfiles).then(():void=>{setRoute("home")})},0)});return()=>data.subscription.unsubscribe()},[]);
 
   function openProduct(product:SharedProductRecord,concern:BrowseConcern="all",returnRoute:ProductReturnRoute="explore"){setSelectedProduct(product);setSelectedConcern(concern);setProductReturnRoute(returnRoute);setRoute("product")}
