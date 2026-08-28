@@ -8,6 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "audit:i18n": "node scripts/i18n-audit.mjs",
     "preview": "vite preview",
     "backup:sqlite": "python scripts/export_supabase_to_sqlite.py",
     "data:pilot": "python scripts/build_pilot_catalog.py",
