@@ -1,43 +1,40 @@
-import { describe, expect, it } from "vitest";
-import { assessPregnancySafety, isPregnancySafetyMode } from "../src/lib/pregnancySafety";
-import type { SkinProfileRecord } from "../src/lib/skinProfile";
+import test from "node:test";
+import assert from "node:assert/strict";
+import { assessPregnancySafety, isPregnancySafetyMode } from "../src/lib/pregnancySafety.ts";
+import type { SkinProfileRecord } from "../src/lib/skinProfile.ts";
 
 function product(ingredients:string[],ingredientListType:"full"|"partial"="full",dataCompleteness=95){
   return {ingredients,ingredientListType,dataCompleteness};
 }
 
-describe("pregnancy safety engine",()=>{
-  it("marks topical retinoids as avoid",()=>{
-    const result=assessPregnancySafety(product(["Water","Glycerin","Retinol"]));
-    expect(result.level).toBe("avoid");
-    expect(result.triggers.some(x=>x.family.includes("维A"))).toBe(true);
-  });
+test("retinoids are classified as pregnancy risk products",()=>{
+  const result=assessPregnancySafety(product(["Water","Glycerin","Retinol"]));
+  assert.equal(result.level,"risk");
+  assert.ok(result.triggers.some(x=>x.family.includes("维A")));
+});
 
-  it("marks hydroquinone as avoid",()=>{
-    const result=assessPregnancySafety(product(["Water","Hydroquinone"]));
-    expect(result.level).toBe("avoid");
-  });
+test("hydroquinone is classified as a pregnancy risk product",()=>{
+  const result=assessPregnancySafety(product(["Water","Hydroquinone"]));
+  assert.equal(result.level,"risk");
+});
 
-  it("treats salicylic acid conservatively as caution when concentration is unknown",()=>{
-    const result=assessPregnancySafety(product(["Water","Salicylic Acid"]));
-    expect(result.level).toBe("caution");
-  });
+test("salicylic acid is conservatively classified as pregnancy risk",()=>{
+  const result=assessPregnancySafety(product(["Water","Salicylic Acid"]));
+  assert.equal(result.level,"risk");
+});
 
-  it("does not call a complete non-triggering formula pregnancy-safe",()=>{
-    const result=assessPregnancySafety(product(["Water","Glycerin","Niacinamide","Panthenol"]));
-    expect(result.level).toBe("no-known-trigger");
-    expect(result.labelEn).not.toMatch(/^safe$/i);
-  });
+test("a complete non-triggering formula is not described as safe",()=>{
+  const result=assessPregnancySafety(product(["Water","Glycerin","Niacinamide","Panthenol"]));
+  assert.equal(result.level,"no-known-trigger");
+  assert.doesNotMatch(result.labelEn,/^safe$/i);
+});
 
-  it("returns insufficient data for a partial ingredient list without triggers",()=>{
-    const result=assessPregnancySafety(product(["Glycerin","Panthenol"],"partial",55));
-    expect(result.level).toBe("insufficient-data");
-  });
+test("partial ingredient lists return insufficient data without triggers",()=>{
+  const result=assessPregnancySafety(product(["Glycerin","Panthenol"],"partial",55));
+  assert.equal(result.level,"insufficient-data");
+});
 
-  it("activates from the saved pregnancy profile answer",()=>{
-    const profile:SkinProfileRecord={
-      id:"p1",name:"test",isActive:true,skinAnswers:{},profileAnswers:{pregnancy:"yes"},selectedSymptoms:[],symptomAnswers:{},multiSelectAnswers:{},redFlag:null,
-    };
-    expect(isPregnancySafetyMode(profile)).toBe(true);
-  });
+test("saved pregnancy profile answer activates pregnancy safety mode",()=>{
+  const profile:SkinProfileRecord={id:"p1",name:"test",isActive:true,skinAnswers:{},profileAnswers:{pregnancy:"yes"},selectedSymptoms:[],symptomAnswers:{},multiSelectAnswers:{},redFlag:null};
+  assert.equal(isPregnancySafetyMode(profile),true);
 });
