@@ -18,7 +18,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return "zh";
     return window.localStorage.getItem(STORAGE_KEY) === "en" ? "en" : "zh";
   });
-  function setLanguage(next: AppLanguage) { setLanguageState(next); if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, next); }
+  function setLanguage(next: AppLanguage) {
+    setLanguageState(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, next);
+      window.dispatchEvent(new CustomEvent("skincare101:language", { detail: { language: next } }));
+    }
+  }
   useEffect(() => { if (typeof document !== "undefined") document.documentElement.lang = language === "zh" ? "zh-CN" : "en"; }, [language]);
   const value = useMemo<LanguageContextValue>(() => ({ language, setLanguage, toggleLanguage: () => setLanguage(language === "zh" ? "en" : "zh"), t: (zh, en) => language === "zh" ? zh : en }), [language]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
