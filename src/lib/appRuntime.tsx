@@ -62,10 +62,31 @@ export function AppRuntimeProvider({children}:{children:React.ReactNode}){
  useEffect(()=>{
   let active=true;
   void loadSharedProductCatalog().then(rows=>{if(active)setProducts(rows)}).catch(()=>{});
-  void refreshProfiles();void refreshShelf();void persistPendingProfile().catch(()=>{});
+
+  // Supabase persists the session in browser storage. On a hard refresh we must
+  // restore that session before deciding whether user-scoped data is available;
+  // otherwise the first profile request can run as an anonymous user and make
+  // the UI look signed out even though a valid refresh token already exists.
+  const bootstrapAuth=async()=>{
+   try{await currentSession()}catch{}
+   if(!active)return;
+   await Promise.all([refreshProfiles(),refreshShelf()]);
+   if(!active)return;
+   void persistPendingProfile().catch(()=>{});
+  };
+  void bootstrapAuth();
+
   const shelfChanged=()=>{void refreshShelf()};
   window.addEventListener("skincare101:shelf-changed",shelfChanged);
-  const{data}=supabase.auth.onAuthStateChange(()=>{setTimeout(()=>{void persistPendingProfile().catch(()=>{});void refreshProfiles();void refreshShelf()},0)});
+  const{data}=supabase.auth.onAuthStateChange((_event,nextSession)=>{
+   if(!active)return;
+   setTimeout(()=>{
+    if(!active)return;
+    if(nextSession)void persistPendingProfile().catch(()=>{});
+    void refreshProfiles();
+    void refreshShelf();
+   },0)
+  });
   return()=>{active=false;window.removeEventListener("skincare101:shelf-changed",shelfChanged);data.subscription.unsubscribe()};
  },[persistPendingProfile,refreshProfiles,refreshShelf]);
 
