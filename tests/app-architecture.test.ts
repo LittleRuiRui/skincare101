@@ -6,8 +6,10 @@ function source(path:string){return readFileSync(new URL(`../${path}`,import.met
 
 test("production entry uses the single app shell",()=>{
  const v6=source("src/V6App.tsx");
+ const shell=source("src/AppShell.tsx");
  assert.match(v6,/AppShell/);
  assert.doesNotMatch(v6,/V5App|V4App|\.\/App["']/);
+ assert.doesNotMatch(shell,/V5App|V4App|LegacyApp|\.\/App["']/);
 });
 
 test("product context actions do not infer state from the DOM",()=>{
