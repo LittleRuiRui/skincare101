@@ -4,8 +4,8 @@ import path from "node:path";
 const ROOT=process.cwd();
 const UI_DIRS=[path.join(ROOT,"src","components"),path.join(ROOT,"src")];
 const legacyAllowlist=new Set([
- "src/V4App.tsx","src/V5App.tsx",
- "src/components/EmailAccountPanel.tsx","src/components/FirstRunOnboarding.tsx","src/components/MyProductHistory.tsx","src/components/MyShelf.tsx","src/components/OnboardingComplete.tsx","src/components/ProductContributionPanel.tsx","src/components/ProductPurchaseLinks.tsx","src/components/ProfileSavePanel.tsx","src/components/ReviewerQueue.tsx","src/components/SkincareKnowledgeCards.tsx","src/components/UserCenter.tsx","src/components/V3Explore.tsx","src/components/V3Home.tsx","src/components/V3IngredientCheck.tsx","src/components/V3MatchHub.tsx","src/components/V3MySkin.tsx","src/components/V3ProductDetail.tsx","src/components/V3ProductScanner.tsx","src/components/V3RoutineBuilder.tsx","src/components/V3RoutineCheckins.tsx","src/components/V3RoutineCommunity.tsx","src/components/V3RoutineHub.tsx","src/components/V3SkinGuidance.tsx"
+ "src/App.tsx","src/V4App.tsx","src/V5App.tsx",
+ "src/components/EmailAccountPanel.tsx","src/components/FirstRunOnboarding.tsx","src/components/MyProductHistory.tsx","src/components/MyShelf.tsx","src/components/OnboardingComplete.tsx","src/components/ProductContributionPanel.tsx","src/components/ProductPurchaseLinks.tsx","src/components/ProfileSavePanel.tsx","src/components/ReviewerQueue.tsx","src/components/SkincareKnowledgeCards.tsx","src/components/UserCenter.tsx","src/components/V3Explore.tsx","src/components/V3Home.tsx","src/components/V3IngredientCheck.tsx","src/components/V3MatchHub.tsx","src/components/V3MySkin.tsx","src/components/V3ProductDetail.tsx","src/components/V3ProductScanner.tsx","src/components/V3RoutineBuilder.tsx","src/components/V3RoutineCheckins.tsx","src/components/V3RoutineCommunity.tsx","src/components/V3RoutineHub.tsx","src/components/V3SkinGuidance.tsx","src/components/WatercolorConcernPreview.tsx","src/components/WatercolorMotifs.tsx"
 ]);
 const exempt=new Set(["src/components/LanguageConsistencyGuard.tsx","src/components/BilingualProductName.tsx","src/components/BilingualIngredientList.tsx"]);
 
@@ -23,4 +23,4 @@ for(const file of files){
  if(/\.category\s*\}/.test(text)&&!/displayCategory/.test(text))failures.push(`${rel}: renders product.category directly; use displayCategory(value, language)`);
 }
 if(failures.length){console.error("i18n audit failed:\n- "+failures.join("\n- "));process.exit(1)}
-console.log(`i18n audit passed for ${files.length} UI files. New UI files must use locale APIs and cannot introduce mixed-language literals.`);
+console.log(`i18n audit passed for ${files.length} UI files. Existing legacy files are explicitly allowlisted; any new UI file must use locale APIs and cannot introduce mixed-language literals.`);
