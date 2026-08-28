@@ -1,6 +1,6 @@
 import type { SharedProductRecord } from "./supabase";
-import type { SkinProfileRecord } from "./skinProfile";
-import { getSpecialSkinStates } from "./skinProfile";
+import type { SkinProfileRecord } from "./skinProfile.ts";
+import { getSpecialSkinStates } from "./skinProfile.ts";
 
 export type PregnancySafetyLevel = "risk" | "no-known-trigger" | "insufficient-data";
 
