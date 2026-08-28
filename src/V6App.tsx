@@ -7,6 +7,7 @@ import AnalyticsBootstrap from "./components/AnalyticsBootstrap";
 import PasswordRecoveryPanel from "./components/PasswordRecoveryPanel";
 import ProductCollectionActions from "./components/ProductCollectionActions";
 import{supabase}from"./lib/supabase";
+import{LanguageProvider}from"./lib/i18n";
 
 export default function V6App(){
  const readAdmin=()=>new URLSearchParams(window.location.search).get("admin");
@@ -20,5 +21,5 @@ export default function V6App(){
  if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
  if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
  if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
- return <><V5App/><ProductCollectionActions/>{common}</>;
+ return <><V5App/><LanguageProvider><ProductCollectionActions/></LanguageProvider>{common}</>;
 }
