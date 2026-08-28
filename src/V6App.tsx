@@ -7,6 +7,7 @@ import AnalyticsBootstrap from"./components/AnalyticsBootstrap";
 import PasswordRecoveryPanel from"./components/PasswordRecoveryPanel";
 import ProductCollectionActions from"./components/ProductCollectionActions";
 import FloatingContextActions from"./components/FloatingContextActions";
+import PregnancySafetyLayer from"./components/PregnancySafetyLayer";
 import{supabase}from"./lib/supabase";
 import{LanguageProvider}from"./lib/i18n";
 import{AppRuntimeProvider}from"./lib/appRuntime";
@@ -23,5 +24,5 @@ export default function V6App(){
  if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
  if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
  if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
- return <LanguageProvider><AppRuntimeProvider><AppShell/><FloatingContextActions/><ProductCollectionActions/>{common}</AppRuntimeProvider></LanguageProvider>;
+ return <LanguageProvider><AppRuntimeProvider><AppShell/><FloatingContextActions/><ProductCollectionActions/><PregnancySafetyLayer/>{common}</AppRuntimeProvider></LanguageProvider>;
 }
