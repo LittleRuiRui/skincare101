@@ -2,16 +2,17 @@ import React,{useEffect,useState}from"react";
 import AppShell from"./AppShell";
 import"./floating-actions.css";
 import LanguageConsistencyGuard from"./components/LanguageConsistencyGuard";
-import AdminDashboard from"./components/AdminDashboard";
-import AdminAnalyticsPanel from"./components/AdminAnalyticsPanel";
 import AnalyticsBootstrap from"./components/AnalyticsBootstrap";
-import PasswordRecoveryPanel from"./components/PasswordRecoveryPanel";
 import ProductCollectionActions from"./components/ProductCollectionActions";
 import FloatingContextActions from"./components/FloatingContextActions";
 import PregnancySafetyLayer from"./components/PregnancySafetyLayer";
 import{supabase}from"./lib/supabase";
 import{LanguageProvider,useLanguage}from"./lib/i18n";
 import{AppRuntimeProvider}from"./lib/appRuntime";
+
+const AdminDashboard=React.lazy(()=>import("./components/AdminDashboard"));
+const AdminAnalyticsPanel=React.lazy(()=>import("./components/AdminAnalyticsPanel"));
+const PasswordRecoveryPanel=React.lazy(()=>import("./components/PasswordRecoveryPanel"));
 
 function UtilityEntries({isAdmin,onAnalytics}:{isAdmin:boolean;onAnalytics:()=>void}){
  const{t}=useLanguage();
@@ -20,6 +21,11 @@ function UtilityEntries({isAdmin,onAnalytics}:{isAdmin:boolean;onAnalytics:()=>v
   <button onClick={()=>{window.location.href="/play/niuma/"}} style={btn}>{t("玩一下 · 牛马测试","Play · Niuma Test")}</button>
   {isAdmin?<button onClick={onAnalytics} style={btn}>Analytics</button>:null}
  </div>
+}
+
+function LazyFallback():React.ReactElement{
+ const{t}=useLanguage();
+ return <div style={{minHeight:"100vh",display:"grid",placeItems:"center",color:"#777065",fontSize:12}}>{t("正在加载…","Loading…")}</div>;
 }
 
 export default function V6App(){
@@ -39,8 +45,8 @@ export default function V6App(){
  function closeAdmin(){setAdmin(null)}
  function finishRecovery(){setRecovering(false);const url=new URL(window.location.href);url.hash="";window.history.replaceState({},"",url)}
  const common=<><LanguageConsistencyGuard/><AnalyticsBootstrap/></>;
- if(recovering)return <><PasswordRecoveryPanel onDone={finishRecovery}/>{common}</>;
- if(adminMode==="analytics")return <><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/>{common}</>;
- if(adminMode==="1")return <><AdminDashboard onBack={closeAdmin}/>{common}</>;
+ if(recovering)return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><PasswordRecoveryPanel onDone={finishRecovery}/></React.Suspense>{common}</LanguageProvider>;
+ if(adminMode==="analytics")return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/></React.Suspense>{common}</LanguageProvider>;
+ if(adminMode==="1")return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><AdminDashboard onBack={closeAdmin}/></React.Suspense>{common}</LanguageProvider>;
  return <LanguageProvider><AppRuntimeProvider><AppShell/><FloatingContextActions/><ProductCollectionActions/><PregnancySafetyLayer/><UtilityEntries isAdmin={isAdmin} onAnalytics={()=>setAdmin("analytics")}/>{common}</AppRuntimeProvider></LanguageProvider>;
 }
