@@ -14,6 +14,7 @@ const exempt=new Set([
  "src/components/LegacyQuestionnaireI18nBridge.tsx",
  "src/components/LegacyReferralUxBridge.tsx",
  "src/components/LegacyResultsI18nBridge.tsx",
+ "src/components/LegacyDeepContentI18nBridge.tsx",
 ]);
 
 function walk(dir){return fs.existsSync(dir)?fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{const p=path.join(dir,entry.name);return entry.isDirectory()?walk(p):[p]}):[]}
