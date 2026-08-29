@@ -1,0 +1,18 @@
+# PEACED SKIN / Skincare101
+# Public product and editorial content is intended to be discoverable by search and answer engines.
+
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /profile
+Disallow: /admin
+
+# ChatGPT Search discovery
+User-agent: OAI-SearchBot
+Allow: /
+
+# Claude crawler
+User-agent: ClaudeBot
+Allow: /
+
+Sitemap: https://peacedskin.com/sitemap.xml
