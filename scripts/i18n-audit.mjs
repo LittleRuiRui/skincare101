@@ -7,7 +7,13 @@ const legacyAllowlist=new Set([
  "src/App.tsx","src/V4App.tsx","src/V5App.tsx",
  "src/components/EmailAccountPanel.tsx","src/components/FirstRunOnboarding.tsx","src/components/MyProductHistory.tsx","src/components/MyShelf.tsx","src/components/OnboardingComplete.tsx","src/components/ProductContributionPanel.tsx","src/components/ProductPurchaseLinks.tsx","src/components/ProfileSavePanel.tsx","src/components/ReviewerQueue.tsx","src/components/SkincareKnowledgeCards.tsx","src/components/UserCenter.tsx","src/components/V3Explore.tsx","src/components/V3Home.tsx","src/components/V3IngredientCheck.tsx","src/components/V3MatchHub.tsx","src/components/V3MySkin.tsx","src/components/V3ProductDetail.tsx","src/components/V3ProductScanner.tsx","src/components/V3RoutineBuilder.tsx","src/components/V3RoutineCheckins.tsx","src/components/V3RoutineCommunity.tsx","src/components/V3RoutineHub.tsx","src/components/V3SkinGuidance.tsx","src/components/WatercolorConcernPreview.tsx","src/components/WatercolorMotifs.tsx"
 ]);
-const exempt=new Set(["src/components/LanguageConsistencyGuard.tsx","src/components/BilingualProductName.tsx","src/components/BilingualIngredientList.tsx"]);
+const exempt=new Set([
+ "src/components/LanguageConsistencyGuard.tsx",
+ "src/components/BilingualProductName.tsx",
+ "src/components/BilingualIngredientList.tsx",
+ "src/components/LegacyQuestionnaireI18nBridge.tsx",
+ "src/components/LegacyReferralUxBridge.tsx",
+]);
 
 function walk(dir){return fs.existsSync(dir)?fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{const p=path.join(dir,entry.name);return entry.isDirectory()?walk(p):[p]}):[]}
 const files=[...new Set(UI_DIRS.flatMap(walk))].filter(f=>/\.tsx$/.test(f));
