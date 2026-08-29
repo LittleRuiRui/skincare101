@@ -41,7 +41,7 @@ const patterns:Array<[RegExp,(m:RegExpMatchArray)=>string]>=[
 
 function translate(text:string){const trimmed=text.trim();if(!trimmed)return text;let out=EN[trimmed];if(!out){for(const[p,fn]of patterns){const m=trimmed.match(p);if(m){out=fn(m);break}}}if(!out)return text;const start=text.indexOf(trimmed);return text.slice(0,start)+out+text.slice(start+trimmed.length)}
 
-export default function LegacyQuestionnaireI18nBridge(){
+export default function LegacyQuestionnaireI18nBridge():null{
  const{language}=useLanguage();
  useEffect(()=>{
   const originals=new WeakMap<Text,string>();
