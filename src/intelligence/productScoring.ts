@@ -134,9 +134,18 @@ export function rankProducts<T extends Product>(products: T[], suitability: Suit
       if (a.recommendationAvailable !== b.recommendationAvailable) {
         return a.recommendationAvailable ? -1 : 1;
       }
+      // This surface is "Best formula match for you": formula fit is the
+      // primary ordering signal. Confidence and completeness break close ties
+      // rather than allowing a merely well-documented formula to outrank a
+      // materially better match.
+      const scoreGap = (b.score || 0) - (a.score || 0);
+      if (Math.abs(scoreGap) >= 3) return scoreGap;
       if (confidenceRank[a.confidence] !== confidenceRank[b.confidence]) {
         return confidenceRank[b.confidence] - confidenceRank[a.confidence];
       }
-      return (b.score || 0) - (a.score || 0);
+      if (a.dataCompleteness !== b.dataCompleteness) {
+        return b.dataCompleteness - a.dataCompleteness;
+      }
+      return scoreGap;
     });
 }
