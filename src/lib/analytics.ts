@@ -2,16 +2,55 @@ import { supabase } from "./supabase";
 import type { AppLanguage } from "./i18n";
 
 const SESSION_KEY = "skincare101-analytics-session";
+const VISITOR_KEY = "skincare101-analytics-visitor";
 let demographicCache: { gender?: string; ageRange?: string } | null = null;
+
+function stableId(storage: Storage, key: string) {
+  let value = storage.getItem(key);
+  if (!value) {
+    value = crypto.randomUUID();
+    storage.setItem(key, value);
+  }
+  return value;
+}
 
 function sessionId() {
   if (typeof window === "undefined") return "server";
-  let value = window.sessionStorage.getItem(SESSION_KEY);
-  if (!value) {
-    value = crypto.randomUUID();
-    window.sessionStorage.setItem(SESSION_KEY, value);
+  return stableId(window.sessionStorage, SESSION_KEY);
+}
+
+function visitorId() {
+  if (typeof window === "undefined") return "server";
+  return stableId(window.localStorage, VISITOR_KEY);
+}
+
+function trafficContext() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const referrer = document.referrer || "";
+  let source = params.get("utm_source") || "";
+  if (!source && referrer) {
+    try {
+      const host = new URL(referrer).hostname.toLowerCase();
+      if (/google\./.test(host)) source = "google";
+      else if (/chatgpt\.com|openai\.com/.test(host)) source = "chatgpt";
+      else if (/claude\.ai|anthropic\.com/.test(host)) source = "claude";
+      else if (/xiaohongshu|xhslink/.test(host)) source = "xiaohongshu";
+      else if (/kimi\./.test(host)) source = "kimi";
+      else if (/doubao\./.test(host)) source = "doubao";
+      else if (/deepseek\./.test(host)) source = "deepseek";
+      else source = host;
+    } catch {}
   }
-  return value;
+  if (!source) source = "direct";
+  return {
+    visitor_id: visitorId(),
+    traffic_source: source,
+    referrer: referrer || null,
+    utm_source: params.get("utm_source"),
+    utm_medium: params.get("utm_medium"),
+    utm_campaign: params.get("utm_campaign")
+  };
 }
 
 async function demographics() {
@@ -52,7 +91,7 @@ export async function trackEvent(eventName: string, options: {
       language: options.language || null,
       gender: demo.gender || null,
       age_range: demo.ageRange || null,
-      metadata: options.metadata || {}
+      metadata: { ...trafficContext(), ...(options.metadata || {}) }
     });
   } catch { /* fire-and-forget */ }
 }
