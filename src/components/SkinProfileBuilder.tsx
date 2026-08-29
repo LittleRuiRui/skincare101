@@ -19,6 +19,8 @@ export default function SkinProfileBuilder({onBack,onSaved}:{onBack:()=>void;onS
   window.addEventListener("skincare101:profiles-changed",handleProfileCreated);
   return()=>window.removeEventListener("skincare101:profiles-changed",handleProfileCreated);
  },[onSaved]);
+ // The legacy questionnaire is wrapped by locale bridges so EN mode stays EN
+ // from the first skin question through report, ingredient, and recommendation screens.
  return <div data-skin-test-root="true" style={{minHeight:"100vh",background:"#FAF9F6",position:"relative"}}>
   <LegacyQuestionnaireI18nBridge/>
   <LegacyReferralUxBridge/>
