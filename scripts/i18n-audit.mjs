@@ -9,6 +9,7 @@ const legacyAllowlist=new Set([
 ]);
 const exempt=new Set([
  "src/components/LanguageConsistencyGuard.tsx",
+ "src/components/EnglishDynamicContentGuard.tsx",
  "src/components/BilingualProductName.tsx",
  "src/components/BilingualIngredientList.tsx",
  "src/components/LegacyQuestionnaireI18nBridge.tsx",
