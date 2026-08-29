@@ -48,6 +48,17 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Enable Niuma share card tools
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('dist/play/niuma/index.html')
+          s = p.read_text()
+          tag = '<script src="/play/niuma/result-tools.js"></script>'
+          if tag not in s:
+              s = s.replace('</body>', tag + '</body>')
+              p.write_text(s)
+          PY
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
