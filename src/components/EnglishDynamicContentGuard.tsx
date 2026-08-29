@@ -12,6 +12,8 @@ const PHRASES:Array<[string,string]>=[
  ["特征更符合：","Features are more consistent with: "],
  ["和色沉、晒斑的方向相反,容易被误判成\"美白过度\",不属于护肤品能干预的范畴。","This is the opposite of pigmentation or sun spots and can be mistaken for excessive lightening. It is not something skincare products can meaningfully treat."],
  ["和色沉、晒斑的方向相反，容易被误判成\"美白过度\"，不属于护肤品能干预的范畴。","This is the opposite of pigmentation or sun spots and can be mistaken for excessive lightening. It is not something skincare products can meaningfully treat."],
+ ["属于需要系统性皮肤科管理的慢性病,鳞屑厚度和点状出血是和普通干燥脱皮最大的区别。","This is a chronic condition that requires ongoing dermatologic management. Thick scaling and pinpoint bleeding are key features that distinguish it from ordinary dry, flaky skin."],
+ ["属于需要系统性皮肤科管理的慢性病，鳞屑厚度和点状出血是和普通干燥脱皮最大的区别。","This is a chronic condition that requires ongoing dermatologic management. Thick scaling and pinpoint bleeding are key features that distinguish it from ordinary dry, flaky skin."],
  ["病毒感染,和痤疮/接触性皮炎的水疱表现需要鉴别,不适合按护肤流程处理。","A viral infection can produce blisters that need to be distinguished from acne or contact dermatitis, so it should not be handled as a routine skincare issue."],
  ["起消速度是关键特征,和接触性皮炎、普通泛红的病程明显不同。","How quickly the welts appear and disappear is an important clue and differs from the course of contact dermatitis or ordinary redness."],
  ["属于癌前病变,检测到疑似特征应立即建议就医,而不是继续走护肤建议路径。","This can be a precancerous lesion. If this pattern is suspected, medical assessment should take priority over skincare recommendations."],
