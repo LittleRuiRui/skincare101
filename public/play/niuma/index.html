@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>你是哪一种打工牛马？｜PEACED SKIN</title>
+<meta name="description" content="12 道离谱但真实的职场人格题。测完你的打工牛马人格，再看看虽然精神已经放飞，脸还需不需要在线。" />
+<meta property="og:title" content="你是哪一种打工牛马？" />
+<meta property="og:description" content="12 道离谱但真实的职场人格题。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://peacedskin.com/play/niuma/" />
+<link rel="canonical" href="https://peacedskin.com/play/niuma/" />
+<style>
+:root{--paper:#fff8e8;--card:#fffdf7;--ink:#29241f;--muted:#776f66;--pink:#f6a8bf;--yellow:#ffdc7c;--blue:#cae7f4;--green:#dbecc6;--line:2px;--shadow:6px 7px 0 rgba(41,36,31,.13)}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background-image:radial-gradient(rgba(60,45,30,.05) .8px,transparent .8px);background-size:6px 6px}.app{width:min(720px,94vw);margin:auto;padding:18px 0 52px}.screen{display:none}.screen.active{display:block}.paper{background:var(--card);border:var(--line) solid var(--ink);border-radius:28px;box-shadow:var(--shadow);padding:22px}.brand{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:900}.stamp{border:2px solid var(--ink);border-radius:12px;padding:7px 10px;background:#fffaf0;transform:rotate(-1deg)}h1{font-size:clamp(42px,10vw,72px);line-height:1.02;text-align:center;margin:34px 0 10px;letter-spacing:-2px}.pink{color:#ef80a3;text-shadow:1.5px 1.5px 0 var(--ink)}.sub{text-align:center;line-height:1.75;font-weight:750}.hero{height:210px;display:grid;place-items:center;font-size:112px}.main{display:block;margin:0 auto;border:2px solid var(--ink);border-radius:18px;background:var(--pink);padding:14px 24px;font-weight:1000;font-size:19px;box-shadow:4px 4px 0 var(--ink);cursor:pointer}.top{display:flex;justify-content:space-between;font-weight:900;font-size:12px;margin-bottom:10px}.bar{height:12px;border:2px solid var(--ink);border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pink);width:0}.q{font-size:25px;line-height:1.45;margin:22px 0 18px;font-weight:900}.choices{display:grid;gap:11px}.choice{border:2px solid var(--ink);border-radius:17px;background:#fff;padding:13px;text-align:left;font-size:15px;line-height:1.55;font-weight:700;cursor:pointer;box-shadow:2px 3px 0 rgba(0,0,0,.08)}.choice:nth-child(2n){background:#fff9dc}.choice:hover{transform:translateX(2px)}.result{text-align:center}.code{font-size:76px;font-weight:1000;color:#ef80a3;text-shadow:2px 2px 0 var(--ink);margin:10px 0 0}.name{font-size:34px;font-weight:1000;margin:0 0 14px}.quote{border:2px solid var(--ink);border-radius:18px;background:#ffe0e9;padding:16px;font-size:19px;font-weight:900;line-height:1.55}.desc{font-size:15px;line-height:1.85;text-align:left;margin:17px 0}.cta{margin-top:22px;border:2px solid var(--ink);border-radius:20px;padding:17px;background:var(--green);text-align:left}.cta h3{margin:0 0 7px;font-size:20px}.cta p{margin:0 0 12px;line-height:1.65}.actions{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;margin-top:16px}.secondary,.skin{border:2px solid var(--ink);border-radius:14px;padding:10px 14px;font-weight:900;cursor:pointer;background:white}.skin{background:var(--yellow)}.foot{text-align:center;color:var(--muted);font-size:11px;margin-top:18px}.tiny{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main class="app">
+<section id="home" class="screen active paper">
+<div class="brand"><span class="stamp">🐮 牛马国际评级委员会</span><span class="stamp">PEACED SKIN</span></div>
+<h1>你是哪一种<br><span class="pink">打工牛马？</span></h1>
+<p class="sub">12 道离谱但真实的职场题。<br><span class="tiny">没有标准答案，只有不同的上班受苦方式。</span></p>
+<div class="hero">🐮💻</div>
+<button class="main" id="start">开始鉴定 →</button>
+<div class="foot">纯属娱乐 · 不建议把结果发给老板</div>
+</section>
+<section id="quiz" class="screen paper">
+<div class="top"><span id="num">01 / 12</span><span>Corporate Livestock Rating</span></div>
+<div class="bar"><i id="prog"></i></div>
+<div class="q" id="q"></div>
+<div class="choices" id="choices"></div>
+</section>
+<section id="result" class="screen paper result"></section>
+</main>
+<script>
+const T=['BULL','MAMA','DOGE','FISH','POOR','QUIT','DEAD','FAKE','MESS','PPT','AI','GHOST'];
+const R={
+BULL:['职场紫微星','别人上班是领工资，你上班顺便准备接班。','野心强、行动快、最怕项目没有 owner，于是最后总会变成你。','🐂'],
+MAMA:['团队妈妈','你不是同事，你是一个没有津贴的人形客服中心。','会补位、会安慰、会收拾残局，最危险的是大家已经默认你会做。','👜'],
+DOGE:['老板爱犬','老板一个眼神，你已经把 PPT 做到第 38 版。','对组织信号极敏锐，擅长判断风向，也很容易把老板的焦虑同步到自己身上。','🐕'],
+FISH:['高级摸鱼师','真正的效率，是让别人看不出你已经做完。','边界感强，擅长用最少能量完成最低必要工作量。','🐟'],
+POOR:['房贷战神','你不是热爱工作，你只是热爱按时还款。','稳定第一，冲动第二。每次想辞职，银行短信都会让你恢复理智。','🏠'],
+QUIT:['精神离职者','肉体在工位，灵魂已经更新了 LinkedIn。','表面正常推进，内心早已开始下一段人生。','🚪'],
+DEAD:['绿点永生者','你的 Teams 是绿色的，你本人不是。','回复很快、在线很久、情绪很淡。别人以为你可靠，其实你只是没关电脑。','🟢'],
+FAKE:['表面职业人','你拥有成熟的邮件语气和完全不成熟的内心活动。','会体面表达，会专业微笑，会在镜头关掉后立刻恢复真实人格。','🎭'],
+MESS:['职场搅局王','别人解决问题，你先把问题变得更有戏剧性。','脑洞多、嘴快、气氛组，偶尔也会误伤流程和会议时间。','🌪️'],
+PPT:['PPT 炼金术士','没有不能讲的故事，只有没调好的字号。','擅长把三行信息做成十八页战略叙事。','📊'],
+AI:['AI 外骨骼人','同事在加班，你在问 AI 为什么同事还在加班。','善用工具、讨厌重复劳动，核心信念是能自动化的绝不手动。','🤖'],
+GHOST:['会议幽灵','你参加了会议，但会议没有参加你。','低存在感、高生存率，最强技能是让任务在分工环节自然绕开自己。','👻']};
+const Q=[
+['老板周五 17:58 发来一句“周末有空吗？”',['当然，什么事？','先不点开，周一再说','回复“有一点安排，您先说”','截图发群里：他又来了']],
+['会上突然问“谁来 owner 一下？”',['我可以','低头记不存在的笔记','先问 scope 和 deadline','看向那个最爱表现的人']],
+['同事说“这个很简单，半小时就好”',['那你来','好的，我今晚做','先让他写清楚需求','立刻让 AI 起草']],
+['你做完项目，老板说“整体不错，再 polish 一下”',['开心，继续改','问具体哪一页','复制一版改文件名 final_v8','精神已经开始离职']],
+['群里晚上 11 点有人 @你',['秒回','明早回','只回一个收到','装没看到但睡不着']],
+['发现流程里有一个巨大的坑',['马上修','先截图留证','告诉所有人这不是我的锅','绕过去']],
+['绩效季到了',['主动准备战绩','先问别人拿了什么 rating','佛系等结果','更新简历']],
+['同事来找你倾诉 40 分钟',['认真安慰','边听边干自己的活','开始给解决方案','想办法结束对话']],
+['老板突然说“我们要更有 ownership”',['燃起来了','听懂了：要加活','记在 PPT 里','决定更隐身']],
+['新工具能把 3 小时工作缩成 20 分钟',['立刻学','担心老板知道后给更多活','偷偷用但不说','做个分享会教全组']],
+['下午 4 点突然来一个“今天要”的任务',['硬刚完成','问能不能明天','先做 60 分版本','找人一起背锅']],
+['如果明天中了彩票，你第一反应是',['还是把项目收尾','直接辞职','请假一天再决定','上线但永远不回消息']]
+];
+const MAP=[[0,1,2,8],[0,6,9,3],[1,2,10,7],[0,9,7,4],[6,3,7,4],[0,2,8,3],[0,2,3,4],[1,10,0,3],[0,4,9,11],[10,4,3,1],[0,2,9,8],[1,4,11,3]];
+let i=0,s={};T.forEach(t=>s[t]=0);
+const $=x=>document.querySelector(x);function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$('#'+id).classList.add('active');scrollTo(0,0)}
+function sid(){let x=sessionStorage.getItem('peaced-play-session');if(!x){x=crypto.randomUUID();sessionStorage.setItem('peaced-play-session',x)}return x}
+async function track(name,metadata={}){try{await fetch('https://tepiqcwytynhrjhtvnws.supabase.co/rest/v1/analytics_events',{method:'POST',headers:{apikey:'sb_publishable_J9GjGc-hNTEvpl-MTyRAiw__JuISs-T','Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({session_id:sid(),event_name:name,page_name:'play_niuma',language:'zh',metadata:{...metadata,referrer:document.referrer||null,utm_source:new URLSearchParams(location.search).get('utm_source')}})})}catch(e){}}
+function render(){const item=Q[i];$('#num').textContent=String(i+1).padStart(2,'0')+' / '+Q.length;$('#prog').style.width=(i/Q.length*100)+'%';$('#q').textContent=item[0];$('#choices').innerHTML='';item[1].forEach((a,j)=>{const b=document.createElement('button');b.className='choice';b.textContent=String.fromCharCode(65+j)+' · '+a;b.onclick=()=>{s[T[MAP[i][j]]] += 2;i++;i<Q.length?render():finish()};$('#choices').appendChild(b)})}
+function finish(){const code=T.slice().sort((a,b)=>s[b]-s[a])[0],r=R[code];track('play_complete',{result:code});show('result');$('#result').innerHTML=`<div class="brand"><span class="stamp">鉴定结果</span><span class="stamp">${r[3]}</span></div><div class="code">${code}</div><div class="name">${r[0]}</div><div class="quote">${r[1]}</div><div class="desc">${r[2]}</div><div class="cta"><h3>精神可以放飞，脸还得在线。</h3><p>既然都测到这里了，顺便看看你是什么肤质、现在真正需要什么护肤。</p><button class="skin" id="skin">测测我的皮肤 →</button></div><div class="actions"><button class="secondary" id="again">↻ 再测一次</button><button class="secondary" id="share">分享给同事 →</button></div><div class="foot">PEACED SKIN · play/niuma</div>`;$('#again').onclick=()=>location.reload();$('#skin').onclick=()=>{track('skin_quiz_click',{from:'play_niuma',result:code});location.href='/?view=skin-profile&utm_source=niuma&utm_medium=play&utm_campaign=viral_test'};$('#share').onclick=async()=>{track('play_share',{result:code});const text=`我测出来是 ${code}｜${r[0]}。你是哪一种打工牛马？`;try{if(navigator.share)await navigator.share({title:'你是哪一种打工牛马？',text,url:location.href});else{await navigator.clipboard.writeText(text+' '+location.href);alert('已复制，去群里寻找同类吧。')}}catch(e){}}}
+$('#start').onclick=()=>{track('play_start');show('quiz');render()};track('play_page_view');
+</script>
+</body>
+</html>
