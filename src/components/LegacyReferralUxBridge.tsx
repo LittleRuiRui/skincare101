@@ -42,7 +42,7 @@ const noteEn:Record<string,string>={
 
 function text(el:Element|null){return (el?.textContent||"").trim()}
 
-export default function LegacyReferralUxBridge(){
+export default function LegacyReferralUxBridge():null{
  const{language}=useLanguage();
  useEffect(()=>{
   const c=copy[language];
