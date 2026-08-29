@@ -24,6 +24,7 @@ export interface SkinProfileSummary {
 const SKIN_TYPE_LABELS: Record<string, string> = {
   dry: "偏干",
   oily: "偏油",
+  normal: "中性 / 平衡",
   balanced: "中性 / 平衡",
   combination: "混合",
   combo: "混合",
