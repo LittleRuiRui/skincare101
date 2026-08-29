@@ -2,6 +2,7 @@ import React,{useEffect,useState}from"react";
 import AppShell from"./AppShell";
 import"./floating-actions.css";
 import LanguageConsistencyGuard from"./components/LanguageConsistencyGuard";
+import EnglishDynamicContentGuard from"./components/EnglishDynamicContentGuard";
 import AnalyticsBootstrap from"./components/AnalyticsBootstrap";
 import ProductCollectionActions from"./components/ProductCollectionActions";
 import FloatingContextActions from"./components/FloatingContextActions";
@@ -44,7 +45,7 @@ export default function V6App(){
  function setAdmin(mode:string|null){const url=new URL(window.location.href);if(mode)url.searchParams.set("admin",mode);else url.searchParams.delete("admin");window.history.pushState({},"",url);setAdminMode(mode)}
  function closeAdmin(){setAdmin(null)}
  function finishRecovery(){setRecovering(false);const url=new URL(window.location.href);url.hash="";window.history.replaceState({},"",url)}
- const common=<><LanguageConsistencyGuard/><AnalyticsBootstrap/></>;
+ const common=<><LanguageConsistencyGuard/><EnglishDynamicContentGuard/><AnalyticsBootstrap/></>;
  if(recovering)return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><PasswordRecoveryPanel onDone={finishRecovery}/></React.Suspense>{common}</LanguageProvider>;
  if(adminMode==="analytics")return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><AdminAnalyticsPanel onBack={()=>setAdmin("1")}/></React.Suspense>{common}</LanguageProvider>;
  if(adminMode==="1")return <LanguageProvider><React.Suspense fallback={<LazyFallback/>}><AdminDashboard onBack={closeAdmin}/></React.Suspense>{common}</LanguageProvider>;
