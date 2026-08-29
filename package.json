@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/generate-seo-product-pages.mjs && node scripts/postbuild-seo-extras.mjs",
-    "build:app": "vite build",
+    "dev": "node scripts/expand-skin-concerns.mjs && vite",
+    "build": "node scripts/expand-skin-concerns.mjs && vite build && node scripts/generate-seo-product-pages.mjs && node scripts/postbuild-seo-extras.mjs",
+    "build:app": "node scripts/expand-skin-concerns.mjs && vite build",
     "seo:generate": "node scripts/generate-seo-product-pages.mjs && node scripts/postbuild-seo-extras.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
