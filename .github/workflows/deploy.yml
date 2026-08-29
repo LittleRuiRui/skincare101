@@ -29,6 +29,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Expand skin concern questionnaire
+        run: node scripts/expand-skin-concerns.mjs
       - name: Verify watercolor image asset
         run: |
           test -s public/illustrations/skincare101-knowledge-watercolor.jpg
