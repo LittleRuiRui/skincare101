@@ -1,8 +1,6 @@
 import {useEffect} from "react";
 import {useLanguage} from "../lib/i18n";
 
-// Locale bridge for the legacy skin-test screens that still render historical
-// Chinese copy from src/App.tsx. This runs only inside the skin-test wrapper.
 const EXACT:Record<string,string>={
   "肤质":"Skin type","基础信息":"Basic info","安全提醒":"Safety check","状态分析":"Skin analysis",
   "已完成":"complete","进行中":"in progress","未开始":"not started","通常约3分钟完成":"Usually takes about 3 minutes",
@@ -56,7 +54,7 @@ const EXACT:Record<string,string>={
   "冲突":"Conflict","一致":"Match","低权重":"Lower weight","中性":"Neutral","未标准化":"Unstandardised",
   "为你推荐 · 本地产品数据库":"Recommended for you · Product database","数据来源":"Source","完整配方":"Full formula","部分配方":"Partial formula","多平台热门":"Popular across platforms","亚洲零售榜单":"Asia retail bestseller","开放数据热门":"Open-data popular","亚洲可购待核验":"Asia availability unverified","亚洲跨境渠道已见":"Seen in Asia cross-border channels","证据不足":"Insufficient evidence","分":"pts","有效证据":"Evidence","方向冲突":"Conflicting direction",
   "为什么不是黑箱推荐?":"Why this is not a black-box recommendation","打分逻辑":"Scoring logic","全部":"All","搜索品牌或产品名":"Search brand or product","再显示 24 款":"Show 24 more",
-  "Formula DNA · 配方结构":"Formula DNA · Formula structure","酒精":"Alcohol","肤感":"Skin feel","可信度":"Confidence","完整配方":"Full formula","部分配方":"Partial formula",
+  "Formula DNA · 配方结构":"Formula DNA · Formula structure","酒精":"Alcohol","肤感":"Skin feel","可信度":"Confidence",
   "脂质体系":"Lipid system","脂质体系(封闭型)":"Lipid system (occlusive)","脂质体系(强封闭型)":"Lipid system (strong occlusive)","脂质体系(硅类)":"Lipid system (silicone)","保湿体系":"Hydration system","保湿体系(小分子)":"Hydration system (small molecules)","抗炎舒缓体系":"Soothing / anti-inflammatory system","抗炎/抗痘体系":"Anti-inflammatory / anti-acne system","角质代谢体系":"Exfoliation / keratinisation system","维A酸类体系":"Retinoid system","肽类修护体系":"Peptide repair system","肽类/抗老体系":"Peptide / anti-aging system","控油体系":"Oil-control system","控油/屏障强化体系":"Oil-control / barrier-support system","控油/循环体系":"Oil-control / circulation system","抗氧化体系":"Antioxidant system","美白体系":"Brightening system","防晒体系(物理)":"Mineral sunscreen system","防晒体系(化学)":"Chemical sunscreen system","抗真菌体系":"Antifungal system","抗菌体系":"Antibacterial system","抗炎/抗菌体系":"Anti-inflammatory / antibacterial system","发酵活性体系":"Ferment-active system","微量元素体系":"Trace-mineral system","防腐香精体系":"Preservative / fragrance system","溶剂/收敛体系":"Solvent / astringent system","感官体系":"Sensory system","着色剂":"Colorant","防腐体系":"Preservative system","质地/基质成分":"Texture / base ingredient","pH调节体系":"pH-adjusting system","螯合体系":"Chelating system","植物精粹体系":"Botanical extract system","保湿/舒缓体系":"Hydration / soothing system","保湿/抗炎体系":"Hydration / anti-inflammatory system","防晒体系(化学,新一代)":"Next-generation chemical sunscreen system","防晒体系(辅助)":"Sunscreen support system","质地/基质成分(硅类)":"Texture / base ingredient (silicone)","品牌复合活性体系":"Brand complex-active system"
 };
 
@@ -112,7 +110,6 @@ const PHRASE_REPLACEMENTS:Array<[string,string]>=[
 function translateCore(value:string){
   const t=value.trim();
   if(EXACT[t]) return EXACT[t];
-  // Ingredient labels are commonly written as Chinese name (English/INCI).
   const ingredient=t.match(/^[\u3400-\u9fff·、\/]+\s*\(([^()]*[A-Za-z][^()]*)\)$/);
   if(ingredient) return ingredient[1];
   let out=t;
@@ -134,7 +131,7 @@ function translateText(text:string){
   return text.slice(0,start)+translated+text.slice(start+trimmed.length);
 }
 
-export default function LegacyResultsI18nBridge(){
+export default function LegacyResultsI18nBridge():null{
   const{language}=useLanguage();
   useEffect(()=>{
     const root=document.querySelector('[data-skin-test-root="true"]');
