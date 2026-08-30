@@ -1,3 +1,0 @@
-Approved source commit: 00d19b0bb699a5f40be9f4daf21e68541cce2407
-Approved source file: public/play/niuma/index.html
-This is the full 12-question version with balanced scoring, hidden/occasional traits, nemesis, and share copy.
