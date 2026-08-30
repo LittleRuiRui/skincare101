@@ -48,16 +48,14 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      - name: Verify rebuilt Niuji route
+      - name: Verify single Niuma route
         run: |
-          test -s dist/play/niuji/index.html
-          grep -q '测测你是牛来' dist/play/niuji/index.html
-          grep -q '牛籍鉴定报告' dist/play/niuji/index.html
-          grep -q '隐藏人格' dist/play/niuji/index.html
-          grep -q '职场天敌' dist/play/niuji/index.html
-          grep -q '发给朋友 / 同事看看' dist/play/niuji/index.html
-          grep -q '再测一次' dist/play/niuji/index.html
-          grep -q "location.replace('/play/niuji/')" dist/play/niuma/index.html
+          test -s dist/play/niuma/index.html
+          grep -q '牛马国际评级委员会' dist/play/niuma/index.html
+          grep -q '隐藏人格' dist/play/niuma/index.html
+          grep -q '职场天敌' dist/play/niuma/index.html
+          test ! -e dist/play/niuji/index.html
+          test ! -e dist/play/niuma-v2/index.html
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
