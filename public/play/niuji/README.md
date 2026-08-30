@@ -1,0 +1,1 @@
+This folder must use the approved full questionnaire from commit 00d19b0bb699a5f40be9f4daf21e68541cce2407. Do not rewrite or shorten question/answer copy. Result logic may evolve, but primary/secondary personality copy should remain humorous and pair-specific.
