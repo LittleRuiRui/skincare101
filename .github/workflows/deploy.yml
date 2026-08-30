@@ -48,42 +48,24 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-      - name: Publish Niuma v2 on fresh path
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import shutil
-
-          src = Path('dist/play/niuma')
-          dst = Path('dist/play/niuma-v2')
-          if dst.exists():
-              shutil.rmtree(dst)
-          shutil.copytree(src, dst)
-
-          # Force every built homepage/app link away from the stale legacy route.
-          for p in Path('dist').rglob('*'):
-              if not p.is_file() or p.suffix not in {'.js', '.html'}:
-                  continue
-              try:
-                  s = p.read_text()
-              except UnicodeDecodeError:
-                  continue
-              ns = s.replace('/play/niuma/', '/play/niuma-v2/')
-              if ns != s:
-                  p.write_text(ns)
-          PY
       - name: Enable Niuma share card tools
         run: |
           python - <<'PY'
           from pathlib import Path
-          for route in ('niuma', 'niuma-v2'):
-              p = Path(f'dist/play/{route}/index.html')
-              s = p.read_text()
-              tag = f'<script src="/play/{route}/result-tools.js"></script>'
-              if tag not in s:
-                  s = s.replace('</body>', tag + '</body>')
-                  p.write_text(s)
+          p = Path('dist/play/niuma/index.html')
+          s = p.read_text()
+          tag = '<script src="/play/niuma/result-tools.js"></script>'
+          if tag not in s:
+              s = s.replace('</body>', tag + '</body>')
+              p.write_text(s)
           PY
+      - name: Verify canonical Niuma route
+        run: |
+          test -s dist/play/niuma/index.html
+          grep -q '牛籍鉴定报告' dist/play/niuma/index.html
+          grep -q '隐藏人格' dist/play/niuma/index.html
+          grep -q '职场天敌' dist/play/niuma/index.html
+          grep -q '发给朋友 / 同事看看' dist/play/niuma/index.html
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
