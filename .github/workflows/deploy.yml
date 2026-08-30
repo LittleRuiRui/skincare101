@@ -48,6 +48,23 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Cache-bust Niuma route
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          version = "${{ github.sha }}"[:12]
+          for p in Path('dist').rglob('*'):
+              if not p.is_file() or p.suffix not in {'.js', '.html'}:
+                  continue
+              try:
+                  s = p.read_text()
+              except UnicodeDecodeError:
+                  continue
+              ns = s.replace('"/play/niuma/"', f'"/play/niuma/?v={version}"')
+              ns = ns.replace("'/play/niuma/'", f"'/play/niuma/?v={version}'")
+              if ns != s:
+                  p.write_text(ns)
+          PY
       - name: Enable Niuma share card tools
         run: |
           python - <<'PY'
