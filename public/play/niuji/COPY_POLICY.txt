@@ -1,4 +1,0 @@
-QUESTIONS/OPTIONS: preserve approved full version exactly.
-SCORING: balanced normalized scoring.
-RESULT: primary + hidden/occasional secondary + pair-specific humorous copy + nemesis + score + share + retake.
-Do not replace with simplified generic copy.
