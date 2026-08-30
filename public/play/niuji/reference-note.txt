@@ -1,1 +1,0 @@
-This route is intentionally based on the approved full Niuma questionnaire and result copy from commit 00d19b0bb699a5f40be9f4daf21e68541cce2407. Do not simplify question or result copy without explicit approval.
