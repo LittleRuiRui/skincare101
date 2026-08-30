@@ -22,6 +22,30 @@ Deno.serve(async(req)=>{
    if(error) return json({error:error.message},400);
    return json({users:data.users.map(u=>({id:u.id,email:u.email||"",created_at:u.created_at,last_sign_in_at:u.last_sign_in_at||null}))});
  }
+ if(body.action==="analyticsSummary"){
+   const perPage=1000;
+   let page=1;
+   let total=0;
+   let new7d=0;
+   let new30d=0;
+   const now=Date.now();
+   const cut7=now-7*86400000;
+   const cut30=now-30*86400000;
+   while(page<=100){
+     const {data,error}=await admin.auth.admin.listUsers({page,perPage});
+     if(error) return json({error:error.message},400);
+     const users=data.users||[];
+     total+=users.length;
+     for(const u of users){
+       const ts=new Date(u.created_at).getTime();
+       if(ts>=cut7)new7d++;
+       if(ts>=cut30)new30d++;
+     }
+     if(users.length<perPage)break;
+     page++;
+   }
+   return json({registered_users_total:total,registered_users_7d:new7d,registered_users_30d:new30d});
+ }
  if(body.action==="sendPasswordReset"){
    const email=String(body.email||"").trim();
    if(!email||!email.includes("@")) return json({error:"Valid email required"},400);
