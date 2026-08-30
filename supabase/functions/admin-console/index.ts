@@ -23,6 +23,9 @@ Deno.serve(async(req)=>{
    return json({users:data.users.map(u=>({id:u.id,email:u.email||"",created_at:u.created_at,last_sign_in_at:u.last_sign_in_at||null}))});
  }
  if(body.action==="analyticsSummary"){
+   const {data:excludedRows,error:excludedError}=await admin.from("admin_analytics_exclusions").select("email");
+   if(excludedError) return json({error:excludedError.message},400);
+   const excluded=new Set((excludedRows||[]).map((x:{email:string})=>String(x.email||"").trim().toLowerCase()).filter(Boolean));
    const perPage=1000;
    let page=1;
    let total=0;
@@ -35,8 +38,10 @@ Deno.serve(async(req)=>{
      const {data,error}=await admin.auth.admin.listUsers({page,perPage});
      if(error) return json({error:error.message},400);
      const users=data.users||[];
-     total+=users.length;
      for(const u of users){
+       const email=String(u.email||"").trim().toLowerCase();
+       if(email&&excluded.has(email)) continue;
+       total++;
        const ts=new Date(u.created_at).getTime();
        if(ts>=cut7)new7d++;
        if(ts>=cut30)new30d++;
