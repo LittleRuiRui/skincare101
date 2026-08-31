@@ -12,9 +12,8 @@
     const verdict=document.querySelector('.verdict')?.innerText?.replace('牛马国际评级委员会鉴定：','').trim()||'';
     const score=document.querySelector('.score')?.textContent?.trim()||'';
     const label=document.querySelector('.cowcopy')?.textContent?.trim()||'';
-    const artSrc=document.querySelector('.wonang-art img')?.getAttribute('src');let art=null,summary=null;
+    const artSrc=document.querySelector('.personality-art img')?.getAttribute('src');let art=null;
     if(artSrc){try{art=await loadImage(new URL(artSrc,location.href).href)}catch(e){art=null}}
-    try{summary=await loadImage(new URL('images/result-twelve-personalities.jpg',location.href).href)}catch(e){summary=null}
     const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=3600;const ctx=canvas.getContext('2d');ctx.fillStyle=paper;ctx.fillRect(0,0,1080,3600);rounded(ctx,50,50,980,3500,42,'#fffdf6');
     let y=120;ctx.fillStyle=ink;ctx.font='800 32px system-ui, sans-serif';ctx.fillText('牛马国际评级委员会',100,y);
     y+=145;ctx.fillStyle=pink;ctx.font='950 124px system-ui, sans-serif';ctx.fillText(code,100,y);
@@ -22,9 +21,8 @@
     ctx.font='850 35px system-ui, sans-serif';const punchHeight=Math.max(150,Math.ceil(ctx.measureText(punch).width/790)*50+70);rounded(ctx,90,y,900,punchHeight,28,'#ffdce7');y=wrap(ctx,punch,130,y+55,820,50,4)+45;
     ctx.fillStyle=ink;ctx.font='650 30px system-ui, sans-serif';y=wrap(ctx,diagnosis,100,y,880,45,8)+24;
     const verdictHeight=Math.max(180,Math.ceil(verdict.length/25)*44+85);rounded(ctx,90,y,900,verdictHeight,25,'#f7efce',null);ctx.font='800 29px system-ui, sans-serif';ctx.fillText('牛马国际评级委员会鉴定',125,y+52);ctx.font='650 28px system-ui, sans-serif';y=wrap(ctx,verdict,125,y+100,820,43,7)+35;
-    if(art){const size=760;rounded(ctx,160,y,size,size,28,'#f7efce');ctx.save();ctx.beginPath();ctx.roundRect(160,y,size,size,26);ctx.clip();ctx.drawImage(art,160,y,size,size);ctx.restore();y+=size+45}
+    if(art){const w=760,h=Math.round(w*art.naturalHeight/art.naturalWidth);rounded(ctx,160,y,w,h,28,'#f7efce');ctx.save();ctx.beginPath();ctx.roundRect(160,y,w,h,26);ctx.clip();ctx.drawImage(art,160,y,w,h);ctx.restore();y+=h+45}
     rounded(ctx,90,y,900,205,28,'#fff7d8');ctx.fillStyle=ink;ctx.font='800 32px system-ui, sans-serif';ctx.fillText('窝囊指数',130,y+55);ctx.font='950 54px system-ui, sans-serif';ctx.fillText(score,130,y+125);ctx.font='750 27px system-ui, sans-serif';wrap(ctx,label,430,y+72,500,40,3);y+=250;
-    if(summary){ctx.fillStyle=ink;ctx.font='900 38px system-ui, sans-serif';ctx.fillText('十二牛马人格图鉴',100,y);y+=35;rounded(ctx,100,y,880,880,28,'#f7efce');ctx.save();ctx.beginPath();ctx.roundRect(100,y,880,880,26);ctx.clip();ctx.drawImage(summary,100,y,880,880);ctx.restore();y+=930}
     ctx.fillStyle=ink;ctx.font='850 29px system-ui, sans-serif';ctx.fillText('你是哪一种打工牛马？',100,y);ctx.font='650 25px system-ui, sans-serif';ctx.fillText(pageUrl,100,y+48);ctx.font='550 21px system-ui, sans-serif';ctx.fillStyle='#7b746b';ctx.fillText('长按识别或点击分享链接，邀请同事接受物种鉴定。',100,y+90);
     return new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
   }
