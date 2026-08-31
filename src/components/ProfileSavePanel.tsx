@@ -208,15 +208,48 @@ export default function ProfileSavePanel({ profile }: Props) {
         {specialStates.includes("environment_change") && <div style={{ marginTop: 10 }}><div style={{ fontSize: 11, color: INK, marginBottom: 5 }}>环境主要发生了什么变化</div><select value={environmentDirection} onChange={e => setEnvironmentDirection(e.target.value)} style={{ width: "100%", border: `1px solid ${LINE}`, borderRadius: 8, padding: "9px 10px", background: "white" }}><option value="cold_dry">更冷 / 更干燥</option><option value="hot_humid">更热 / 更潮湿</option><option value="aircon">长期空调环境</option><option value="other">旅行 / 搬家 / 其他变化</option></select></div>}
       </div>
 
-      <input
-        value={profileName}
-        onChange={(event) => { setProfileName(event.target.value); setNameEdited(true); }}
-        placeholder={`不填写则自动命名，例如：${suggestedProfileName(specialStates, acidFrequency, retinoidStage, environmentDirection)}`}
-        aria-label="档案名称"
-        maxLength={60}
-        style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${LINE}`, borderRadius: 9, padding: "10px 11px", fontSize: 13, color: INK, marginBottom: 6 }}
-      />
-      <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.45, marginBottom: 11 }}>你也可以自己命名，例如「夏季稳定期」「旅行期间」「妈妈」。</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+        <label htmlFor="skin-profile-name" style={{ fontSize: 12.5, fontWeight: 600, color: INK }}>档案名称 <span style={{ color: TEAL }}>· 可修改</span></label>
+        {nameEdited ? (
+          <button
+            type="button"
+            onClick={() => {
+              setNameEdited(false);
+              setProfileName(suggestedProfileName(specialStates, acidFrequency, retinoidStage, environmentDirection));
+            }}
+            style={{ border: 0, background: "transparent", color: TEAL, fontSize: 10.5, padding: "4px 0", cursor: "pointer" }}
+          >
+            恢复自动名称
+          </button>
+        ) : <span style={{ color: MUTE, fontSize: 10.5 }}>当前为自动名称</span>}
+      </div>
+      <div style={{ position: "relative", marginBottom: 6 }}>
+        <input
+          id="skin-profile-name"
+          value={profileName}
+          onFocus={() => setNameEdited(true)}
+          onCompositionStart={() => setNameEdited(true)}
+          onChange={(event) => { setProfileName(event.target.value); setNameEdited(true); }}
+          placeholder={`不填写则自动命名，例如：${suggestedProfileName(specialStates, acidFrequency, retinoidStage, environmentDirection)}`}
+          aria-label="档案名称"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={60}
+          style={{ width: "100%", boxSizing: "border-box", border: `1.5px solid ${nameEdited ? TEAL : LINE}`, borderRadius: 9, padding: "10px 58px 10px 11px", fontSize: 13, color: INK, background: "#fff", outline: "none" }}
+        />
+        {profileName && nameEdited && (
+          <button
+            type="button"
+            aria-label="清空档案名称"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setProfileName("")}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", border: 0, borderRadius: 999, background: TEAL_SOFT, color: TEAL, fontSize: 10.5, padding: "5px 9px", cursor: "pointer" }}
+          >
+            清空
+          </button>
+        )}
+      </div>
+      <div style={{ fontSize: 10.5, color: MUTE, lineHeight: 1.45, marginBottom: 11 }}>点进输入框即可改名，例如「夏季稳定期」「旅行期间」「妈妈」。保存前都可以继续修改。</div>
 
       {!session ? (
         <div style={{ borderTop: `1px solid ${LINE}`, paddingTop: 12, marginTop: 4 }}>
