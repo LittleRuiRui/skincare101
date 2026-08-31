@@ -65,6 +65,10 @@ interface Props {
   profile: SkinProfileInput;
 }
 
+function completeProfileBuilder(): void {
+  window.dispatchEvent(new CustomEvent("skincare101:profile-builder-completed"));
+}
+
 export default function ProfileSavePanel({ profile }: Props) {
   const initialStates = (profile.profileAnswers?.special_states || "").split(",").filter(Boolean) as SpecialStateKey[];
   const [session, setSession] = useState<Session | null>(null);
@@ -119,6 +123,7 @@ export default function ProfileSavePanel({ profile }: Props) {
         await saveMySkinProfile(pending.profile, pending.name || suggestedProfileName([], "regular", "stable", "other"));
         clearPendingProfileDraft();
         setMessage("账号已登录，本次问卷也已自动同步为你的皮肤档案。");
+        completeProfileBuilder();
       } catch (err: any) {
         setError(err?.message || "账号已登录，但自动建立档案失败，请再点一次保存。");
       } finally {
@@ -173,6 +178,7 @@ export default function ProfileSavePanel({ profile }: Props) {
       clearPendingProfileDraft();
       setProfileName(finalName);
       setMessage(`已保存并切换到“${finalName}”。特殊状态只影响当前护理策略，不会改写你的基础肤质。`);
+      completeProfileBuilder();
     } catch (err: any) {
       setError(err?.message || "保存失败，请稍后再试。");
     } finally {
@@ -226,11 +232,11 @@ export default function ProfileSavePanel({ profile }: Props) {
       ) : (
         <>
           <div style={{ fontSize: 11.5, color: MUTE, marginBottom: 10 }}>当前账号：{session.user.email}</div>
-          <button type="button" onClick={saveProfile} disabled={busy} style={{ width: "100%", border: 0, borderRadius: 9, padding: "11px 12px", color: "#fff", background: busy ? MUTE : TEAL, cursor: busy ? "default" : "pointer", fontWeight: 600 }}>{busy ? "正在保存…" : "保存为新档案并使用"}</button>
+          <button type="button" onClick={saveProfile} disabled={busy} style={{ width: "100%", border: 0, borderRadius: 9, padding: "11px 12px", color: "#fff", background: busy ? MUTE : TEAL, cursor: busy ? "default" : "pointer", fontWeight: 600 }}>{busy ? "正在保存…" : "保存并查看我的肤质"}</button>
         </>
       )}
 
-      {!session && <button type="button" onClick={saveProfile} disabled={busy} style={{ width: "100%", marginTop: 10, border: `1px solid ${TEAL}`, borderRadius: 9, padding: "10px 12px", color: TEAL, background: "white", cursor: busy ? "default" : "pointer", fontWeight: 600 }}>{busy ? "正在保存…" : "仅保存到此设备"}</button>}
+      {!session && <button type="button" onClick={saveProfile} disabled={busy} style={{ width: "100%", marginTop: 10, border: `1px solid ${TEAL}`, borderRadius: 9, padding: "10px 12px", color: TEAL, background: "white", cursor: busy ? "default" : "pointer", fontWeight: 600 }}>{busy ? "正在保存…" : "保存到此设备并查看我的肤质"}</button>}
       {message && <div style={{ marginTop: 10, padding: "9px 10px", borderRadius: 8, background: TEAL_SOFT, color: TEAL, fontSize: 11.5, lineHeight: 1.5 }}>{message}</div>}
       {error && <div style={{ marginTop: 10, color: RUST, fontSize: 11.5, lineHeight: 1.5 }}>{error}</div>}
     </section>

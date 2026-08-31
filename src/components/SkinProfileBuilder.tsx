@@ -12,8 +12,11 @@ export default function SkinProfileBuilder({onBack,onSaved}:{onBack:()=>void;onS
    finishedRef.current=true;
    window.setTimeout(()=>onSaved(),0);
   };
-  window.addEventListener("skincare101:profiles-changed",handleProfileCreated);
-  return()=>window.removeEventListener("skincare101:profiles-changed",handleProfileCreated);
+  // The report saves a local recovery copy as soon as it opens. That background
+  // save must not be treated as the user finishing the report, otherwise the
+  // result screen only flashes before AppShell navigates to My Skin.
+  window.addEventListener("skincare101:profile-builder-completed",handleProfileCreated);
+  return()=>window.removeEventListener("skincare101:profile-builder-completed",handleProfileCreated);
  },[onSaved]);
  function handleQuestionnaireClick(event:React.MouseEvent<HTMLDivElement>){
   const button=(event.target as Element|null)?.closest("button") as HTMLButtonElement|null;
