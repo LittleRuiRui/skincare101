@@ -5,6 +5,7 @@
 Canonical site: https://peacedskin.com/
 
 ## Core public content
+- Skincare journal: https://peacedskin.com/blog/ — Chinese educational articles with sources, practical scenarios and explicit limitations. AI-assisted, not individually medically reviewed.
 - Product pages: product identity, brand, category, ingredient list, formula analysis, skin-type suitability, concerns, and concise verdicts.
 - Ingredient pages: ingredient purpose, expected benefits, suitability, and related products.
 - Skin and concern guides: structured explanations for common skin types and skincare concerns.

@@ -7,6 +7,7 @@ import{useLanguage}from"../lib/i18n";
 import{HandDrawnHero,SketchSprig,SketchUnderline}from"./HandDrawnVisuals";
 import BilingualProductName from"./BilingualProductName";
 import SkincareKnowledgeCards from"./SkincareKnowledgeCards";
+import BlogEntry from "./BlogEntry";
 
 const INK="#263027",PAPER="transparent",CARD="#FBF6EA",LINE="#D9D0BC",SAGE="#2F5A40",MUSTARD="#D5A92E",MUTE="#6F6A5F",ROSE="#A96F68";
 const SANS="'IBM Plex Sans','PingFang SC','Hiragino Sans GB','Microsoft YaHei',system-ui,sans-serif";
@@ -49,6 +50,7 @@ export default function V3Home({goTo,profile=null,products=[],onCreateProfile,on
    <NiumaEntry t={t}/>
    <div style={{marginTop:24}}>{luckySection}</div>
    <SkincareKnowledgeCards/>
+   <BlogEntry/>
    <section aria-label={t("关于作者","About the author")} style={{marginTop:22,border:"1px solid "+LINE,borderRadius:24,padding:"18px 17px",background:"linear-gradient(145deg,#FFF9ED,#F1E9D8)",boxShadow:"0 7px 22px rgba(40,55,42,.05)"}}><div style={{display:"flex",alignItems:"flex-start",gap:13}}><div style={{width:45,height:45,borderRadius:"50%",background:"#E7D7CF",display:"grid",placeItems:"center",color:ROSE,border:"1px solid #DEC8BF",flexShrink:0}}><Heart size={19} fill="currentColor"/></div><div><div style={{fontSize:11,fontWeight:600,letterSpacing:".07em",color:SAGE,marginBottom:4}}>{t("PEACED 作者","BY THE CREATOR OF PEACED")}</div><div style={{fontSize:18,fontWeight:600}}>{t("小红书｜杨园街首席分析师","Xiaohongshu · 杨园街首席分析师")}</div><p style={{fontSize:13,color:MUTE,lineHeight:1.65,margin:"7px 0 13px"}}>{t("配方拆解、产品点评和不绕弯的护肤判断","Formula breakdowns, product reviews, and straight skincare analysis")}</p><a href={XIAOHONGSHU_PROFILE_URL} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:7,borderRadius:999,padding:"9px 13px",background:ROSE,color:"#fff",fontSize:13,fontWeight:600,textDecoration:"none"}}>{t("去小红书关注我","Follow me on Xiaohongshu")}<ExternalLink size={14}/></a></div></div></section>
   </>:<>
    <section style={{padding:"19px 17px",borderRadius:25,background:"linear-gradient(145deg,#2B523B,#234631)",color:"#FFF9EC",marginBottom:17,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",right:-8,top:-16,opacity:.28}}><SketchSprig size={92}/></div><div style={{fontSize:10.5,fontWeight:700,letterSpacing:".1em",color:"#E3C65A",marginBottom:7}}>{t("你的护肤主页","YOUR SKINCARE HOME")}</div><h1 style={{fontSize:27,lineHeight:1.25,letterSpacing:"-.025em",margin:"0 0 8px",fontWeight:600}}>{t("今天想从哪里开始？","What does your skin need today?")}</h1><p style={{fontSize:13.5,lineHeight:1.65,color:"#E8E5D8",margin:0,maxWidth:390}}>{t("你的肤质档案已经连接产品匹配、成分判断和早晚 Routine。","Your profile now connects product matching, ingredient checks, and your AM/PM routine.")}</p></section>
@@ -57,6 +59,7 @@ export default function V3Home({goTo,profile=null,products=[],onCreateProfile,on
    {luckySection}
 
    <SkincareKnowledgeCards/>
+   <BlogEntry/>
   </>}
  </div>;
 }
