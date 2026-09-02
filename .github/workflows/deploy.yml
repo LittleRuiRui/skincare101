@@ -48,6 +48,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Validate SEO output
+        run: npm run test:seo
       - name: Verify single Niuma route
         run: |
           test -s dist/play/niuma/index.html

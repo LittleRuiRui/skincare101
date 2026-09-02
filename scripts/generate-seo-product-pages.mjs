@@ -130,8 +130,8 @@ function visibleFacts(row) {
 
 function productHtml(row) {
   const { ingredients, ingredientPreview, completeness } = visibleFacts(row);
-  const title = `${row.brand} ${row.name}: Ingredients & Formula Facts | PEACED SKIN`;
-  const description = `${row.brand} ${row.name} ingredient list and formula facts from PEACED SKIN. Category: ${row.category || "skincare"}. ${ingredients.length ? `${ingredients.length} ingredients indexed.` : "Formula data indexed."}`;
+  const title = `${row.brand} ${row.name}: Ingredients & Formula Facts | Peacedskin`;
+  const description = `${row.brand} ${row.name} ingredient list and formula facts from Peacedskin. Category: ${row.category || "skincare"}. ${ingredients.length ? `${ingredients.length} ingredients indexed.` : "Formula data indexed."}`;
   const canonical = `${SITE_URL}/product/${row.__slug}/`;
   const topIngredients = ingredientPreview.length
     ? `<ol>${ingredientPreview.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`
@@ -195,7 +195,7 @@ function productHtml(row) {
 </head>
 <body>
 <main class="wrap">
-  <nav class="crumb"><a href="/">PEACED SKIN</a> / <a href="/products">Products</a> / ${escapeHtml(row.name)}</nav>
+  <nav class="crumb"><a href="/">Peacedskin</a> / <a href="/products/">Products</a> / ${escapeHtml(row.name)}</nav>
   <div class="brand">${escapeHtml(row.brand)}</div>
   <h1>${escapeHtml(row.name)}</h1>
   <p>${escapeHtml(row.category || "Skincare")} formula facts and ingredient index.</p>
@@ -224,7 +224,8 @@ function productHtml(row) {
   <section>
     <h2>How should this page be interpreted?</h2>
     <p>Formula facts describe the indexed ingredient list. They are not the same as advertising claims or individual user outcomes. Skin suitability can depend on skin type, sensitivity, climate, routine and formula version.</p>
-    <a class="cta" href="/products">Explore PEACED SKIN product database</a>
+    <a class="cta" href="/?view=product&amp;product=${encodeURIComponent(row.id)}">Explore this product in Peacedskin</a>
+    <p><a href="/products/">Browse all public product ingredient pages</a> · <a href="/?view=profileBuilder">Find your skin profile / 肤质测试</a></p>
   </section>
 </main>
 </body>
@@ -239,9 +240,33 @@ async function writePages(products) {
     await fs.writeFile(path.join(dir, "index.html"), productHtml(product), "utf8");
   }
 
+  await fs.mkdir(path.join(OUT_DIR, "products"), { recursive: true });
+  const groups = new Map();
+  for (const product of products) {
+    if (!groups.has(product.brand)) groups.set(product.brand, []);
+    groups.get(product.brand).push(product);
+  }
+  const sections = [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([brand, items]) =>
+    `<section><h2>${escapeHtml(brand)}</h2><ul>${items.map(product => `<li><a href="/product/${product.__slug}/">${escapeHtml(product.name)}</a> <span>${escapeHtml(product.category || "Skincare")}</span></li>`).join("")}</ul></section>`
+  ).join("\n");
+  await fs.writeFile(path.join(OUT_DIR, "products", "index.html"), `<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>护肤品成分目录 · Skincare Ingredients | Peacedskin</title>
+<meta name="description" content="按品牌浏览 Peacedskin 公开护肤品成分目录，查看已收录配方、成分表和数据完整度。Browse skincare ingredient lists and formula facts by brand.">
+<link rel="canonical" href="${escapeHtml(SITE_URL)}/products/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Peacedskin">
+<meta property="og:title" content="护肤品成分目录 | Peacedskin"><meta property="og:url" content="${escapeHtml(SITE_URL)}/products/">
+<style>body{margin:0;background:#fbfaf7;color:#283027;font:16px/1.7 system-ui,sans-serif}main{max-width:820px;margin:auto;padding:32px 20px 80px}a{color:#2f5a40}h1{font-size:clamp(28px,5vw,42px);line-height:1.2}section{border-top:1px solid #d9d0bc;padding:16px 0}li{margin:12px 0}span{display:block;color:#555;font-size:14px}nav{margin-bottom:28px}</style>
+</head><body><main><nav><a href="/">Peacedskin 首页</a> · <a href="/?view=explore">打开产品筛选工具</a></nav>
+<h1>护肤品成分目录</h1><p lang="en">Skincare ingredient lists &amp; formula facts by brand.</p>
+<p>当前公开目录包含 ${products.length} 款产品。这里展示的是已收录的配方信息，不是产品效果排名；请结合市场版本和配方完整度阅读。</p>
+${sections}
+<p><a href="/?view=profileBuilder">免费肤质测试：了解你的护肤需求</a></p>
+<p>成分信息不等同于临床功效或个人使用结果；本网站不提供医学诊断。</p></main></body></html>`, "utf8");
+
   const urls = [
     `${SITE_URL}/`,
-    `${SITE_URL}/products`,
+    `${SITE_URL}/products/`,
     ...products.map((product) => `${SITE_URL}/product/${product.__slug}/`)
   ];
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls

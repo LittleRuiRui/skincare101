@@ -1,4 +1,4 @@
-# PEACED SKIN / Skincare101
+# Peacedskin
 # Public product and editorial content is intended to be discoverable by search and answer engines.
 
 User-agent: *

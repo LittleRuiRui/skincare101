@@ -26,7 +26,7 @@ async function enhanceProducts(){
       const zh=`\n  <section lang="zh-CN">\n    <h2>中文配方速览</h2>\n    <p><strong>${h1}</strong> 的本页信息来自 PEACED SKIN 已审核公开产品库。成分表、品类与配方完整度用于帮助用户和 AI 搜索系统理解产品本身，不等同于品牌宣传，也不代表每个人的实际使用结果。</p>\n    <p>查看时请同时考虑肤质、敏感程度、所在气候、护肤步骤以及不同市场或改版造成的配方差异。</p>\n  </section>\n`;
       html=html.replace("</main>",`${zh}</main>`);
     }
-    html=html.replace(/<title>(.*?)<\/title>/,(_,title)=>`<title>${title.replace(" | PEACED SKIN","｜成分表与配方分析 | PEACED SKIN")}</title>`);
+    html=html.replaceAll("PEACED SKIN", "Peacedskin");
     await fs.writeFile(file,html,"utf8");
   }
 }
