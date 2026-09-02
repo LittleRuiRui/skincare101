@@ -4,10 +4,10 @@ import path from 'node:path';
 import test from 'node:test';
 import { articles, art, sources } from '../data/blog-articles.mjs';
 
-test('twelve complete, distinct articles with sources and related articles', () => {
-  assert.equal(articles.length,12);
-  assert.equal(new Set(articles.map(a=>a.slug)).size,12);
-  assert.equal(new Set(articles.map(a=>a.title)).size,12);
+test('fifteen complete, distinct articles with sources and related articles', () => {
+  assert.equal(articles.length,15);
+  assert.equal(new Set(articles.map(a=>a.slug)).size,15);
+  assert.equal(new Set(articles.map(a=>a.title)).size,15);
   for(const a of articles) {
     assert.match(a.slug,/^[a-z0-9-]+$/);
     assert.ok(a.sections.length>=4,a.slug);
@@ -51,10 +51,10 @@ test('published article HTML has metadata, source disclosure, working anchors an
   }
 });
 
-test('blog hub exposes all twelve articles and no articles require JavaScript',async()=>{
+test('blog hub exposes all fifteen articles and no articles require JavaScript',async()=>{
   const html=await fs.readFile('dist/blog/index.html','utf8');
   for(const a of articles) assert.ok(html.includes(`/blog/${a.slug}/`));
-  assert.equal((html.match(/class="card"/g)||[]).length,12);
+  assert.equal((html.match(/class="card"/g)||[]).length,15);
   // Optional comparison loads progressively; the full guide remains static HTML.
   assert.match(html,/<script src="\/reading.js" defer><\/script>/);
   assert.ok(html.includes('data-pair='));

@@ -5,8 +5,8 @@
 Canonical site: https://peacedskin.com/
 
 ## Core public content
-- Chinese journal: https://peacedskin.com/blog/ — 12 educational articles with sources and explicit limitations. AI-assisted, not individually medically reviewed.
-- English journal: https://peacedskin.com/en/blog/ — full translations of the same 12 guides.
+- Chinese journal: https://peacedskin.com/blog/ — 15 educational articles with sources and explicit limitations. AI-assisted, not individually medically reviewed.
+- English journal: https://peacedskin.com/en/blog/ — full translations of the same 15 guides.
 - Chinese product directory: https://peacedskin.com/products/
 - English product directory: https://peacedskin.com/en/products/
 - Product pages: English /product/{slug}/ and Chinese /zh/product/{slug}/. Both contain stored ingredient facts and links to the matching product in the app. Chinese ingredient names use the app's dictionary; unmapped names remain unchanged.

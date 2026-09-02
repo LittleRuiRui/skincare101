@@ -9,7 +9,7 @@ export default function BlogEntry() {
       <div style={{padding:20}}>
         <div style={{fontSize:14,color:"#2F5A40"}}>{t("护肤指南","Skincare journal")}</div>
         <h2 style={{fontSize:23,lineHeight:1.4,margin:"8px 0"}}>{t("少一点猜测，多一点适合自己","Less guessing. Better-fitting skincare.")}</h2>
-        <p style={{fontSize:16,lineHeight:1.65,margin:"0 0 14px"}}>{t("12 篇完整指南：湿热天气、防晒、成分和产品选择，附资料来源，支持中英对照。","12 practical guides on humid weather, sunscreen, ingredients and product choices, with sources and English–Chinese reading.")}</p>
+        <p style={{fontSize:16,lineHeight:1.65,margin:"0 0 14px"}}>{t("15 篇完整指南：湿热天气、防晒、成分和产品选择，附资料来源，支持中英对照。","15 practical guides on humid weather, sunscreen, ingredients and product choices, with sources and English–Chinese reading.")}</p>
         <span style={{fontSize:15,fontWeight:600,color:"#2F5A40"}}>{t("阅读全部指南 →","Read the guides →")}</span>
       </div>
     </a>

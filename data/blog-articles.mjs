@@ -1,4 +1,5 @@
 // Original editorial text. Source links support the adjacent factual sections;
+import {growthArticles,growthSources} from './growth-content.mjs';
 // practical shopping frameworks are editorial guidance, not clinical protocols.
 export const art = {
   climate:{file:'singapore-climate.webp',alt:'手绘插画：女性在热带城市与室内环境之间安排日常护肤'},
@@ -28,6 +29,7 @@ export const sources = {
   antiage:{label:'AAD｜How to select anti-aging skin care products',url:'https://www.aad.org/public/everyday-care/skin-care-secrets/anti-aging/selecting-anti-aging-products',note:'明确单一目标、合理期待与基础护理。'}
 };
 const date='2026-09-02';
+Object.assign(sources,growthSources);
 export const articles=[
 {
   slug:'moisturizer-humid-singapore',date,category:'新加坡日常',art:'climate',
@@ -123,7 +125,7 @@ export const articles=[
   answer:'两者都偏向干燥、敏感或不适时的护理，但并不是同一配方。没有可靠头对头证据时，不能宣布谁“修复更快”；选择应回到版本、个人耐受和是否需要这类质地。',
   sections:[
     {heading:'这一篇比较的具体版本',paragraphs:['这里讨论 La Roche-Posay Cicaplast Baume B5+ 与 Avène Cicalfate+ Restorative Protective Cream，依据 2026 年 9 月 2 日可查的新加坡官网。不是 B5 精华、凝胶、面膜或带 SPF 的其他版本。请先核对包装完整名称，不要把同系列所有产品都简称成同一瓶“B5”。']},
-    {heading:'官方资料能确认哪些差异',table:{headers:['比较点','Cicaplast Baume B5+','Cicalfate+ Cream'],rows:[['官网强调的配方线索','5% 泛醇、积雪草苷及 Tribioma 等','C+-Restore、铜锌相关成分等'],['官网描述的护理方向','干燥不适区域的舒缓、滋养和保护','干燥敏感皮肤的保护膜与舒适护理'],['质地相关描述','品牌描述为滋养型质地','品牌强调保护膜感'],['能否因此断言谁更有效','不能，仅凭品牌资料无法作头对头比较','不能，仅凭品牌资料无法作头对头比较']]},sources:['lrp','avene']},
+    {heading:'官方资料能确认哪些差异',table:{headers:['比较点','Cicaplast Baume B5+','Cicalfate+ Cream'],rows:[['官网强调的配方线索','5% 泛醇、madecassoside 及 Tribioma 等','C+-Restore、铜锌相关成分等'],['官网描述的护理方向','干燥不适区域的舒缓、滋养和保护','干燥敏感皮肤的保护膜与舒适护理'],['质地相关描述','品牌描述为滋养型质地','品牌强调保护膜感'],['能否因此断言谁更有效','不能，仅凭品牌资料无法作头对头比较','不能，仅凭品牌资料无法作头对头比较']]},sources:['lrp','avene']},
     {heading:'不要把不同试验的数字放在一起比赛',paragraphs:['两家官网的宣传资料可能分别使用不同人群、观察时长和评价方式。即使都出现“修复”“舒缓”，也不代表测量的是同一件事。没有相同条件下的比较，就不应做出一款比另一款快多少、强多少的排名。','因此本文不引用这些百分比来判胜负。你真正能拿来用的信息是产品定位、完整配方、具体版本，以及你自己是否能耐受，而不是谁的网页数字更漂亮。']},
     {heading:'在湿热天气，先判断需不需要全脸使用',paragraphs:['我们的编辑建议是：如果问题只是局部干燥，不必自动把这类护理全脸厚敷；如果你现有的日常保湿已经舒服，也没有理由仅为了“修复”二字再加一层。具体使用范围与频率仍以产品说明和专业建议为准。','这不是说油皮不能使用，也不是说厚重就必然致痘。它只是提醒你把需求和产品形式对应起来，而不是拿“别人急救有效”替代自己的选择。']},
     {heading:'两款都不应该替代什么',paragraphs:['本次比较的两款不是因为带有“修复”定位，就自动变成防晒、抗感染药或所有红痒问题的治疗。术后、明显破损、渗液或持续皮疹应遵循医生指导。也不要把一个产品不耐受，理解成必须靠另一款厚敷来抵消。','如果你仍在犹豫，先保留已经耐受的基础产品；确有需求时，再选择一个具体版本试用。一次把两款叠上脸，不会让比较更科学，反而更难知道哪一款带来什么变化。']}
@@ -182,3 +184,6 @@ export const articles=[
   ],related:['how-to-test-new-skincare','stop-stacking-actives'],next:'用 Peacedskin 的 routine 功能整理你在用的东西，个人记录请按自己的隐私偏好保存。'
 }
 ];
+
+articles.push(...growthArticles.map(a=>a.zh));
+articles.find(a=>a.slug==='cicaplast-b5-vs-cicalfate').sections.push({heading:'从成分线索回到实际选择',paragraphs:['Cicalfate+ 的新加坡官网列有矿油、甘油、氧化锌等；这些能帮助辨识配方，但氧化锌在面霜中出现不代表它可以替代有明确防晒标示的产品。B5+ 官网强调的 Tribioma 是品牌组合名称，不应把它当成单一 INCI 来与另一款某个成分一对一计分。','如果你只是某一小块皮肤干燥，先看局部护理需求；如果整天在空调房里紧绷，先检查日常保湿是否够用。选其中一款时，可以记录涂后舒适度、与现有防晒是否搓泥，以及是否出现不适。这个记录用来帮助你决定是否保留产品，不能证明哪款修复速度更快。','本页没有上脸实测，也没有价格或库存的实时比较。成分页展示的是已收录目录；如果包装不同或列表出现品牌混合物名称，请到来源页重新核对，不把资料完整度百分比当成权威认证。'],sources:['avene','lrp']});
