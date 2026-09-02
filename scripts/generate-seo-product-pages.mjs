@@ -1,6 +1,7 @@
 import {productHtml,directoryHtml,normalize} from "./product-pages.mjs";
 import {productRoute,directoryRoute} from "./static-languages.mjs";
 import fs from "node:fs/promises";
+import {selectAllProducts} from "./product-selection.mjs";
 import path from "node:path";
 
 const SITE_URL = (process.env.SITE_URL || "https://peacedskin.com").replace(/\/$/, "");
@@ -14,31 +15,7 @@ const PUBLISHABLE_KEY =
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
   "sb_publishable_J9GjGc-hNTEvpl-MTyRAiw__JuISs-T";
-const PILOT_LIMIT = Number(process.env.SEO_PRODUCT_LIMIT || 50);
 const OUT_DIR = path.resolve("dist");
-
-const BRAND_PRIORITY = new Map(
-  [
-    "SK-II", "La Mer", "Estée Lauder", "Lancôme", "Shiseido",
-    "La Roche-Posay", "Avène", "Bioderma", "CeraVe", "The Ordinary",
-    "Paula's Choice", "SkinCeuticals", "Chanel", "Dior", "Clarins",
-    "Kiehl's", "Clinique", "Olay", "L'Oréal Paris", "Neutrogena",
-    "Eucerin", "Vichy", "Hada Labo", "COSRX", "Beauty of Joseon",
-    "Anua", "Round Lab", "Laneige", "Dr. Jart+", "Sulwhasoo",
-    "Innisfree", "Aesop"
-  ].map((brand, i) => [brand.toLowerCase(), i < 20 ? 100 - i : 70 - (i - 20)])
-);
-
-const PRODUCT_KEYWORDS = [
-  ["facial treatment essence", 55], ["神仙水", 55], ["advanced night repair", 55],
-  ["crème de la mer", 55], ["creme de la mer", 55], ["cicaplast", 50],
-  ["anthelios", 45], ["moisturizing cream", 40], ["niacinamide 10", 45],
-  ["2% bha", 50], ["ce ferulic", 50], ["c e ferulic", 50],
-  ["sensibio h2o", 45], ["cicalfate", 45], ["ultimune", 45],
-  ["snail 96", 35], ["relief sun", 35], ["cream skin", 30],
-  ["gokujyun", 30], ["double repair", 30], ["toleriane", 35],
-  ["genifique", 45], ["génifique", 45], ["capture totale", 35]
-];
 
 function escapeHtml(value = "") {
   return String(value)
@@ -49,39 +26,14 @@ function escapeHtml(value = "") {
     .replaceAll("'", "&#039;");
 }
 
-function slugify(value) {
-  return String(value)
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 110);
-}
-
-function scoreProduct(row) {
-  const brand = String(row.brand || "").toLowerCase();
-  const name = String(row.name || "").toLowerCase();
-  let score = BRAND_PRIORITY.get(brand) || 0;
-  for (const [keyword, bonus] of PRODUCT_KEYWORDS) {
-    if (name.includes(keyword)) score += bonus;
-  }
-  const completeness = Number(row.data_completeness || 0);
-  score += Math.min(20, completeness / 5);
-  if ((row.ingredient_names || []).length >= 10) score += 8;
-  if (String(row.ingredient_list_type || "").toLowerCase() === "full") score += 10;
-  if (row.verified_at) score += 3;
-  return score;
-}
-
 async function fetchCatalog() {
   const rows = [];
   const pageSize = 1000;
-  for (let offset = 0; offset < 5000; offset += pageSize) {
+  let expectedCount;
+  for (let offset = 0; ; ) {
     const params = new URLSearchParams({
       select: "*",
-      order: "brand.asc,name.asc",
+      order: "id.asc",
       limit: String(pageSize),
       offset: String(offset)
     });
@@ -89,38 +41,25 @@ async function fetchCatalog() {
       headers: {
         apikey: PUBLISHABLE_KEY,
         Authorization: `Bearer ${PUBLISHABLE_KEY}`,
-        Accept: "application/json"
-      }
+        Accept: "application/json",
+        Prefer: "count=exact"
+      },
+      signal: AbortSignal.timeout(30000)
     });
     if (!response.ok) throw new Error(`Catalog fetch failed: ${response.status} ${response.statusText}`);
+    const total=Number(response.headers.get("content-range")?.split("/")[1]);
+    if(!Number.isInteger(total)||total<0)throw new Error("Missing exact catalog count.");
+    if(expectedCount!==undefined&&expectedCount!==total)throw new Error("Catalog changed during export; retry a clean build.");
+    expectedCount=total;
     const page = await response.json();
+    if(!Array.isArray(page))throw new Error("Invalid public catalog response.");
     rows.push(...page);
-    if (page.length < pageSize) break;
+    offset+=page.length;
+    if(offset===expectedCount)break;
+    if(!page.length||offset>expectedCount)throw new Error("Incomplete catalog pagination.");
   }
+  if(new Set(rows.map(r=>r.id)).size!==rows.length)throw new Error("Duplicate catalog rows across pages.");
   return rows;
-}
-
-function selectPilot(rows) {
-  const ranked = rows
-    .filter((row) => row?.id && row?.brand && row?.name)
-    .map((row) => ({ ...row, __score: scoreProduct(row) }))
-    .sort((a, b) => b.__score - a.__score || String(a.brand).localeCompare(String(b.brand)));
-
-  const selected = [];
-  const perBrand = new Map();
-  const seenSlugs = new Set();
-  for (const row of ranked) {
-    if (row.__score <= 0) continue;
-    const brandKey = String(row.brand).toLowerCase();
-    if ((perBrand.get(brandKey) || 0) >= 3) continue;
-    const slug = slugify(`${row.brand}-${row.name}`);
-    if (!slug || seenSlugs.has(slug)) continue;
-    selected.push({ ...row, __slug: slug });
-    seenSlugs.add(slug);
-    perBrand.set(brandKey, (perBrand.get(brandKey) || 0) + 1);
-    if (selected.length >= PILOT_LIMIT) break;
-  }
-  return selected;
 }
 
 async function fetchDictionary(products) {
@@ -144,7 +83,7 @@ async function writePages(products) {
       const dir=path.join(OUT_DIR,route);
       await fs.mkdir(dir,{recursive:true});
       await fs.writeFile(path.join(dir,"index.html"),productHtml(product,dictionary,en),"utf8");
-      urls.push(SITE_URL+route);
+      if(product.ingredient_names?.filter(Boolean).length)urls.push(SITE_URL+route);
     }
     const route=directoryRoute(en),dir=path.join(OUT_DIR,route);
     await fs.mkdir(dir,{recursive:true});
@@ -152,17 +91,20 @@ async function writePages(products) {
     urls.push(SITE_URL+route);
   }
   await fs.writeFile(path.join(OUT_DIR,"sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url=>`<url><loc>${escapeHtml(url)}</loc></url>`).join("\n")}\n</urlset>\n`);
-  const manifest=products.map(({id,brand,name,category,__slug,__score})=>({id,brand,name,category,slug:__slug,score:Math.round(__score*10)/10}));
+  const manifest=products.map(({id,brand,name,category,__slug,market,ingredient_names,ingredient_list_type,data_completeness})=>({id,brand,name,category,slug:__slug,market,ingredientCount:ingredient_names?.filter(Boolean).length||0,indexable:Boolean(ingredient_names?.filter(Boolean).length),listType:ingredient_list_type,completeness:data_completeness}));
+  await fs.writeFile(path.join(OUT_DIR,"seo-products.json"),JSON.stringify(manifest),"utf8");
+  await fs.writeFile(path.join(OUT_DIR,"seo-product-coverage.json"),JSON.stringify({catalogCount:products.length,productCount:products.length,languagePages:products.length*2,brands:new Set(products.map(p=>p.brand)).size,missingIngredients:products.filter(p=>!p.ingredient_names?.filter(Boolean).length).length,partialLists:products.filter(p=>p.ingredient_list_type==="partial").length}),"utf8");
+  // Compatibility for cached clients that still request the original manifest URL.
   await fs.writeFile(path.join(OUT_DIR,"seo-pilot-products.json"),JSON.stringify(manifest,null,2),"utf8");
 }
 
 async function main() {
   const rows = await fetchCatalog();
-  const products = selectPilot(rows);
-  if (!products.length) throw new Error("No eligible products found for SEO pilot.");
+  const products = selectAllProducts(rows);
+  if (!products.length) throw new Error("No public products found; refusing to publish an empty directory.");
   await writePages(products);
   console.log(`Generated ${products.length} static SEO product pages from ${rows.length} approved catalog rows.`);
-  console.log(products.map((p) => `${p.brand} — ${p.name}`).join("\n"));
+  console.log(`Coverage: ${products.length*2} language pages; ${new Set(products.map(p=>p.brand)).size} brands.`);
 }
 
 main().catch((error) => {

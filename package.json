@@ -10,7 +10,7 @@
     "seo:generate": "node scripts/generate-seo-product-pages.mjs && node scripts/postbuild-seo-extras.mjs && node scripts/generate-blog.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types tests/*.test.ts",
-    "test:seo": "node --test tests/seo-output.test.mjs tests/blog-output.test.mjs tests/bilingual-output.test.mjs",
+    "test:seo": "node --test tests/product-selection.test.mjs tests/seo-output.test.mjs tests/blog-output.test.mjs tests/bilingual-output.test.mjs",
     "audit:i18n": "node scripts/i18n-audit.mjs",
     "audit:catalog": "node scripts/catalog-governance-audit.mjs",
     "preview": "vite preview",

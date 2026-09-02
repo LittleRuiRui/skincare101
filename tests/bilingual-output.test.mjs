@@ -8,7 +8,7 @@ const origin='https://peacedskin.com';
 const read=route=>fs.readFile(path.join('dist',route,'index.html'),'utf8');
 const pairs=html=>[...html.matchAll(/data-pair="([^"]+)"/g)].map(m=>m[1]).sort();
 test('all language pairs are self-canonical, reciprocally linked, and aligned for comparison',async()=>{
- const products=JSON.parse(await fs.readFile('dist/seo-pilot-products.json','utf8'));
+ const products=JSON.parse(await fs.readFile('dist/seo-products.json','utf8'));
  const routes=[['/products/','/en/products/'],['/blog/','/en/blog/'],...products.map(p=>[`/zh/product/${p.slug}/`,`/product/${p.slug}/`]),...articles.map(a=>[`/blog/${a.slug}/`,`/en/blog/${a.slug}/`])];
  for(const [zh,en] of routes){
   const pages=await Promise.all([read(zh),read(en)]);

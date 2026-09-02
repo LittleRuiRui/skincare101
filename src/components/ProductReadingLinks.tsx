@@ -3,7 +3,7 @@ import {useLanguage} from '../lib/i18n';
 type Entry={id:string;slug:string};
 let manifest:Promise<Entry[]>|undefined;
 function loadManifest(){
-  if(!manifest)manifest=fetch('/seo-pilot-products.json').then(async r=>{
+  if(!manifest)manifest=fetch('/seo-products.json').then(async r=>{
     if(!r.ok)throw new Error('Reading index unavailable');
     const rows:unknown=await r.json();
     if(!Array.isArray(rows))throw new Error('Invalid reading index');

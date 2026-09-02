@@ -9,6 +9,7 @@ Canonical site: https://peacedskin.com/
 - English journal: https://peacedskin.com/en/blog/ — full translations of the same 15 guides.
 - Chinese product directory: https://peacedskin.com/products/
 - English product directory: https://peacedskin.com/en/products/
+- Coverage: all products exposed by the approved public catalog, regenerated at deployment. Missing or partial formula data stays explicitly labelled; private profiles and unapproved records are excluded.
 - Product pages: English /product/{slug}/ and Chinese /zh/product/{slug}/. Both contain stored ingredient facts and links to the matching product in the app. Chinese ingredient names use the app's dictionary; unmapped names remain unchanged.
 - Optional Chinese–English comparison is a reading enhancement. Each language has complete static text, a self-canonical URL and reciprocal language alternates.
 
