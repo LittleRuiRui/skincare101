@@ -34,7 +34,7 @@ test('directory links to all generated product pages and product links return to
   for (const product of products) {
     assert.ok(directory.includes(`/product/${product.slug}/`));
     const html = await read(`product/${product.slug}/index.html`);
-    assert.match(html, /href="\/products\/"/);
+    assert.match(html, /href="\/en\/products\/"/);
     assert.ok(html.includes(`/?view=product&amp;product=${encodeURIComponent(product.id)}`));
     assert.match(html, /<title>[^<]*Peacedskin<\/title>/);
     assert.doesNotMatch(html, /PEACED SKIN|Skincare101/);

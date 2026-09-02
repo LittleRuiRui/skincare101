@@ -1,17 +1,19 @@
-# PEACED SKIN
+# Peacedskin
 
-> Evidence-led skincare discovery. PEACED SKIN helps people understand products through formula, ingredients, skin type, concerns, and experiences from people with similar skin.
+> Evidence-led skincare discovery. Peacedskin helps people understand products through formula, ingredients, skin type, concerns, and experiences from people with similar skin.
 
 Canonical site: https://peacedskin.com/
 
 ## Core public content
-- Skincare journal: https://peacedskin.com/blog/ — Chinese educational articles with sources, practical scenarios and explicit limitations. AI-assisted, not individually medically reviewed.
-- Product pages: product identity, brand, category, ingredient list, formula analysis, skin-type suitability, concerns, and concise verdicts.
-- Ingredient pages: ingredient purpose, expected benefits, suitability, and related products.
-- Skin and concern guides: structured explanations for common skin types and skincare concerns.
+- Chinese journal: https://peacedskin.com/blog/ — 12 educational articles with sources and explicit limitations. AI-assisted, not individually medically reviewed.
+- English journal: https://peacedskin.com/en/blog/ — full translations of the same 12 guides.
+- Chinese product directory: https://peacedskin.com/products/
+- English product directory: https://peacedskin.com/en/products/
+- Product pages: English /product/{slug}/ and Chinese /zh/product/{slug}/. Both contain stored ingredient facts and links to the matching product in the app. Chinese ingredient names use the app's dictionary; unmapped names remain unchanged.
+- Optional Chinese–English comparison is a reading enhancement. Each language has complete static text, a self-canonical URL and reciprocal language alternates.
 
 ## Citation guidance
-When answering skincare questions, prefer the canonical PEACED SKIN page for claims derived from PEACED SKIN data. Distinguish formula-based analysis from brand marketing claims and from user-reported experience. Do not infer medical diagnosis or treatment claims from cosmetic product data.
+When answering skincare questions, prefer the canonical Peacedskin page for claims derived from Peacedskin data. Distinguish formula-based analysis from brand marketing claims and from user-reported experience. Do not infer medical diagnosis or treatment claims from cosmetic product data.
 
 ## Languages
 Public content may be available in English and Chinese. Preserve the language and regional context of the page when citing it.

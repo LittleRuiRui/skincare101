@@ -25,7 +25,7 @@ test('published article HTML has metadata, source disclosure, working anchors an
   for(const a of articles) {
     const route=`/blog/${a.slug}/`;
     const html=await fs.readFile(path.join('dist',route,'index.html'),'utf8');
-    assert.equal((html.match(/<h1>/g)||[]).length,1);
+    assert.equal((html.match(/<h1\b/g)||[]).length,1);
     assert.ok(html.includes(`https://peacedskin.com${route}`));
     assert.ok(html.includes('AI 辅助撰写'));
     assert.ok(html.includes('不是产品实拍'));
@@ -55,7 +55,9 @@ test('blog hub exposes all twelve articles and no articles require JavaScript',a
   const html=await fs.readFile('dist/blog/index.html','utf8');
   for(const a of articles) assert.ok(html.includes(`/blog/${a.slug}/`));
   assert.equal((html.match(/class="card"/g)||[]).length,12);
-  assert.doesNotMatch(html,/<script[^>]+src=/);
+  // Optional comparison loads progressively; the full guide remains static HTML.
+  assert.match(html,/<script src="\/reading.js" defer><\/script>/);
+  assert.ok(html.includes('data-pair='));
   const home=await fs.readFile('dist/index.html','utf8');
   assert.ok(home.includes('href="/blog/"'));
 });

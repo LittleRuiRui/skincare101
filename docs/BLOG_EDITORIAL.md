@@ -1,13 +1,17 @@
 # Peacedskin journal
 
-This batch adds 12 Chinese-language articles without replacing the existing
+This batch adds 12 Chinese-language articles and complete English translations without replacing the existing
 four short knowledge cards (the homepage initially displays two).
 
 ## Editing and build
 
 - Article source: `data/blog-articles.mjs`.
+- English source: `data/blog-articles-en.mjs`; section, paragraph and table shapes must align.
 - Renderer: `scripts/generate-blog.mjs`, run at the end of `npm run build`.
-- Output: `/blog/` plus a static route per article. No account or JavaScript required.
+- Output: `/blog/` and `/en/blog/`, each with a static route per article. Reading either language requires no account or JavaScript. The optional comparison button progressively fetches the other version and pairs text; failure preserves the readable page and ordinary language links.
+- Product directory: `/products/` (Chinese), `/en/products/` (English). Existing English product URLs are preserved; Chinese versions use `/zh/product/{slug}/`. All language pairs are self-canonical with reciprocal hreflang links, and all are in the sitemap.
+- Static product facts use the same approved catalog and public ingredient dictionary as the app. Do not invent translations for unmatched INCI names.
+- App product details look up the published manifest by product ID before linking to a matching static page. Products outside the 50-product pilot link to the directory instead. The app resolves both raw catalog IDs and shared-prefixed IDs, including old static links and browser history.
 - Existing main-branch GitHub Pages workflow remains the publisher; no host migration.
 - Run `npm run test:seo` after a build. It checks metadata, images, references,
   sitemap membership, internal links, source disclosures and article counts.

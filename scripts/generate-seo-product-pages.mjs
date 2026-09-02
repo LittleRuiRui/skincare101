@@ -1,3 +1,5 @@
+import {productHtml,directoryHtml,normalize} from "./product-pages.mjs";
+import {productRoute,directoryRoute} from "./static-languages.mjs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -121,163 +123,37 @@ function selectPilot(rows) {
   return selected;
 }
 
-function visibleFacts(row) {
-  const ingredients = Array.isArray(row.ingredient_names) ? row.ingredient_names.filter(Boolean) : [];
-  const ingredientPreview = ingredients.slice(0, 12);
-  const completeness = Number(row.data_completeness || 0);
-  return { ingredients, ingredientPreview, completeness };
+async function fetchDictionary(products) {
+  const keys=[...new Set(products.flatMap(p=>(p.ingredient_names||[]).map(normalize)))];
+  const map=new Map();
+  for(let i=0;i<keys.length;i+=100){
+    const params=new URLSearchParams({select:"canonical_inci,name_zh_cn,lookup_key",lookup_key:`in.(${keys.slice(i,i+100).join(",")})`,limit:"1000"});
+    const response=await fetch(`${PROJECT_URL}/rest/v1/ingredient_master_lookup?${params}`,{headers:{apikey:PUBLISHABLE_KEY,Authorization:`Bearer ${PUBLISHABLE_KEY}`},signal:AbortSignal.timeout(30000)});
+    if(!response.ok)throw new Error(`Ingredient dictionary fetch failed: ${response.status}`);
+    for(const row of await response.json())map.set(row.lookup_key,row);
+  }
+  console.log(`Loaded ${map.size} ingredient translations from the public dictionary.`);
+  return map;
 }
-
-function productHtml(row) {
-  const { ingredients, ingredientPreview, completeness } = visibleFacts(row);
-  const title = `${row.brand} ${row.name}: Ingredients & Formula Facts | Peacedskin`;
-  const description = `${row.brand} ${row.name} ingredient list and formula facts from Peacedskin. Category: ${row.category || "skincare"}. ${ingredients.length ? `${ingredients.length} ingredients indexed.` : "Formula data indexed."}`;
-  const canonical = `${SITE_URL}/product/${row.__slug}/`;
-  const topIngredients = ingredientPreview.length
-    ? `<ol>${ingredientPreview.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`
-    : `<p>Ingredient list is being verified.</p>`;
-  const fullIngredients = ingredients.length
-    ? `<p class="inci">${ingredients.map(escapeHtml).join(", ")}</p>`
-    : `<p>Ingredient list is being verified.</p>`;
-  const verified = row.verified_at ? new Date(row.verified_at).toISOString().slice(0, 10) : null;
-
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: row.name,
-    brand: { "@type": "Brand", name: row.brand },
-    category: row.category || "Skincare",
-    url: canonical,
-    description,
-    additionalProperty: [
-      { "@type": "PropertyValue", name: "Market", value: row.market || "global" },
-      { "@type": "PropertyValue", name: "Formula completeness", value: `${completeness}%` },
-      { "@type": "PropertyValue", name: "Ingredient list type", value: row.ingredient_list_type || "unknown" }
-    ]
-  };
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `What is ${row.brand} ${row.name}?`,
-        acceptedAnswer: { "@type": "Answer", text: `${row.name} is listed in PEACED SKIN as ${row.category || "a skincare product"}.` }
-      },
-      {
-        "@type": "Question",
-        name: `What ingredients are in ${row.brand} ${row.name}?`,
-        acceptedAnswer: { "@type": "Answer", text: ingredientPreview.length ? `The indexed formula begins with: ${ingredientPreview.join(", ")}.` : "The ingredient list is currently being verified." }
-      }
-    ]
-  };
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}" />
-  <link rel="canonical" href="${canonical}" />
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:url" content="${canonical}" />
-  <meta name="twitter:card" content="summary" />
-  <script type="application/ld+json">${JSON.stringify(productJsonLd).replaceAll("<", "\\u003c")}</script>
-  <script type="application/ld+json">${JSON.stringify(faqJsonLd).replaceAll("<", "\\u003c")}</script>
-  <style>
-    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#171717;background:#fbfaf7}
-    body{margin:0}.wrap{max-width:820px;margin:auto;padding:32px 20px 72px}a{color:inherit}.brand{letter-spacing:.12em;font-size:12px;text-transform:uppercase}.crumb{font-size:13px;opacity:.65;margin-bottom:34px}h1{font-size:clamp(32px,6vw,56px);line-height:1.05;margin:8px 0 18px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 34px}.pill{border:1px solid #d9d5cc;border-radius:999px;padding:7px 11px;font-size:13px;background:#fff}section{border-top:1px solid #dedbd3;padding:28px 0}h2{font-size:22px;margin:0 0 14px}.inci{line-height:1.7}.note{font-size:14px;line-height:1.6;opacity:.72}.cta{display:inline-block;margin-top:20px;padding:12px 18px;border-radius:999px;background:#171717;color:#fff;text-decoration:none}
-  </style>
-</head>
-<body>
-<main class="wrap">
-  <nav class="crumb"><a href="/">Peacedskin</a> / <a href="/products/">Products</a> / ${escapeHtml(row.name)}</nav>
-  <div class="brand">${escapeHtml(row.brand)}</div>
-  <h1>${escapeHtml(row.name)}</h1>
-  <p>${escapeHtml(row.category || "Skincare")} formula facts and ingredient index.</p>
-  <div class="meta">
-    <span class="pill">${escapeHtml(row.category || "Skincare")}</span>
-    <span class="pill">${escapeHtml(row.market || "Global")}</span>
-    <span class="pill">Formula data ${completeness}% complete</span>
-  </div>
-
-  <section>
-    <h2>Formula at a glance</h2>
-    ${topIngredients}
-  </section>
-
-  <section>
-    <h2>Full indexed ingredient list</h2>
-    ${fullIngredients}
-    <p class="note">Ingredient lists can differ by market and reformulation. PEACED SKIN separates verified formula data from brand marketing claims.${verified ? ` Last catalog verification: ${verified}.` : ""}</p>
-  </section>
-
-  <section>
-    <h2>What is ${escapeHtml(row.name)}?</h2>
-    <p>PEACED SKIN currently classifies this product as <strong>${escapeHtml(row.category || "skincare")}</strong>. The page is generated from the approved public catalog so search engines and AI answer systems can read the same product facts shown in the database.</p>
-  </section>
-
-  <section>
-    <h2>How should this page be interpreted?</h2>
-    <p>Formula facts describe the indexed ingredient list. They are not the same as advertising claims or individual user outcomes. Skin suitability can depend on skin type, sensitivity, climate, routine and formula version.</p>
-    <a class="cta" href="/?view=product&amp;product=${encodeURIComponent(row.id)}">Explore this product in Peacedskin</a>
-    <p><a href="/products/">Browse all public product ingredient pages</a> · <a href="/?view=profileBuilder">Find your skin profile / 肤质测试</a></p>
-  </section>
-</main>
-</body>
-</html>`;
-}
-
 async function writePages(products) {
-  await fs.mkdir(path.join(OUT_DIR, "product"), { recursive: true });
-  for (const product of products) {
-    const dir = path.join(OUT_DIR, "product", product.__slug);
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, "index.html"), productHtml(product), "utf8");
+  const dictionary=await fetchDictionary(products);
+  const urls=[SITE_URL+"/"];
+  for(const en of [false,true]){
+    for(const product of products){
+      const route=productRoute(product.__slug,en);
+      const dir=path.join(OUT_DIR,route);
+      await fs.mkdir(dir,{recursive:true});
+      await fs.writeFile(path.join(dir,"index.html"),productHtml(product,dictionary,en),"utf8");
+      urls.push(SITE_URL+route);
+    }
+    const route=directoryRoute(en),dir=path.join(OUT_DIR,route);
+    await fs.mkdir(dir,{recursive:true});
+    await fs.writeFile(path.join(dir,"index.html"),directoryHtml(products,en),"utf8");
+    urls.push(SITE_URL+route);
   }
-
-  await fs.mkdir(path.join(OUT_DIR, "products"), { recursive: true });
-  const groups = new Map();
-  for (const product of products) {
-    if (!groups.has(product.brand)) groups.set(product.brand, []);
-    groups.get(product.brand).push(product);
-  }
-  const sections = [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([brand, items]) =>
-    `<section><h2>${escapeHtml(brand)}</h2><ul>${items.map(product => `<li><a href="/product/${product.__slug}/">${escapeHtml(product.name)}</a> <span>${escapeHtml(product.category || "Skincare")}</span></li>`).join("")}</ul></section>`
-  ).join("\n");
-  await fs.writeFile(path.join(OUT_DIR, "products", "index.html"), `<!doctype html>
-<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>护肤品成分目录 · Skincare Ingredients | Peacedskin</title>
-<meta name="description" content="按品牌浏览 Peacedskin 公开护肤品成分目录，查看已收录配方、成分表和数据完整度。Browse skincare ingredient lists and formula facts by brand.">
-<link rel="canonical" href="${escapeHtml(SITE_URL)}/products/">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Peacedskin">
-<meta property="og:title" content="护肤品成分目录 | Peacedskin"><meta property="og:url" content="${escapeHtml(SITE_URL)}/products/">
-<style>body{margin:0;background:#fbfaf7;color:#283027;font:16px/1.7 system-ui,sans-serif}main{max-width:820px;margin:auto;padding:32px 20px 80px}a{color:#2f5a40}h1{font-size:clamp(28px,5vw,42px);line-height:1.2}section{border-top:1px solid #d9d0bc;padding:16px 0}li{margin:12px 0}span{display:block;color:#555;font-size:14px}nav{margin-bottom:28px}</style>
-</head><body><main><nav><a href="/">Peacedskin 首页</a> · <a href="/?view=explore">打开产品筛选工具</a></nav>
-<h1>护肤品成分目录</h1><p lang="en">Skincare ingredient lists &amp; formula facts by brand.</p>
-<p>当前公开目录包含 ${products.length} 款产品。这里展示的是已收录的配方信息，不是产品效果排名；请结合市场版本和配方完整度阅读。</p>
-${sections}
-<p><a href="/?view=profileBuilder">免费肤质测试：了解你的护肤需求</a></p>
-<p>成分信息不等同于临床功效或个人使用结果；本网站不提供医学诊断。</p></main></body></html>`, "utf8");
-
-  const urls = [
-    `${SITE_URL}/`,
-    `${SITE_URL}/products/`,
-    ...products.map((product) => `${SITE_URL}/product/${product.__slug}/`)
-  ];
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-    .map((url) => `  <url><loc>${escapeHtml(url)}</loc></url>`)
-    .join("\n")}\n</urlset>\n`;
-  await fs.writeFile(path.join(OUT_DIR, "sitemap.xml"), sitemap, "utf8");
-
-  const manifest = products.map(({ id, brand, name, category, __slug, __score }) => ({
-    id, brand, name, category, slug: __slug, score: Math.round(__score * 10) / 10
-  }));
-  await fs.writeFile(path.join(OUT_DIR, "seo-pilot-products.json"), JSON.stringify(manifest, null, 2), "utf8");
+  await fs.writeFile(path.join(OUT_DIR,"sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(url=>`<url><loc>${escapeHtml(url)}</loc></url>`).join("\n")}\n</urlset>\n`);
+  const manifest=products.map(({id,brand,name,category,__slug,__score})=>({id,brand,name,category,slug:__slug,score:Math.round(__score*10)/10}));
+  await fs.writeFile(path.join(OUT_DIR,"seo-pilot-products.json"),JSON.stringify(manifest,null,2),"utf8");
 }
 
 async function main() {
