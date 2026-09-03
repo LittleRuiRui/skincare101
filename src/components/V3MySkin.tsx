@@ -255,7 +255,7 @@ export default function V3MySkin({
             marginBottom: 10,
           }}
         >
-          MY SKIN
+          {t("肤质档案", "MY SKIN")}
         </div>
         <h1
           style={{
@@ -689,7 +689,7 @@ export default function V3MySkin({
                 "Browse more products ranked for me",
               )}
               body={t(
-                "完整报告先给你 Top 5，这里可以继续查看全部匹配结果。",
+                "完整报告先给你最匹配的五款产品，这里可以继续查看全部匹配结果。",
                 "Your report shows the Top 5; continue here for the full ranked list.",
               )}
               onClick={onFindProducts}

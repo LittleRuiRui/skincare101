@@ -39,6 +39,8 @@ const SYMPTOM_LABELS: Record<string, string> = {
   dryness: "干燥",
   sensitivity: "敏感",
   aging: "细纹 / 抗老",
+  agingConcern: "细纹 / 抗老",
+  textureConcern: "粗糙 / 肤质不平",
 };
 
 const SPECIAL_STATE_LABELS: Record<string, string> = {

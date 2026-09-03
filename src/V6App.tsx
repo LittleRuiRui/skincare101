@@ -20,7 +20,7 @@ function UtilityEntries({isAdmin,onAnalytics}:{isAdmin:boolean;onAnalytics:()=>v
  const btn:React.CSSProperties={border:"1px solid #D9D0BC",borderRadius:999,padding:"8px 11px",background:"rgba(251,246,234,.96)",color:"#2F5A40",fontSize:11,fontWeight:700,boxShadow:"0 5px 16px rgba(39,53,41,.10)",cursor:"pointer",backdropFilter:"blur(10px)",whiteSpace:"nowrap"};
  return <div style={{position:"fixed",right:14,top:"calc(env(safe-area-inset-top, 0px) + 58px)",zIndex:115,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:7}}>
   <button onClick={()=>{window.location.href="/play/niuma/"}} style={btn}>{t("玩一下 · 牛马测试","Play · Niuma Test")}</button>
-  {isAdmin?<button onClick={onAnalytics} style={btn}>Analytics</button>:null}
+  {isAdmin?<button onClick={onAnalytics} style={btn}>{t("数据统计","Analytics")}</button>:null}
  </div>
 }
 
