@@ -4,6 +4,29 @@ import path from 'node:path';
 import test from 'node:test';
 import { articles, art, sources } from '../data/blog-articles.mjs';
 
+test('PDRN safety update is paired, dated and linked to the exact cream',async()=>{
+ const slug='pdrn-serum-vs-skin-booster-evidence';
+ const product='medicube-pdrn-pink-collagen-capsule-cream-dca76bbb-9cd0-4995-9f0f-258ade4f043a';
+ const sitemap=await fs.readFile('dist/sitemap.xml','utf8');
+ for(const en of [false,true]){
+  const route=`${en?'/en':''}/blog/${slug}/`;
+  const html=await fs.readFile(path.join('dist',route,'index.html'),'utf8');
+  for(const batch of ['2E122I.2E117I','2E191G.2E193G'])assert.ok(html.includes(batch));
+  assert.ok(html.includes(sources.hsaMedicube.url));
+  const schema=JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+  assert.equal(schema.datePublished,'2026-09-02');
+  assert.equal(schema.dateModified,'2026-09-04');
+  assert.ok(sitemap.includes(`<loc>https://peacedskin.com${route}</loc><lastmod>2026-09-04</lastmod>`));
+  const productRoute=`${en?'':'/zh'}/product/${product}/`;
+  assert.ok(html.includes(productRoute));
+  const p=await fs.readFile(path.join('dist',productRoute,'index.html'),'utf8');
+  assert.ok(p.includes(route));
+  assert.ok(p.includes('2026-09-04'));
+  assert.ok(p.includes('product=dca76bbb-9cd0-4995-9f0f-258ade4f043a'));
+  assert.ok(p.includes(sources.hsaMedicube.url));
+ }
+});
+
 test('fifteen complete, distinct articles with sources and related articles', () => {
   assert.equal(articles.length,15);
   assert.equal(new Set(articles.map(a=>a.slug)).size,15);

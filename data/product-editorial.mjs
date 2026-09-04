@@ -5,6 +5,11 @@ const avene='https://www.eau-thermale-avene.sg/p/cicalfate-restorative-protectiv
 const boj='https://beautyofjoseon.com/blogs/news/mastering-relief-sun-and-aqua-fresh';
 const hada='https://www.hadalabo.com.sg/collection/lotion/';
 export const productEditorial={
+ 'medicube-pdrn-pink-collagen-capsule-cream-dca76bbb-9cd0-4995-9f0f-258ade4f043a':{
+  checked:'2026-09-04',
+  sections:[section('批次安全提醒：请先查看下方 HSA 通报及双语指南，核对手中面霜的批次。目录完整度不代表批次安全认证。','Batch safety notice: read the HSA update and linked bilingual guide before checking your jar. Catalog completeness does not certify batch safety.')],
+  source:'https://www.hsa.gov.sg/announcements/hsa-tests-product-samples-of-medicube-pdrn-pink-collagen-capsule-cream-for-presence-of-sudan-red-dyes/',sourceLabel:'HSA Singapore — 28 August 2026',guide:'pdrn-serum-vs-skin-booster-evidence',guideZh:'查看批次提醒与 PDRN 证据指南',guideEn:'Read the batch notice and PDRN evidence guide'
+ },
  'la-roche-posay-cicaplast-baume-b5':{
   sections:[
    section('这里指 Cicaplast Baume B5+ 滋养护理霜，不是同系列 B5 精华、凝胶或带 SPF 的版本。新加坡品牌资料强调 5% 泛醇、madecassoside 与 Tribioma。品牌原料组合名不等于单一 INCI，也不能仅凭它判断个人使用效果。','This entry concerns Cicaplast Baume B5+, not the B5 serum, gel or an SPF version. Singapore brand information highlights 5% panthenol, madecassoside and Tribioma. A branded ingredient blend is not a single INCI name or proof of individual results.'),

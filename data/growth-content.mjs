@@ -1,5 +1,6 @@
 // Original bilingual editorial; sources checked 2026-09-02.
 export const growthSources = {
+ hsaMedicube:{label:'HSA | Medicube batch update, 28 August 2026',url:'https://www.hsa.gov.sg/announcements/hsa-tests-product-samples-of-medicube-pdrn-pink-collagen-capsule-cream-for-presence-of-sudan-red-dyes/',note:'新加坡批次安全通报；2026-09-04 核对，不是功效证据。',en:'Singapore batch safety update; checked 2026-09-04, not efficacy evidence.'},
  bojGuide:{label:'Beauty of Joseon | Relief Sun and Aqua-fresh guide',url:'https://beautyofjoseon.com/blogs/news/mastering-relief-sun-and-aqua-fresh',note:'品牌对两款国际版的定位；不是独立比较试验。',en:'Brand positioning for the two international versions; not an independent comparative trial.'},
  hadaSG:{label:'Hada Labo Singapore | Lotion collection',url:'https://www.hadalabo.com.sg/collection/lotion/',note:'新加坡官网的系列名称；不能用于证明日本版配方相同。',en:'Singapore collection names; not evidence that Japanese formulas are identical.'},
  pdrnStudy:{label:'Kim et al. (2022) | PDRN combination study',url:'https://pubmed.ncbi.nlm.nih.gov/35209068/',note:'紫外线照射动物模型，使用微针递送；并非普通精华的人体日常涂抹试验。',en:'A UV-exposed animal model using microneedling delivery, not a human trial of everyday serum application.'}
@@ -59,7 +60,7 @@ export const growthArticles=[
  products:['View the Japanese-market Light record','View the Japanese-market Rich record']
 }},
 {zh:{
- slug:'pdrn-serum-vs-skin-booster-evidence',date:'2026-09-02',category:'产品选择',art:'routine',
+ slug:'pdrn-serum-vs-skin-booster-evidence',date:'2026-09-02',modified:'2026-09-04',category:'产品选择',art:'routine',
  title:'PDRN 精华是“涂抹式水光针”吗？追热点前看懂证据',
  excerpt:'PDRN、三文鱼 DNA、水光针常被放在同一段广告里。分清普通涂抹、微针递送和注射，再判断研究与你手里的精华有多大关系。',
  answer:'普通 PDRN 精华不能仅凭相同的成分名，就被当成注射项目的替代品。研究对象、给药方式和完整配方必须对应；动物实验或微针研究也不能直接证明一瓶日常精华的效果。',
@@ -70,7 +71,7 @@ export const growthArticles=[
  {heading:'如果只是想买保湿精华，怎么避免被热点带着走？',paragraphs:['先写下你原本要解决的问题，再检查现有产品是否已经满足。觉得皮肤干，并不自动意味着缺少 PDRN；看到别人推荐某个热门数字或浓度，也不能用名称替代完整标签。比较时把价格、质地、实际使用意愿以及成品证据放在一起，不要只按热词多少评分。','购买前核对可靠来源与标签；新加坡 HSA 的消费提醒也强调警惕误导宣传。下面的 Anua 目录链接只是一个已收录产品的资料入口，并不是本文对其效果的验证，也不是品牌排名。我们没有在这里进行产品实测。'],sources:['hsaSafety']},
  {heading:'要记住的英文表达',bullets:['Topical application：涂在皮肤表面的使用方式；还要继续核对有没有辅助递送。','Finished-product evidence：针对完整成品的证据，不只是原料宣传。','Animal model：动物模型；不能直接等同日常人体使用。','Delivery method：递送方式，是比较研究时不能省略的条件。'],paragraphs:['你可以打开中英对照，把这些词放回上下文阅读。不要自行模仿论文里的微针或注射方法来追求“更好吸收”；这篇文章用于理解信息，不提供操作流程。']}
  ],related:['ingredient-list-how-to-read','skincare-tracking-not-guessing'],next:'先读证据，再看成分。目录中的产品名和数字不能替代完整配方、包装说明或成品研究。',
- products:[p('anua-pdrn-hyaluronic-acid-100-moisturizing-cream','查看 Anua PDRN 面霜目录记录（非效果背书）')]
+ products:[p('anua-pdrn-hyaluronic-acid-100-moisturizing-cream','查看 Anua PDRN 面霜目录记录（非效果背书）'),p('medicube-pdrn-pink-collagen-capsule-cream-dca76bbb-9cd0-4995-9f0f-258ade4f043a','查看 Medicube 对应面霜资料与批次提醒（非购买推荐）')]
 },en:{
  title:'Is PDRN serum a topical skin booster? What the evidence actually tests',
  excerpt:'PDRN, salmon DNA and injectable skin boosters often share an advert. Separate ordinary application, microneedling delivery and injection before interpreting the research.',
@@ -82,6 +83,17 @@ export const growthArticles=[
  {heading:'Buying a moisturising serum without following every trend',paragraphs:['Write down your original need and check whether your current products meet it. Dry-feeling skin does not automatically indicate a need for PDRN. A popular number or concentration claim in a name does not replace a full label. Consider price, texture, willingness to use the product and finished-product evidence together, not the number of buzzwords.','Check reliable sources and labels before buying; Singapore HSA also warns consumers about misleading claims. The Anua link below is only an existing catalog entry, not validation of that product’s effects or a brand ranking. We have not performed hands-on product testing here.']},
  {heading:'Useful English terms to remember',bullets:['Topical application: use on the skin surface; still check whether assisted delivery was involved.','Finished-product evidence: evidence for the complete formula, not just a raw-material claim.','Animal model: research in animals, not equivalent to everyday human use.','Delivery method: how the material reaches its target, an essential research distinction.'],paragraphs:['Use Chinese + English mode to read these terms in context. Do not copy microneedling or injection methods from a paper to seek better absorption. This article helps interpret information and does not provide procedure instructions.']}
  ],next:'Read the evidence before the ingredients. Product names and numbers in the directory do not replace the complete formula, package instructions or finished-product research.',
- products:['View the Anua PDRN cream record (not an efficacy endorsement)']
+ products:['View the Anua PDRN cream record (not an efficacy endorsement)','View the Medicube cream record and batch notice (not a purchase recommendation)']
 }}
 ];
+
+// A dated addition, not a new article or an inference about all PDRN products.
+const pdrnGuide=growthArticles.find(a=>a.zh.slug==='pdrn-serum-vs-skin-booster-evidence');
+pdrnGuide.zh.sections.unshift({heading:'新加坡批次提醒：先核对这款面霜',paragraphs:[
+ 'HSA 2026 年 8 月 28 日通报：Venus Beauty 销售的 Medicube PDRN Pink Collagen Capsule Cream 两个批次（2E122I.2E117I、2E191G.2E193G）检出 Sudan IV，已要求召回。受影响产品应停止使用，退款问题联系卖家。未受影响批次可恢复销售；供本地销售的每批产品须按 HSA 要求检测。',
+ '这不是对所有 PDRN 产品的召回。请核对完整名称、批次和购买渠道；本页目录不能鉴定你手中的产品。此次新增的是安全信息，不改变上面关于功效研究外推的结论。'
+],sources:['hsaMedicube']});
+pdrnGuide.en.sections.unshift({heading:'Singapore batch notice: check this cream first',paragraphs:[
+ 'HSA’s 28 August 2026 update identifies two Venus Beauty batches of Medicube PDRN Pink Collagen Capsule Cream (2E122I.2E117I and 2E191G.2E193G) recalled after Sudan IV detection. Stop using affected products; contact the seller about refunds. Unaffected batches may return to sale, with HSA-required testing for each batch supplied locally.',
+ 'This is not a recall of all PDRN products. Check the full name, batch and seller; our catalog cannot authenticate your jar. This safety addition does not change the efficacy-evidence distinctions above.'
+]});
