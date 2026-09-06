@@ -165,6 +165,18 @@ const SYMPTOM_TREES = {
     },
     questions: [
       {
+        key: "life_stage",
+        q: "你现在处于哪个年龄阶段？",
+        hint: "年龄只做小幅背景校正；痘痘的形态、深度和近期变化仍是主要依据",
+        options: [
+          { v: "under18", l: "18 岁以下", signals: { true_acne: { delta: 12, label: "青春期常见年龄阶段" } } },
+          { v: "18_29", l: "18–29 岁", signals: { true_acne: { delta: 8, label: "痘痘常见年龄阶段" } } },
+          { v: "30_44", l: "30–44 岁", signals: { true_acne: { delta: 5, label: "成人痘年龄背景" } } },
+          { v: "45_plus", l: "45 岁或以上", signals: { true_acne: { delta: 2, label: "较晚出现的痘痘背景" } } },
+          { v: "prefer_not", l: "不想回答", signals: {} },
+        ],
+      },
+      {
         key: "trigger",
         q: "爆痘前后，出现过哪些变化？（可多选）",
         hint: "优先找近期诱因；没有明显变化也可以直接选择“以上都没有”",
@@ -192,6 +204,11 @@ const SYMPTOM_TREES = {
             v: "cycle",
             l: "若适用：经期前后规律性出现",
             signals: { true_acne: { delta: 20, label: "生理周期相关" } },
+          },
+          {
+            v: "hormone_change",
+            l: "近期处于围绝经期，或开始/调整激素、睾酮相关药物",
+            signals: { true_acne: { delta: 18, label: "近期激素背景变化" } },
           },
           {
             v: "none",
@@ -301,6 +318,18 @@ const SYMPTOM_TREES = {
       photodamage: "光损伤(慢性)",
     },
     questions: [
+      {
+        key: "context",
+        q: "斑点或暗沉出现前后，有哪些情况？（可多选）",
+        hint: "直接问形成背景，比用性别猜测更有用；没有符合项也可以继续",
+        multi: true,
+        options: [
+          { v: "after_acne", l: "主要是痘痘或皮肤发炎后留下的印子", signals: { pigmentation: { delta: 28, label: "炎症后留下色沉" } } },
+          { v: "hormone", l: "在怀孕、产后、围绝经期或调整激素药物后明显", signals: { pigmentation: { delta: 22, label: "与激素阶段变化时间接近" } } },
+          { v: "sun", l: "暴晒后出现或明显加深", signals: { photodamage: { delta: 25, label: "日晒后加深" }, pigmentation: { delta: 10 } } },
+          { v: "none", l: "以上都不符合或不确定", signals: {} },
+        ],
+      },
       {
         key: "fluctuation",
         q: "这种暗沉是持续存在的,还是会随着睡眠/状态好坏明显变化?",
@@ -495,6 +524,18 @@ const SYMPTOM_TREES = {
       photodamage: "光老化",
     },
     questions: [
+      {
+        key: "life_stage",
+        q: "你现在处于哪个年龄阶段？",
+        hint: "年龄只调整判断权重，不会把正常年龄变化当成皮肤问题",
+        options: [
+          { v: "under25", l: "25 岁以下", signals: { aging: { delta: -8 }, photodamage: { delta: -5 } } },
+          { v: "25_34", l: "25–34 岁", signals: { aging: { delta: 4, label: "早期年龄背景" } } },
+          { v: "35_44", l: "35–44 岁", signals: { aging: { delta: 8, label: "年龄相关背景" } } },
+          { v: "45_plus", l: "45 岁或以上", signals: { aging: { delta: 12, label: "年龄相关背景" } } },
+          { v: "prefer_not", l: "不想回答", signals: {} },
+        ],
+      },
       {
         key: "main",
         q: "你现在最明显的变化是什么?",

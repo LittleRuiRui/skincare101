@@ -23,6 +23,15 @@ test("simplified questionnaire keeps natural English equivalents", () => {
       localizeLegacySkinText("开始分析（最多 8 题）", "en"),
       "Start analysis (up to 8 questions)",
     );
+    assert.equal(localizeLegacySkinText("你现在处于哪个年龄阶段？", "en"), "Which age range are you in?");
+    assert.equal(
+      localizeLegacySkinText("斑点或暗沉出现前后，有哪些情况？（可多选）", "en"),
+      "What happened around the time the spots or dullness appeared? (Select all that apply)",
+    );
+    assert.equal(
+      localizeLegacySkinText("近期处于围绝经期，或开始/调整激素、睾酮相关药物", "en"),
+      "I am in perimenopause, or recently started or changed hormone- or testosterone-related medication",
+    );
   } finally {
     Object.defineProperty(globalThis, "window", { configurable: true, value: originalWindow });
   }
