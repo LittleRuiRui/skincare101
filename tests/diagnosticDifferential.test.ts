@@ -66,6 +66,25 @@ test("itchy uniform chest/back eruption raises Malassezia folliculitis possibili
   assert.ok(fungal.score > finding(result, "acne_vulgaris_tendency").score);
 });
 
+test("deep acne keeps depth and pus as separate severity evidence", () => {
+  const withoutPus = buildDiagnosticDifferential(profile({
+    selectedSymptoms: ["acne"],
+    symptomAnswers: { acne: { inflamed: "yes", depth: "deep", pus: "no" } },
+    multiSelectAnswers: { acne: { trigger: ["none"], fungal: ["none"] } },
+  }));
+  const withPus = buildDiagnosticDifferential(profile({
+    selectedSymptoms: ["acne"],
+    symptomAnswers: { acne: { inflamed: "yes", depth: "deep", pus: "yes" } },
+    multiSelectAnswers: { acne: { trigger: ["none"], fungal: ["none"] } },
+  }));
+
+  const noduleLike = finding(withoutPus, "acne_vulgaris_tendency");
+  const cystLike = finding(withPus, "acne_vulgaris_tendency");
+  assert.ok(noduleLike.risk.some(item => item.includes("深层")));
+  assert.ok(cystLike.score > noduleLike.score);
+  assert.ok(cystLike.supporting.some(item => item.includes("脓")));
+});
+
 test("multi-concern profile preserves differential findings and generic mechanisms together", () => {
   const result = buildDiagnosticDifferential(profile({
     selectedSymptoms: ["redness", "pores", "pigmentation", "dryness"],

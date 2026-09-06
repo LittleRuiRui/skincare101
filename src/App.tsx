@@ -20,6 +20,7 @@ import { scoreCandidates } from "./intelligence/confidenceEngine";
 import { ingredientMatches, parseIngredientDetails } from "./intelligence/ingredientParser";
 import { analyzeFormulaDna, FORMULA_SYSTEM_ORDER } from "./intelligence/formulaDna";
 import { rankProducts } from "./intelligence/productScoring";
+import { MAX_SELECTED_CONCERNS, toggleConcernSelection } from "./intelligence/questionnaireFlow";
 import { PRODUCT_CATALOG } from "./data/productCatalog";
 import ProductContributionPanel from "./components/ProductContributionPanel";
 import ProfileSavePanel from "./components/ProfileSavePanel";
@@ -48,7 +49,7 @@ const MUTE = "#8A8579";
 
 const SYMPTOM_TREES = {
   redness: {
-    label: "泛红",
+    label: "泛红 / 敏感 / 屏障",
     candidates: {
       barrier: "屏障受损型泛红",
       rosacea: "玫瑰痤疮倾向",
@@ -58,35 +59,9 @@ const SYMPTOM_TREES = {
     },
     questions: [
       {
-        key: "onset",
-        q: "这种泛红是最近才出现的,还是持续超过一个月了?",
-        hint: "先做急性/慢性分流,判断是外因触发还是体质性问题",
-        options: [
-          {
-            v: "acute",
-            l: "两周以内,比较突然",
-            signals: {
-              barrier: { delta: 25, label: "急性起病" },
-              overexfoliate: { delta: 15, label: "急性起病" },
-              rosacea: { delta: -10 },
-              sensitive: { delta: -10 },
-            },
-          },
-          {
-            v: "chronic",
-            l: "一个多月以上,反反复复",
-            signals: {
-              rosacea: { delta: 20, label: "慢性反复病程" },
-              sensitive: { delta: 20, label: "慢性反复病程" },
-              barrier: { delta: -10 },
-            },
-          },
-        ],
-      },
-      {
         key: "trigger",
-        q: "这段时间有没有以下情况?(可多选)",
-        hint: "诱因具体化,而非开放式提问",
+        q: "泛红前后，出现过哪些情况？（可多选）",
+        hint: "近期换产品、刷酸和环境变化，比单纯问“敏不敏感”更能帮助判断方向",
         multi: true,
         options: [
           {
@@ -190,30 +165,9 @@ const SYMPTOM_TREES = {
     },
     questions: [
       {
-        key: "onset",
-        q: "这次爆痘是最近(两周内)突然冒出来的,还是断断续续持续一个多月了?",
-        hint: "急慢性分流",
-        options: [
-          {
-            v: "acute",
-            l: "最近突然冒出来的",
-            signals: {
-              product_induced: { delta: 20, label: "急性突发" },
-              pseudo: { delta: 10, label: "急性突发" },
-              true_acne: { delta: -10 },
-            },
-          },
-          {
-            v: "chronic",
-            l: "断断续续一个多月以上",
-            signals: { true_acne: { delta: 25, label: "慢性反复病程" }, pseudo: { delta: -5 } },
-          },
-        ],
-      },
-      {
         key: "trigger",
-        q: "这段时间有没有以下情况?(可多选)",
-        hint: "诱因具体化",
+        q: "爆痘前后，出现过哪些变化？（可多选）",
+        hint: "优先找近期诱因；没有明显变化也可以直接选择“以上都没有”",
         multi: true,
         options: [
           {
@@ -236,7 +190,7 @@ const SYMPTOM_TREES = {
           },
           {
             v: "cycle",
-            l: "生理周期相关(经期前后规律性出现)",
+            l: "若适用：经期前后规律性出现",
             signals: { true_acne: { delta: 20, label: "生理周期相关" } },
           },
           {
@@ -335,45 +289,11 @@ const SYMPTOM_TREES = {
           },
         ],
       },
-      {
-        key: "location",
-        q: "主要长在两颊,还是集中在下巴/嘴周/T区?",
-        hint: "分布位置辅助区分病因",
-        options: [
-          {
-            v: "cheek",
-            l: "两颊为主",
-            signals: { pseudo: { delta: 20, label: "分布在两颊" }, product_induced: { delta: 10, label: "分布在两颊" } },
-          },
-          {
-            v: "jaw",
-            l: "下巴/嘴周/T区为主",
-            signals: { true_acne: { delta: 25, label: "分布在下巴/嘴周/T区" } },
-          },
-        ],
-      },
-      {
-        key: "cyclical",
-        q: "这种爆痘是不是每个月固定时间会加重?",
-        hint: "补充确认激素相关因素",
-        options: [
-          {
-            v: "yes",
-            l: "有规律,固定时间加重",
-            signals: { true_acne: { delta: 30, label: "存在周期性加重规律" } },
-          },
-          {
-            v: "no",
-            l: "没什么规律",
-            signals: { true_acne: { delta: -10 }, pseudo: { delta: 5 } },
-          },
-        ],
-      },
     ],
   },
 
   dullness: {
-    label: "暗沉",
+    label: "暗沉 / 色斑",
     candidates: {
       buildup: "角质堆积",
       pigmentation: "色素沉着",
@@ -441,32 +361,11 @@ const SYMPTOM_TREES = {
           },
         ],
       },
-      {
-        key: "duration",
-        q: "这种状态是最近才这样,还是感觉持续好几年了?",
-        hint: "累积时长,最终确认光损伤",
-        options: [
-          {
-            v: "recent",
-            l: "最近才这样",
-            signals: {
-              buildup: { delta: 15, label: "近期才出现" },
-              circulation: { delta: 10, label: "近期才出现" },
-              photodamage: { delta: -20 },
-            },
-          },
-          {
-            v: "years",
-            l: "持续好几年,一直没变过",
-            signals: { photodamage: { delta: 30, label: "多年持续累积" }, pigmentation: { delta: 10 }, buildup: { delta: -15 } },
-          },
-        ],
-      },
     ],
   },
 
   pores: {
-    label: "毛孔粗大/黑头",
+    label: "毛孔 / 黑头 / 出油",
     candidates: {
       oily: "油脂型毛孔",
       compensatory: "缺水代偿型毛孔",
@@ -474,33 +373,6 @@ const SYMPTOM_TREES = {
       aging: "衰老松弛型毛孔",
     },
     questions: [
-      {
-        key: "shape",
-        q: "毛孔的形状更接近哪一种?",
-        hint: "形状是判断成因最直接的线索——不同成因撑大毛孔的方式不一样",
-        options: [
-          {
-            v: "u",
-            l: "U型,主要集中在鼻翼/T区",
-            signals: { oily: { delta: 30, label: "U型毛孔,集中T区" }, buildup: { delta: 10 } },
-          },
-          {
-            v: "oval",
-            l: "椭圆形,同时觉得皮肤有点紧绷缺水",
-            signals: { compensatory: { delta: 30, label: "椭圆形毛孔+紧绷缺水" }, oily: { delta: -10 } },
-          },
-          {
-            v: "drop",
-            l: "水滴形,向下拉长,伴随松弛下垂感",
-            signals: { aging: { delta: 35, label: "水滴形毛孔,向下松弛" }, oily: { delta: -15 } },
-          },
-          {
-            v: "unclear",
-            l: "看不出明显形状,但黑头/闭口很多",
-            signals: { buildup: { delta: 30, label: "形状不明显,黑头闭口为主" }, oily: { delta: 10 } },
-          },
-        ],
-      },
       {
         key: "oil",
         q: "平时出油情况怎么样?",
@@ -571,6 +443,114 @@ const SYMPTOM_TREES = {
             l: "没有以上情况",
             signals: { aging: { delta: -15 } },
           },
+        ],
+      },
+    ],
+  },
+
+  // // expanded-skin-concerns-v1
+  dryness: {
+    label: "干燥 / 缺水 / 起皮",
+    candidates: {
+      barrier: "屏障受损",
+      compensatory: "缺水状态",
+      sensitive: "敏感不耐受",
+    },
+    questions: [
+      {
+        key: "surface",
+        q: "干燥时皮肤表面更像哪一种?",
+        hint: "区分单纯缺水与屏障受损",
+        options: [
+          { v: "tight", l: "只是紧绷、缺水，但没有明显刺痛", signals: { compensatory: { delta: 30, label: "紧绷缺水为主" } } },
+          { v: "flaky", l: "会起皮、粗糙，底妆容易卡粉", signals: { barrier: { delta: 20, label: "起皮粗糙" }, compensatory: { delta: 15 } } },
+          { v: "sting", l: "涂普通护肤品也会刺痛或发热", signals: { barrier: { delta: 30, label: "基础护肤也刺痛" }, sensitive: { delta: 20 } } },
+        ],
+      },
+      {
+        key: "oil_mix",
+        q: "干的同时会不会明显出油?",
+        hint: "识别常见的外油内干/缺水代偿状态",
+        options: [
+          { v: "yes", l: "会，T区或整脸还是很容易出油", signals: { compensatory: { delta: 30, label: "干燥同时明显出油" } } },
+          { v: "no", l: "不会，整体就是偏干、油脂很少", signals: { barrier: { delta: 10 }, compensatory: { delta: 15 } } },
+        ],
+      },
+      {
+        key: "trigger",
+        q: "最近有没有明显增加刷酸、清洁或高活性产品?",
+        hint: "确认干燥是否可能来自近期刺激叠加",
+        options: [
+          { v: "yes", l: "有，最近活性产品或清洁明显变多", signals: { barrier: { delta: 35, label: "近期刺激叠加" }, sensitive: { delta: 10 } } },
+          { v: "no", l: "没有，护肤习惯基本没变", signals: { compensatory: { delta: 15 }, barrier: { delta: -5 } } },
+        ],
+      },
+    ],
+  },
+
+  agingConcern: {
+    label: "细纹 / 松弛 / 老化",
+    candidates: {
+      aging: "胶原流失 / 松弛",
+      photodamage: "光老化",
+    },
+    questions: [
+      {
+        key: "main",
+        q: "你现在最明显的变化是什么?",
+        hint: "先区分动态细纹、结构性松弛与整体光老化表现",
+        options: [
+          { v: "lines", l: "眼周、额头或嘴角细纹更明显", signals: { aging: { delta: 25, label: "细纹明显" } } },
+          { v: "sag", l: "轮廓变松、皮肤支撑感下降", signals: { aging: { delta: 35, label: "松弛支撑下降" } } },
+          { v: "overall", l: "同时有暗沉、粗糙、斑点和细纹", signals: { photodamage: { delta: 35, label: "多维度光老化表现" }, aging: { delta: 10 } } },
+        ],
+      },
+      {
+        key: "sun",
+        q: "过去几年日晒和防晒情况怎么样?",
+        hint: "紫外线是可干预的主要外源老化因素",
+        options: [
+          { v: "high", l: "日晒较多，过去也不太规律防晒", signals: { photodamage: { delta: 30, label: "长期紫外线暴露" } } },
+          { v: "low", l: "日晒不多，而且长期规律防晒", signals: { aging: { delta: 15 }, photodamage: { delta: -10 } } },
+        ],
+      },
+      {
+        key: "dryness",
+        q: "补足保湿后，细纹会不会明显变浅?",
+        hint: "帮助区分缺水纹与更稳定的结构性细纹",
+        options: [
+          { v: "yes", l: "会，皮肤水润时明显好很多", signals: { aging: { delta: -10 }, photodamage: { delta: -5 } } },
+          { v: "no", l: "不会，保湿后还是很明显", signals: { aging: { delta: 25, label: "保湿后仍存在" } } },
+        ],
+      },
+    ],
+  },
+
+  textureConcern: {
+    label: "粗糙 / 肤质不平",
+    candidates: {
+      buildup: "角质堆积",
+      barrier: "屏障受损",
+      true_acne: "闭口 / 粉刺倾向",
+    },
+    questions: [
+      {
+        key: "feel",
+        q: "摸起来的不平整更像哪一种?",
+        hint: "粗糙、脱屑和闭口看起来相似，但处理方向不同",
+        options: [
+          { v: "rough", l: "整体像砂纸一样粗糙，但没有很多凸起", signals: { buildup: { delta: 30, label: "整体角质粗糙" } } },
+          { v: "flaky", l: "粗糙同时会起皮、紧绷或刺痛", signals: { barrier: { delta: 35, label: "粗糙伴起皮不适" } } },
+          { v: "bumps", l: "是一颗颗小凸起，摸起来颗粒感明显", signals: { true_acne: { delta: 30, label: "小颗粒凸起" }, buildup: { delta: 10 } } },
+        ],
+      },
+      {
+        key: "clog",
+        q: "同时有没有黑头、白头或闭口?",
+        hint: "确认毛囊堵塞是否是主要原因",
+        options: [
+          { v: "yes", l: "有，而且数量不少", signals: { true_acne: { delta: 30, label: "伴明显粉刺堵塞" }, buildup: { delta: 15 } } },
+          { v: "no", l: "基本没有，就是表面不够平滑", signals: { true_acne: { delta: -20 }, buildup: { delta: 15 } } },
         ],
       },
     ],
@@ -708,6 +688,21 @@ const REPORT_CONTENT = {
       drugs: [{ tier: "处方(视情况)", name: "维A酸 (Tretinoin)", note: "长期用于刺激胶原合成,需建立耐受,起效缓慢" }],
       medical: false,
     },
+  },
+
+  dryness: {
+    barrier: { advice: "当前更像屏障受损导致的干燥不耐受。先停高频去角质和刺激性活性，保留温和清洁、保湿和防晒，优先补充神经酰胺、泛醇等屏障支持体系。", drugs: [], medical: false },
+    compensatory: { advice: "当前更像缺水或外油内干。重点不是继续强控油，而是增加稳定的吸湿保湿和适度封闭，观察出油是否随水润度恢复而下降。", drugs: [], medical: false },
+    sensitive: { advice: "干燥同时伴随较明显的不耐受信号。减少新品和活性叠加，优先使用配方简单、低刺激的保湿修护产品，并逐个引入新产品。", drugs: [], medical: false },
+  },
+  agingConcern: {
+    aging: { advice: "当前更偏向结构性细纹或松弛。日常重点是长期防晒、稳定保湿，并在耐受允许时逐步建立维A类或其他有证据的抗老活性；变化通常以月为单位。", drugs: [], medical: false },
+    photodamage: { advice: "当前光老化信号更突出。严格防晒是第一优先级，再考虑抗氧化和维A类长期方案；如果有持续变化的异常色斑或皮损，应先由皮肤科确认。", drugs: [], medical: false },
+  },
+  textureConcern: {
+    buildup: { advice: "当前更像角质堆积造成的粗糙。可以从低频、温和的化学去角质开始，同时保持保湿；不要因为追求即时光滑而连续叠加酸类。", drugs: [], medical: false },
+    barrier: { advice: "当前粗糙更像屏障不稳定而不是角质太厚。先停止去角质和强清洁，以修护和保湿为主，等紧绷、起皮或刺痛稳定后再评估肤质。", drugs: [], medical: false },
+    true_acne: { advice: "当前颗粒感更像闭口或粉刺堵塞。避免挤压，优先考虑温和的角质代谢和控油方案；如果持续发炎、疼痛或明显加重，建议皮肤科评估。", drugs: [], medical: false },
   },
 };
 
@@ -1167,6 +1162,8 @@ function OptionCard({ label, sub, selected, onClick, dim }) {
   return (
     <button
       onClick={onClick}
+      disabled={dim}
+      aria-disabled={dim || undefined}
       style={{
         display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", textAlign: "left",
         padding: "16px 18px", borderRadius: 10, border: `1px solid ${selected ? TEAL : LINE}`,
@@ -1529,53 +1526,32 @@ function ProductRecommendationCard({ product, index }) {
 const SKIN_QUESTIONS = [
   {
     key: "wash",
-    q: "洗完脸不涂任何东西,1小时后T区和两颊分别是什么状态?",
+    q: "大多数日子到了中午，你的 T 区和两颊通常是什么状态？",
     options: [
-      { v: "combo", l: "T区出油,两颊偏干或正常", sub: "混合性" },
-      { v: "oily", l: "整脸都出油", sub: "油性" },
-      { v: "dry", l: "整脸紧绷、有点起皮", sub: "干性" },
-      { v: "normal", l: "比较舒适,没什么明显感觉", sub: "中性" },
+      { v: "combo", l: "T 区会出油，两颊偏干或比较正常", sub: "混合性" },
+      { v: "oily", l: "T 区和两颊都容易出油", sub: "油性" },
+      { v: "dry", l: "整脸偏干，常有紧绷或起皮", sub: "干性" },
+      { v: "normal", l: "整体比较舒服，没有明显出油或紧绷", sub: "中性" },
     ],
   },
   {
     key: "sensitive",
-    q: "换新产品时,皮肤容易泛红刺痛,还是基本没什么反应?",
+    q: "过去 3 个月，普通洁面或保湿品也经常让你刺痛、发热或明显泛红吗？",
     options: [
-      { v: "yes", l: "比较容易有反应", sub: "敏感叠加" },
-      { v: "no", l: "基本没什么反应", sub: "非敏感" },
+      { v: "yes", l: "是，经常出现这类反应", sub: "敏感倾向" },
+      { v: "no", l: "不是，通常能正常耐受", sub: "耐受相对稳定" },
     ],
   },
 ];
 
 const PROFILE_QUESTIONS = [
   {
-    key: "age",
-    q: "你的年龄段是?",
-    hint: "年龄会影响诊断权重——同样症状在不同年龄段更可能对应的病因不一样",
-    options: [
-      { v: "u18", l: "18岁以下" },
-      { v: "18-30", l: "18-30岁" },
-      { v: "30-45", l: "30-45岁" },
-      { v: "45+", l: "45岁以上" },
-    ],
-  },
-  {
-    key: "gender",
-    q: "性别",
-    hint: "用于判断部分周期性/激素相关问题是否适用,以及用药建议的安全边界",
-    options: [
-      { v: "female", l: "女" },
-      { v: "male", l: "男" },
-    ],
-  },
-  {
     key: "pregnancy",
-    q: "目前有没有怀孕或哺乳?",
-    hint: "这一步是用药建议前的安全检查,不影响病因诊断本身",
-    skipIf: (a) => a.gender !== "female",
+    q: "目前是否处于备孕、怀孕或哺乳期？",
+    hint: "只用于更保守地筛选成分，不参与肤质判断",
     options: [
-      { v: "yes", l: "是,目前怀孕或哺乳期" },
-      { v: "no", l: "没有" },
+      { v: "yes", l: "是" },
+      { v: "no", l: "否或不适用" },
     ],
   },
 ];
@@ -1584,36 +1560,34 @@ const PREGNANCY_UNSAFE_KEYWORDS = ["异维A酸", "维A酸", "阿达帕林", "水
 
 const RED_FLAGS = [
   {
-    v: "psoriasis",
-    l: "边界清楚的红斑,上面覆盖较厚的银白色鳞屑,撕掉鳞屑容易点状出血",
-    condition: "银屑病",
-    note: "属于需要系统性皮肤科管理的慢性病,鳞屑厚度和点状出血是和普通干燥脱皮最大的区别。",
+    v: "emergency",
+    l: "呼吸困难，或脸、眼、嘴唇、舌头突然肿胀；全身大片起疱、脱皮",
+    condition: "严重过敏或重症皮肤反应风险",
+    note: "这类表现需要立即就医，不要继续试护肤品或等待问卷结果。",
+    urgency: "emergency",
   },
   {
-    v: "vitiligo",
-    l: "有边界清楚的色素完全脱失斑(不是变浅,是完全变白)",
-    condition: "白癜风",
-    note: "和色沉、晒斑的方向相反,容易被误判成\"美白过度\",不属于护肤品能干预的范畴。",
+    v: "urgent",
+    l: "红肿或疼痛快速扩散，伴发热、流脓；或眼周出现成簇疼痛水疱",
+    condition: "感染或需要尽快处理的皮肤问题风险",
+    note: "建议当天寻求医疗评估；眼周、快速扩散或伴全身不适时不要延误。",
+    urgency: "urgent",
   },
   {
-    v: "herpes",
-    l: "成簇的小水疱,伴刺痛或灼烧感",
-    condition: "疱疹类病毒感染",
-    note: "病毒感染,和痤疮/接触性皮炎的水疱表现需要鉴别,不适合按护肤流程处理。",
+    v: "lesion",
+    l: "有新出现或持续变化的痣、斑块、伤口，出现反复出血或久不愈合",
+    condition: "需要医生检查的持续性皮损",
+    note: "仅凭照片或问卷无法排除需要治疗的皮损，请预约医生或皮肤科检查。",
+    urgency: "appointment",
   },
   {
-    v: "urticaria",
-    l: "风团样红斑,通常24小时内自行消退,但此起彼伏反复出现",
-    condition: "荨麻疹",
-    note: "起消速度是关键特征,和接触性皮炎、普通泛红的病程明显不同。",
+    v: "persistent",
+    l: "边界清楚的完全白斑，或反复出现的厚鳞屑、渗液、结痂皮疹",
+    condition: "超出普通护肤范围的持续性皮肤问题",
+    note: "需要专业检查区分具体原因，护肤问卷不应替代诊断。",
+    urgency: "appointment",
   },
-  {
-    v: "actinic",
-    l: "长期日晒部位(面部/手背)出现粗糙鳞屑性斑块,摸起来像砂纸",
-    condition: "日光性角化病",
-    note: "属于癌前病变,检测到疑似特征应立即建议就医,而不是继续走护肤建议路径。",
-  },
-  { v: "none", l: "都没有以上情况", condition: null, note: null },
+  { v: "none", l: "以上情况都没有", condition: null, note: null, urgency: null },
 ];
 
 const CANDIDATE_FAMILY = {
@@ -1890,7 +1864,7 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
   }
 
   function toggleSymptom(key) {
-    setSelectedSymptoms((prev) => (prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]));
+    setSelectedSymptoms((prev) => toggleConcernSelection(prev, key));
   }
 
   function beginSymptoms() {
@@ -1965,6 +1939,7 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
 
   const skinDry = skinAnswers.wash === "dry";
   const skinSensitive = skinAnswers.sensitive === "yes";
+  const selectedQuestionCount = selectedSymptoms.reduce((total, key) => total + (SYMPTOM_TREES[key]?.questions.length || 0), 0);
 
   let symptomResults = [];
   if (screen === "report" || screen === "ingredient" || screen === "recommend") {
@@ -2309,20 +2284,20 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               {SKIN_QUESTIONS[skinStep].q}
             </h2>
-            <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>2个问题，帮助后续建议更贴近你的真实状态</p>
+            <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>只判断相对稳定的肤质和耐受，不把今天临时出油或起皮当成永久肤质</p>
             {SKIN_QUESTIONS[skinStep].options.map((o) => (
               <OptionCard key={o.v} label={o.l} sub={o.sub} selected={skinAnswers[SKIN_QUESTIONS[skinStep].key] === o.v} onClick={() => selectSkin(SKIN_QUESTIONS[skinStep].key, o.v)} />
             ))}
           </div>
         )}
 
-        {/* ---------------- PROFILE (年龄/性别/怀孕安全闸门) ---------------- */}
+        {/* ---------------- PROFILE (孕哺安全闸门) ---------------- */}
         {screen === "profile" && currentProfileQ && (
           <div style={{ paddingTop: 24 }}>
             <TextButton onClick={backProfile}>
               <ChevronLeft size={14} /> 上一步
             </TextButton>
-            <Eyebrow>第二步 · 基础信息</Eyebrow>
+            <Eyebrow>第二步 · 安全筛选</Eyebrow>
             <JourneyProgress stage={1} />
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, color: MUTE, marginBottom: 10 }}>
               本阶段问题 {profileStep + 1}/{visibleProfileQuestions.length}
@@ -2347,28 +2322,27 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
             <JourneyProgress stage={3} />
             <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
               <Tag>{{ combo: "混合性", oily: "油性", dry: "干性", normal: "中性" }[skinAnswers.wash]}</Tag>
-              <Tag>{skinSensitive ? "敏感叠加" : "非敏感"}</Tag>
-              {profileAnswers.age && <Tag>{{ u18: "18岁以下", "18-30": "18-30岁", "30-45": "30-45岁", "45+": "45岁以上" }[profileAnswers.age]}</Tag>}
-              {profileAnswers.gender && <Tag>{profileAnswers.gender === "female" ? "女" : "男"}</Tag>}
+              <Tag>{skinSensitive ? "敏感倾向" : "耐受相对稳定"}</Tag>
               {profileAnswers.pregnancy === "yes" && <Tag>怀孕/哺乳期</Tag>}
             </div>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 22, fontWeight: 500, marginBottom: 6, marginTop: 0 }}>
               现在最想改善哪些问题?
             </h2>
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>
-              建议先选1–2个最困扰你的问题，完成会更快；相同的可能原因会自动合并
+              先选最困扰你的 1–2 项。每次最多选 {MAX_SELECTED_CONCERNS} 项，避免问题过多和互相干扰
             </p>
             {Object.entries(SYMPTOM_TREES).map(([key, t]) => (
               <OptionCard
                 key={key}
                 label={t.label}
-                sub={`约 ${t.questions.length} 题进一步了解`}
+                sub={`${t.questions.length} 题针对性追问`}
                 selected={selectedSymptoms.includes(key)}
+                dim={!selectedSymptoms.includes(key) && selectedSymptoms.length >= MAX_SELECTED_CONCERNS}
                 onClick={() => toggleSymptom(key)}
               />
             ))}
             <PrimaryButton onClick={beginSymptoms} disabled={selectedSymptoms.length === 0}>
-              开始分析{selectedSymptoms.length > 0 ? `（${selectedSymptoms.length}个问题）` : ""} <ChevronRight size={16} />
+              开始分析{selectedSymptoms.length > 0 ? `（最多 ${selectedQuestionCount} 题）` : ""} <ChevronRight size={16} />
             </PrimaryButton>
           </div>
         )}
@@ -2379,13 +2353,13 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
             <TextButton onClick={goBack}>
               <ChevronLeft size={14} /> 上一步
             </TextButton>
-            <Eyebrow>第三步 · 就医识别</Eyebrow>
+            <Eyebrow>第三步 · 安全分流</Eyebrow>
             <JourneyProgress stage={2} />
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 21, fontWeight: 500, marginBottom: 6, marginTop: 0, lineHeight: 1.4 }}>
-              在选具体问题之前,先排除这几种情况
+              先确认有没有需要医生处理的情况
             </h2>
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20, lineHeight: 1.6 }}>
-              这几种不属于护肤品能处理的范畴,这一步只做一次——命中任意一项会直接建议就医,不会进入后面的症状选择
+              不需要判断自己得了什么病。只要选中符合的表现，我们就先暂停产品推荐
             </p>
             {RED_FLAGS.map((f) => (
               <OptionCard key={f.v} label={f.l} selected={redFlag === f.v} onClick={() => selectRedFlag(f.v)} />
@@ -2401,7 +2375,7 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
             </TextButton>
             <Eyebrow>建议就医</Eyebrow>
             <h2 style={{ fontFamily: "'Newsreader', serif", fontSize: 24, fontWeight: 500, marginBottom: 20, marginTop: 0 }}>
-              这个特征超出了护肤品能处理的范围
+              {RED_FLAGS.find((f) => f.v === redFlag)?.urgency === "emergency" ? "请立即寻求医疗帮助" : RED_FLAGS.find((f) => f.v === redFlag)?.urgency === "urgent" ? "建议今天就医评估" : "这个情况需要医生确认"}
             </h2>
             <div style={{ display: "flex", gap: 10, border: `1px solid #DDBBAE`, borderRadius: 10, padding: "16px 18px", marginBottom: 20, background: "#FBF0EC" }}>
               <Stethoscope size={18} color={RUST} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -2413,9 +2387,11 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
               </div>
             </div>
             <BodyText>
-              这类情况通常需要专业检查(必要时刮片、皮肤镜或活检)才能确诊,继续用护肤品自行判断和护理不仅无效,还可能延误规范治疗的时机。建议尽快挂皮肤科明确诊断,再决定后续方案。
+              {RED_FLAGS.find((f) => f.v === redFlag)?.urgency === "emergency"
+                ? "如果伴随呼吸困难或脸、眼、嘴唇、舌头肿胀，请联系紧急医疗服务。不要继续使用刚接触的新产品。"
+                : "先暂停最近新增的刺激性产品并记录出现时间。医生确认原因后，再决定是否恢复日常护肤。"}
             </BodyText>
-            <PrimaryButton onClick={resetAll}>重新开始演示</PrimaryButton>
+            <PrimaryButton onClick={resetAll}>重新开始测试</PrimaryButton>
           </div>
         )}
 
@@ -2426,7 +2402,7 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
               <ChevronLeft size={14} /> 上一步
             </TextButton>
             <Eyebrow>
-              {tree.label} · 鉴别问诊
+              {tree.label} · 针对性追问
               {selectedSymptoms.length > 1 ? `(${symptomIndex + 1}/${selectedSymptoms.length})` : ""}
             </Eyebrow>
             <JourneyProgress stage={3} />
@@ -2437,9 +2413,7 @@ function App({ initialScreen, profileData }: { initialScreen?: string; profileDa
               {currentQ.q}
             </h2>
             <p style={{ fontSize: 12.5, color: MUTE, marginBottom: 20 }}>{currentQ.hint}</p>
-            {currentQ.options
-              .filter((o) => !(currentSymptomKey === "acne" && currentQ.key === "trigger" && o.v === "cycle" && profileAnswers.gender === "male"))
-              .map((o) => {
+            {currentQ.options.map((o) => {
                 const selected = currentQ.multi ? multiDraft.includes(o.v) : answers[currentQ.key] === o.v;
                 return <OptionCard key={o.v} label={o.l} selected={selected} onClick={() => selectAnswer(o.v)} />;
               })}

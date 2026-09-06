@@ -36,10 +36,6 @@ const REDNESS_TREE: SymptomTree = {
     seborrheic: "脂溢性皮炎可能",
   },
   questions: [
-    { key: "onset", q: "泛红持续时间", options: [
-      { v: "acute", l: "近期突然出现", signals: { barrier: { delta: 25, label: "急性起病" }, overexfoliate: { delta: 15, label: "急性起病" }, rosacea: { delta: -10 } } },
-      { v: "chronic", l: "一个月以上反复", signals: { rosacea: { delta: 20, label: "慢性反复病程" }, sensitive: { delta: 20, label: "慢性反复病程" }, barrier: { delta: -10 } } },
-    ] },
     { key: "trigger", q: "近期诱因", multi: true, options: [
       { v: "product", l: "近期更换新产品", signals: { barrier: { delta: 10, label: "近期换新产品" } } },
       { v: "exfoliate", l: "近期去角质/焕肤", signals: { overexfoliate: { delta: 30, label: "近期高频去角质" }, barrier: { delta: 10, label: "近期高频去角质" } } },
@@ -69,10 +65,6 @@ const ACNE_TREE: SymptomTree = {
     fungal_acne: "马拉色菌毛囊炎可能",
   },
   questions: [
-    { key: "onset", q: "爆痘持续时间", options: [
-      { v: "acute", l: "近期突然出现", signals: { product_induced: { delta: 20, label: "急性突发" }, pseudo: { delta: 10, label: "急性突发" }, true_acne: { delta: -10 } } },
-      { v: "chronic", l: "一个月以上反复", signals: { true_acne: { delta: 25, label: "慢性反复病程" }, pseudo: { delta: -5 } } },
-    ] },
     { key: "trigger", q: "近期诱因", multi: true, options: [
       { v: "product", l: "近期更换护肤/防晒/彩妆", signals: { product_induced: { delta: 30, label: "近期换新产品" } } },
       { v: "exfoliate", l: "近期去角质/焕肤", signals: { pseudo: { delta: 15, label: "近期高频去角质" }, product_induced: { delta: 10, label: "近期高频去角质" } } },
@@ -91,9 +83,14 @@ const ACNE_TREE: SymptomTree = {
       { v: "no", l: "以粉刺/小颗粒为主", signals: { true_acne: { delta: 15, label: "粉刺型表现" }, pseudo: { delta: -10 } } },
       { v: "yes", l: "存在红肿疼痛", signals: { true_acne: { delta: 5, label: "炎症性表现" } } },
     ] },
-    { key: "depth", q: "皮损深度", options: [
+    { key: "depth", q: "皮损深度", skipIf: answers => answers.inflamed === "no", options: [
       { v: "deep", l: "深层皮下结节/包块", signals: { true_acne: { delta: 25, label: "深层皮损" } } },
+      { v: "shallow", l: "浅表皮损", signals: { true_acne: { delta: 5, label: "浅表皮损" } } },
       { v: "surface", l: "浅表皮损", signals: { true_acne: { delta: 5, label: "浅表皮损" } } },
+    ] },
+    { key: "pus", q: "是否有明显脓头", skipIf: answers => answers.inflamed === "no", options: [
+      { v: "no", l: "没有明显脓头", signals: { true_acne: { delta: 5, label: "无明显脓头" } } },
+      { v: "yes", l: "可见脓头或脓液", signals: { true_acne: { delta: 25, label: "可见脓头或脓液" }, pseudo: { delta: -15 } } },
     ] },
   ],
 };

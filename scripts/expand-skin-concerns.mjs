@@ -24,16 +24,6 @@ if (!app.includes(MARKER)) {
     },
     questions: [
       {
-        key: "timing",
-        q: "什么时候最容易觉得干、紧绷或起皮?",
-        hint: "先判断是持续性干燥，还是清洁、环境或护肤后短暂出现",
-        options: [
-          { v: "all_day", l: "一天大部分时间都干，甚至会起皮", signals: { compensatory: { delta: 25, label: "持续性缺水干燥" }, barrier: { delta: 10 } } },
-          { v: "after_wash", l: "主要是洗脸后明显紧绷", signals: { barrier: { delta: 25, label: "清洁后明显紧绷" }, sensitive: { delta: 10 } } },
-          { v: "environment", l: "空调房、换季或旅行时明显", signals: { compensatory: { delta: 20, label: "环境相关干燥" }, sensitive: { delta: 10 } } },
-        ],
-      },
-      {
         key: "surface",
         q: "干燥时皮肤表面更像哪一种?",
         hint: "区分单纯缺水与屏障受损",
@@ -91,15 +81,6 @@ if (!app.includes(MARKER)) {
         ],
       },
       {
-        key: "duration",
-        q: "这些变化大概持续多久了?",
-        hint: "长期稳定累积更符合结构性老化，而短期波动可能受缺水和状态影响",
-        options: [
-          { v: "recent", l: "最近几个月才突然觉得明显", signals: { aging: { delta: 5 }, photodamage: { delta: -10 } } },
-          { v: "years", l: "几年里逐渐变明显", signals: { aging: { delta: 25, label: "多年渐进变化" }, photodamage: { delta: 20 } } },
-        ],
-      },
-      {
         key: "dryness",
         q: "补足保湿后，细纹会不会明显变浅?",
         hint: "帮助区分缺水纹与更稳定的结构性细纹",
@@ -130,32 +111,12 @@ if (!app.includes(MARKER)) {
         ],
       },
       {
-        key: "location",
-        q: "主要集中在哪里?",
-        hint: "分布能帮助判断角质、屏障还是毛孔堵塞为主",
-        options: [
-          { v: "tzone", l: "额头、鼻翼、下巴这些容易出油的位置", signals: { true_acne: { delta: 20 }, buildup: { delta: 20 } } },
-          { v: "cheeks", l: "两颊为主，而且容易干或敏感", signals: { barrier: { delta: 25 } } },
-          { v: "overall", l: "整脸都比较粗糙", signals: { buildup: { delta: 20 }, barrier: { delta: 10 } } },
-        ],
-      },
-      {
         key: "clog",
         q: "同时有没有黑头、白头或闭口?",
         hint: "确认毛囊堵塞是否是主要原因",
         options: [
           { v: "yes", l: "有，而且数量不少", signals: { true_acne: { delta: 30, label: "伴明显粉刺堵塞" }, buildup: { delta: 15 } } },
           { v: "no", l: "基本没有，就是表面不够平滑", signals: { true_acne: { delta: -20 }, buildup: { delta: 15 } } },
-        ],
-      },
-      {
-        key: "exfoliation",
-        q: "温和去角质后通常会怎样?",
-        hint: "反应模式能进一步区分角质堆积与屏障脆弱",
-        options: [
-          { v: "better", l: "会暂时更光滑，而且没有明显刺激", signals: { buildup: { delta: 30, label: "温和去角质后改善" } } },
-          { v: "worse", l: "容易更红、更干或刺痛", signals: { barrier: { delta: 30, label: "去角质后刺激加重" } } },
-          { v: "unknown", l: "不确定，平时很少去角质", signals: {} },
         ],
       },
     ],
